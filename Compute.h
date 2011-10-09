@@ -9,28 +9,6 @@ struct force {
   BigReal z;
 };
 
-class sqrtPars {
-  public:
-    BigReal a; //constant
-    BigReal b;
-    BigReal c;
-    BigReal d; //x^3
-
-    void pup(PUP::er &p) {
-      p | a; p | b;
-      p | c;  p | d;
-    }
-};
-
-
-class sqrtTable : public CMessage_sqrtTable {
-  public:
-    sqrtPars* pars;
-    int length;
-    BigReal delta;
-};
-
-
 class ParticleForceMsg : public CMessage_ParticleForceMsg {
   public:
     int lengthX;
@@ -85,7 +63,6 @@ class Compute : public CBase_Compute {
       int hasList = (numLists >= 0  && pairList != NULL);
       p | hasList;
       if (hasList){
-	//CkPrintf("NUMLISTS = %d\n", numLists);
 	if (p.isUnpacking())
 	  pairList = new CkVec<int>[numLists];
 	PUParray(p, pairList, numLists);

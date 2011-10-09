@@ -50,7 +50,7 @@ Patch::Patch() {
   inbrs = numNbrs;
   usesAtSync = CmiTrue;
   // Particle initialization
-  myNumParts = numParts/(patchArrayDimX*patchArrayDimY*patchArrayDimZ);
+  myNumParts = NUM_PARTICLES;
 
   // starting random generator
   srand48(25763);
@@ -59,19 +59,18 @@ Patch::Patch() {
   for(i=0; i < myNumParts; i++) {
     particles.push_back(Particle());
 
-    //TODO decide on values for charge and mass
-    particles[myNumParts].charge = 1;
-    particles[myNumParts].mass = 1;
+    particles[i].charge = 0;
+    particles[i].mass = 0;
 
     particles[i].x = drand48() * patchSize + thisIndex.x * patchSize;
     particles[i].y = drand48() * patchSize + thisIndex.y * patchSize;
     particles[i].z = drand48() * patchSize + thisIndex.z * patchSize;
-    particles[myNumParts].vx = 0;
-    particles[myNumParts].vy = 0;
-    particles[myNumParts].vz = 0;
-    particles[myNumParts].fx = 0;
-    particles[myNumParts].fy = 0;
-    particles[myNumParts].fz = 0;
+    particles[i].vx = 0;
+    particles[i].vy = 0;
+    particles[i].vz = 0;
+    particles[i].fx = 0;
+    particles[i].fy = 0;
+    particles[i].fz = 0;
 
     particles[i].id = (thisIndex.x*patchArrayDimX + thisIndex.y) * numParts / (patchArrayDimX*patchArrayDimY)  + i;
   }

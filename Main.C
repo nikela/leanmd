@@ -49,7 +49,6 @@ Main::Main(CkArgMsg* msg) {
   LBTurnInstrumentOff();
   stepTime = CmiWallTimer();
   CkPrintf("\nLENNARD JONES MOLECULAR DYNAMICS START UP ...\n");
-  numParts = 0;
 
   usePairLists = USE_PAIRLISTS;
   patchArrayDimX = PATCHARRAY_DIM_X;
@@ -76,6 +75,7 @@ Main::Main(CkArgMsg* msg) {
   twoAwayX = false;
   twoAwayY = false;
   twoAwayZ = false;
+  numParts = NUM_PARTICLES*patchArrayDimX*patchArrayDimY*patchArrayDimZ;
 
   mainProxy = thisProxy;
   phase = 0;

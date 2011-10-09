@@ -9,6 +9,8 @@ typedef double BigReal;
 #define COULOMBS_CONSTANT       (8.987551 * pow(10.0,-9))
 #define ELECTRON_CHARGE         (1.602176 * pow(10.0,-19))
 
+#define NUM_PARTICLES		1000
+
 #define USE_PAIRLISTS		true	// generally faster if true
 
 #define DEFAULT_DELTA		1	// in femtoseconds
@@ -87,10 +89,6 @@ extern /* readonly */ CProxy_Main mainProxy;
 extern /* readonly */ CProxy_Patch patchArray;
 extern /* readonly */ CProxy_Compute computeArray;
 extern /* readonly */ CkGroupID mCastGrpID;
-
-extern /* readonly */ vdwParams *vdwTable;
-
-extern /* readonly */ sqrtTable *rootTable;
 
 extern /* readonly */ bool usePairLists;
 extern /* readonly */ int numParts;
