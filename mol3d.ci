@@ -5,9 +5,6 @@ mainmodule mol3d {
   readonly CProxy_Compute computeArray;
   readonly CkGroupID mCastGrpID;
 
-  readonly message vdwParams *vdwTable;	// vdw params table
-  readonly message sqrtTable *rootTable;// sqrt interpolation table
-
   readonly int numParts;		// total number of particles
   readonly int patchArrayDimX;		// X dimension of the Patch array
   readonly int patchArrayDimY;		// Y dimension of the Patch array
@@ -49,16 +46,6 @@ mainmodule mol3d {
     entry void startUpDone();
   };
 
-  message vdwParams {
-    vdwPars params[];
-  };
-
-
-  message sqrtTable {
-    sqrtPars pars[];
-  };
-
-
   message ParticleDataMsg{
     partData part[];
   };
@@ -71,11 +58,10 @@ mainmodule mol3d {
     BigReal charge[];
     BigReal mass[];
     loc coords[];
-    int vdw_type[];
   };
 
   array [3D] Patch {
-    entry Patch(FileDataMsg* fdmsg);
+    entry Patch();
     entry void start();
     entry void createComputes();
     entry void createSection();
@@ -93,5 +79,4 @@ mainmodule mol3d {
     entry void interact(ParticleDataMsg *msg);
     entry void ResumeFromSync();
   };
-
 };
