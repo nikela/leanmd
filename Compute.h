@@ -1,7 +1,7 @@
 #ifndef __COMPUTE_H__
 #define __COMPUTE_H__
 
-#include "physics.h"
+#include "defs.h"
 
 struct force {
   BigReal x;

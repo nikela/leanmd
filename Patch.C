@@ -1,13 +1,10 @@
 #include "time.h"
-#include "physics.h"
+#include "defs.h"
 #include "mol3d.decl.h"
-#include "Main.h"
 #include "Patch.h"
-#include "Compute.h"
 #ifdef USE_SECTION_MULTICAST
 #include "ckmulticast.h"
 #endif
-
   
 extern /* readonly */ CProxy_Main mainProxy;
 extern /* readonly */ CProxy_Patch patchArray;
@@ -62,9 +59,9 @@ Patch::Patch() {
     particles[i].charge = 0;
     particles[i].mass = 0;
 
-    particles[i].x = drand48() * patchSize + thisIndex.x * patchSize;
-    particles[i].y = drand48() * patchSize + thisIndex.y * patchSize;
-    particles[i].z = drand48() * patchSize + thisIndex.z * patchSize;
+    particles[i].x = drand48() * patchSizeX + thisIndex.x * patchSizeX;
+    particles[i].y = drand48() * patchSizeY + thisIndex.y * patchSizeY;
+    particles[i].z = drand48() * patchSizeZ + thisIndex.z * patchSizeZ;
     particles[i].vx = 0;
     particles[i].vy = 0;
     particles[i].vz = 0;
@@ -84,7 +81,6 @@ Patch::Patch() {
   pause = false;
   incomingParticles.resize(0);
   setMigratable(CmiFalse);
-  delete fdmsg;
 }
 
 // Constructor for chare object migration

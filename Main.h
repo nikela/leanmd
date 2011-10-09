@@ -1,9 +1,6 @@
 #ifndef __MAIN_H__
 #define __MAIN_H__
 
-/** \class Main
- *
- */
 class Main : public CBase_Main {
   private:
     int phase;

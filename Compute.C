@@ -1,7 +1,8 @@
-#include "physics.h"
+#include "defs.h"
 #include "mol3d.decl.h"
 #include "Patch.h"
 #include "Compute.h"
+#include "physics.h"
 #ifdef USE_SECTION_MULTICAST
 #include "ckmulticast.h"
 #endif
