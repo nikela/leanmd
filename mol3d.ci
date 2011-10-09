@@ -54,12 +54,6 @@ mainmodule mol3d {
     force forces[];
   };
 
-  message FileDataMsg{
-    BigReal charge[];
-    BigReal mass[];
-    loc coords[];
-  };
-
   array [3D] Patch {
     entry Patch();
     entry void start();

@@ -4,6 +4,9 @@
 #include "Main.h"
 #include "Patch.h"
 #include "Compute.h"
+#ifdef USE_SECTION_MULTICAST
+#include "ckmulticast.h"
+#endif
 
 /* readonly */ CProxy_Main mainProxy;
 /* readonly */ CProxy_Patch patchArray;

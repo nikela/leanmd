@@ -1,18 +1,7 @@
-/** \file Patch.h
- *  Author: Abhinav S Bhatele
- *  Date Created: August 11th, 2008
- */
-
 #ifndef __PATCH_H__
 #define __PATCH_H__
 
 extern /*readonly*/ int numNbrs;
-
-class vdwParams : public CMessage_vdwParams {
-  public:
-    vdwPars *params;
-    int numParams;
-};
 
 class loc{
   public:
@@ -29,22 +18,14 @@ class partData{
   public:
     loc coord;
     BigReal charge;
-    int vdwIndex;
     
     void pup(PUP::er &p){
-      p|coord; p|charge; p|vdwIndex;
+      p|coord; p|charge; 
     }
 };
 
 class ParticleDataMsg : public CkMcastBaseMsg, public CMessage_ParticleDataMsg {
   public:
-    //BigReal* particleLocX;
-    //BigReal* particleLocY;
-    //BigReal* particleLocZ;
-    /*loc* coords;
-    BigReal* charge;
-    int *vdwIndex;
-    */
     partData* part;
     int lengthAll;
     int x;
@@ -56,7 +37,6 @@ class ParticleDataMsg : public CkMcastBaseMsg, public CMessage_ParticleDataMsg {
     bool lbOn;
 
     void pup(PUP::er &p){
-     // CkMcastBaseMsg::pup(p);
       CMessage_ParticleDataMsg::pup(p);
       p | lengthAll;
       p | x; p | y; p | z;
@@ -65,25 +45,10 @@ class ParticleDataMsg : public CkMcastBaseMsg, public CMessage_ParticleDataMsg {
       p | doAtSync;
       p | lbOn;
       if (p.isUnpacking()){
-	/*coords = new loc[lengthAll];
-	charge = new BigReal[lengthAll];
-	vdwIndex = new int[lengthAll];*/
 	part = new partData[lengthAll];
       }
-      /*PUParray(p, coords, lengthAll);
-      PUParray(p, charge, lengthAll);
-      PUParray(p, vdwIndex, lengthAll);*/
       PUParray(p, part, lengthAll);
     } 
-};
-
-class FileDataMsg : public CMessage_FileDataMsg {
-  public:
-    BigReal* charge;
-    BigReal* mass;
-    loc* coords; //encoded as x1 y1 z1 x2 y2 z2...
-    int* vdw_type;
-    int length;
 };
 
 /** \class Patch
@@ -116,7 +81,7 @@ class Patch : public CBase_Patch {
     CProxySection_Compute mCastSecProxy;
 
   public:
-    Patch(FileDataMsg *fdmsg);
+    Patch();
     Patch(CkMigrateMessage *msg);
     ~Patch();
 

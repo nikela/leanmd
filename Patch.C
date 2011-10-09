@@ -1,19 +1,11 @@
-/** \file Patch.C
- *  Author: Abhinav S Bhatele
- *  Date Created: August 11th, 2008
- */
-
 #include "time.h"
-#include "defs.h"
+#include "physics.h"
 #include "mol3d.decl.h"
 #include "Main.h"
 #include "Patch.h"
 #include "Compute.h"
-#include "ConfigList.h"
-#include "molfile_plugin.h"
-#include "PluginIOMgr.h"
 #ifdef USE_SECTION_MULTICAST
-  #include "ckmulticast.h"
+#include "ckmulticast.h"
 #endif
 
   
@@ -52,37 +44,37 @@ extern /* readonly */ double A;
 extern /* readonly */ double B;
 
 // Default constructor
-Patch::Patch(FileDataMsg* fdmsg) {
+Patch::Patch() {
   LBTurnInstrumentOff();
   int i;
   inbrs = numNbrs;
   usesAtSync = CmiTrue;
-  //double d1 = CmiWallTimer();
   // Particle initialization
-  myNumParts = 0;
-  for(i=0; i < fdmsg->length; i++) {
+  myNumParts = numParts/(patchArrayDimX*patchArrayDimY*patchArrayDimZ);
+
+  // starting random generator
+  srand48(25763);
+
+  // Particle initialization
+  for(i=0; i < myNumParts; i++) {
     particles.push_back(Particle());
-    particles[myNumParts].charge = fdmsg->charge[i];
-    particles[myNumParts].mass = fdmsg->mass[i];
 
-    particles[myNumParts].x = fdmsg->coords[i].x;
-    particles[myNumParts].y = fdmsg->coords[i].y;
-    particles[myNumParts].z = fdmsg->coords[i].z;
+    //TODO decide on values for charge and mass
+    particles[myNumParts].charge = 1;
+    particles[myNumParts].mass = 1;
 
+    particles[i].x = drand48() * patchSize + thisIndex.x * patchSize;
+    particles[i].y = drand48() * patchSize + thisIndex.y * patchSize;
+    particles[i].z = drand48() * patchSize + thisIndex.z * patchSize;
     particles[myNumParts].vx = 0;
     particles[myNumParts].vy = 0;
     particles[myNumParts].vz = 0;
     particles[myNumParts].fx = 0;
     particles[myNumParts].fy = 0;
     particles[myNumParts].fz = 0;
-     
-    particles[myNumParts].id = (thisIndex.x*patchArrayDimX + thisIndex.y) * numParts / (patchArrayDimX*patchArrayDimY)  + i;
-    
-    particles[myNumParts].vdw_type = fdmsg->vdw_type[i];
-    myNumParts++;
-  }	
-  //CkPrintf("Creating %d particles on Patch [%d][%d][%d]\n", myNumParts, thisIndex.x, thisIndex.y, thisIndex.z);
 
+    particles[i].id = (thisIndex.x*patchArrayDimX + thisIndex.y) * numParts / (patchArrayDimX*patchArrayDimY)  + i;
+  }
 
   updateCount = 0;
   forceCount = 0;
@@ -92,9 +84,8 @@ Patch::Patch(FileDataMsg* fdmsg) {
   incomingFlag = false;
   pause = false;
   incomingParticles.resize(0);
- // setMigratable(CmiFalse);
+  setMigratable(CmiFalse);
   delete fdmsg;
-  //loadTime = CmiWallTimer() - d1;
 }
 
 // Constructor for chare object migration
@@ -105,9 +96,7 @@ Patch::Patch(CkMigrateMessage *msg): CBase_Patch(msg) {
                                        
 Patch::~Patch() {}
 
-
 void Patch::createComputes() {
-  //double d1 = CmiWallTimer();
   int num;  
   
   int x = thisIndex.x;
@@ -170,7 +159,6 @@ void Patch::createComputes() {
   } // end of for loop
 
   contribute(CkCallback(CkIndex_Main::startUpDone(), mainProxy));
-  //loadTime += CmiWallTimer()-d1;
 }
 
 void Patch::createSection() {
@@ -232,26 +220,9 @@ void Patch::start() {
 	msg->updateList = true;
     }
   }
-#ifdef USE_SECTION_MULTICAST
-  // if we are using section mutlicast and we just did migration we need to rebuild the section
-  if (stepCount > 1 && (stepCount - firstLdbStep) % ldbPeriod == 1){
-    CkVec<CkArrayIndex6D> elems;
-    for (int num=0; num<numNbrs; num++)
-      elems.push_back(CkArrayIndex6D(computesList[num][0], computesList[num][1], computesList[num][2], computesList[num][3], computesList[num][4], computesList[num][5]));
 
-    CkArrayID computeArrayID = computeArray.ckGetArrayID();
-    mCastSecProxy = CProxySection_Compute::ckNew(computeArrayID, elems.getVec(), elems.size());
-    
-//	CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
-    //mCastSecProxy.ckSectionDelegate(mCastGrp);
-//	mCastGrp->resetSection(mCastSecProxy);
-//	mCastGrp->setReductionClient(mCastSecProxy, new CkCallback(CkIndex_Patch::reduceForces(NULL), thisProxy(thisIndex.x, thisIndex.y, thisIndex.z)));
-  
-  }
-#endif
   msg->lbOn = false;
   if (((stepCount > firstLdbStep - 1) && stepCount % ldbPeriod == 1) || stepCount == 0){
-    // if (x + y + z == 0) CkPrintf("Starting Load Balancer Instrumentation at %f\n", CmiWallTimer());
     msg->lbOn = true;
   }
   if ((stepCount - firstLdbStep) % ldbPeriod == 0){
@@ -263,10 +234,7 @@ void Patch::start() {
     msg->part[i].coord.y = particles[i].y;
     msg->part[i].coord.z = particles[i].z;
     msg->part[i].charge = particles[i].charge;
-    msg->part[i].vdwIndex = particles[i].vdw_type;
   }
-  //if (x+y+z < 1)
-    //  CkPrintf("patch %d %d %d, updatelist = %d deletelist = %d\n",x,y,z,msg->updateList, msg->deleteList);
 #ifdef USE_SECTION_MULTICAST
   mCastSecProxy.interact(msg);
 #else
@@ -294,8 +262,6 @@ void Patch::start() {
       newMsg->doAtSync = msg->doAtSync;
       newMsg->lbOn = msg->lbOn;
       memcpy(newMsg->part, msg->part, len*sizeof(partData));
-      //memcpy(newMsg->charge, msg->charge, len*sizeof(BigReal));
-      //memcpy(newMsg->vdwIndex, msg->vdwIndex, len*sizeof(int));
       computeArray(px1, py1, pz1, px2, py2, pz2).interact(newMsg);
     } 
   }
@@ -304,12 +270,10 @@ void Patch::start() {
 
 //reduction to update forces coming from a compute
 void Patch::reduceForces(CkReductionMsg *msg) {
-  //double d1 = CmiWallTimer();
   int i, lengthUp;
   forceCount=numNbrs;
   int* forces = (int*)msg->getData();
   lengthUp = msg->getSize()/sizeof(BigReal);
-  //CkPrintf("lengthup = %d numparts = %d\n",lengthUp, particles.length());
   for(i = 0; i < lengthUp; i+=3){
     particles[i/3].fx += forces[i];
     particles[i/3].fy += forces[i+1];
@@ -317,9 +281,7 @@ void Patch::reduceForces(CkReductionMsg *msg) {
   }
   applyForces();
   delete msg;
-  //loadTime += CmiWallTimer()-d1;
 }
-
 
 
 // Function to update forces coming from a compute
@@ -359,7 +321,6 @@ void Patch::applyForces(){
       for(i=0; i<particles.length(); i++) {
 	migrateToPatch(particles[i], x1, y1, z1);
 	if(x1 !=0 || y1!=0 || z1 !=0) {
-	  //CkPrintf("PARTICLE MIGRATING!\n");
 	  outgoing[(x1+1)*nbrsY*nbrsZ + (y1+1)*nbrsZ + (z1+1)].push_back(wrapAround(particles[i]));
 	  particles.remove(i);
 	}
@@ -381,12 +342,8 @@ void Patch::applyForces(){
 	      
     // checking whether to proceed with next step
     thisProxy(x, y, z).checkNextStep();
-    //checkNextStep();
     delete [] outgoing;
-  //  thisProxy(x, y, z).checkNextStep();
-    //checkNextStep();
   }
-//  else { CkPrintf("forcecount = %d/%d on patch %d %d %d\n", forceCount, numNbrs, thisIndex.x, thisIndex.y, thisIndex.z); }
 
 }
 
@@ -430,20 +387,10 @@ void Patch::checkNextStep(){
       timer = CmiWallTimer();
       CkPrintf("Step %d Benchmark Time %f ms/step, Total Time Elapsed %f ms\n", stepCount, ((timer - stepTime)/20)*1000, timer);
       stepTime = timer;
-//      if (stepCount == 300)
-//	traceBegin();
-  //    if (stepCount == 400)
-//	traceEnd();
 
     }
- //   if (stepCount == 300 && thisIndex.x*patchArrayDimY*patchArrayDimZ + thisIndex.y*patchArrayDimZ + thisIndex.z < 8)
- //     traceBegin();
- //   if (stepCount == 301 && thisIndex.x*patchArrayDimY*patchArrayDimZ + thisIndex.y*patchArrayDimZ + thisIndex.z < 8)
- //     traceEnd();
-
     // checking for next step
     if (stepCount >= finalStepCount) {
-     // CkPrintf("Final number of particles is %d on Patch [%d][%d][%d]\n", particles.length(), thisIndex.x, thisIndex.y, thisIndex.z);
       print();
       contribute(CkCallback(CkIndex_Main::allDone(), mainProxy)); 
     } else {
@@ -461,39 +408,26 @@ void Patch::checkNextStep(){
       }
       else{
 	AtSync();
-//	loadTime += CmiWallTimer()-d1;
-	//CkPrintf("Patch %d on processor %d had load %f\n", thisIndex.x*patchArrayDimY*patchArrayDimZ + thisIndex.y*patchArrayDimZ + thisIndex.z, CkMyPe(), loadTime);
-//	loadTime = 0;
 	contribute(CkCallback(CkIndex_Main::lbBarrier(),mainProxy));
       }
-	//loadTime = 0;
     }
   }
 }
 
 void Patch::ResumeFromSync(){
-    // if (thisIndex.x+thisIndex.y+thisIndex.z == 0) CkPrintf("patch 0 ResumeFromSync at %f\n",CmiWallTimer());
     pause = false;
     stepTime = CmiWallTimer();
     thisProxy(thisIndex.x, thisIndex.y, thisIndex.z).start();
     LBTurnInstrumentOff();
-    //resumeCount = 0;
 }
 
 void Patch::resume(){
- /* if (++resumeCount == numNbrs){
-    pause = false;
-    thisProxy(thisIndex.x, thisIndex.y, thisIndex.z).start();
-    resumeCount = 0;
-  }*/
   if (!pause){
-    // if (thisIndex.x+thisIndex.y+thisIndex.z == 0) CkPrintf("patch 0 calling LBInstrumentation on at %f\n",CmiWallTimer());
     LBTurnInstrumentOn();
     loadTime = 0;
     start();
   }
   else {
-    // if (thisIndex.x+thisIndex.y+thisIndex.z == 0) CkPrintf("patch 0 calling AtSync at %f\n",CmiWallTimer());
     AtSync();
   }
 }
