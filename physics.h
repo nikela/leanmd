@@ -1,5 +1,5 @@
-#ifndef __COMMON_H__
-#define __COMMON_H__
+#ifndef __PHYSICS_H__
+#define __PHYSICS_H__
 
 #include "pup.h"
 
@@ -20,7 +20,7 @@ typedef double BigReal;
 #define PATCHARRAY_DIM_X	3
 #define PATCHARRAY_DIM_Y	3
 #define PATCHARRAY_DIM_Z	3
-#define PTP_CUT_OFF		13	// Rc in NAMD, cut off for atom to atom interactions
+#define PTP_CUT_OFF		13	//  cut off for atom to atom interactions
 #define PATCH_MARGIN		0 	// constant difference between cut off and patch size
 #define PATCH_SIZE_X		(PTP_CUT_OFF + PATCH_MARGIN)
 #define PATCH_SIZE_Y		(PTP_CUT_OFF + PATCH_MARGIN)
@@ -45,28 +45,9 @@ typedef double BigReal;
 #define WRAP_Y(a)		(((a)+patchArrayDimY)%patchArrayDimY)
 #define WRAP_Z(a)		(((a)+patchArrayDimZ)%patchArrayDimZ)
 
-// Struct for keeping track of vdw parameters
-class vdwPars{
-  public:
-    BigReal A;
-    BigReal B;
-    BigReal A14;
-    BigReal B14;
-
-    vdwPars(){
-      A = B = A14 = B14 = 0;
-    }
-    
-    void pup(PUP::er &p) {
-      p | A; p | B; p | A14; p | B14;
-    }
-
-};
-
 // Class for keeping track of the properties for a particle
 class Particle {
   public:
-    int vdw_type;
 
     int id;
     BigReal mass;	// mass of the particle
@@ -99,54 +80,8 @@ class Particle {
       p | fx; p | fy; p | fz;
       p | ax; p | ay; p | az;
       p | vx; p | vy; p | vz;
-      p | vdw_type;
     }
 };
-
-class Color {
-  public:
-    unsigned char R, G, B;
-
-    // Generate a unique color for each index from 0 to total-1
-    Color(int index){
-      int total = 8;
-      if(index % total == 0) {
-	R = 255;
-	G = 100;
-	B = 100;
-      } else if(index % total == 1) {
-	R = 100;
-	G = 255;
-	B = 100;
-      } else if(index % total == 2) {
-	R = 100;
-	G = 100;
-	B = 255;
-      } else if(index % total == 3) {
-	R = 100;
-	G = 255;
-	B = 255;
-      } else if(index % total == 4) {
-	R = 100;
-	G = 255;
-	B = 255;
-      } else if(index % total == 5) {
-	R = 255;
-	G = 255;
-	B = 100;
-      } else if(index % total == 6) {
-	R = 255;
-	G = 100;
-	B = 255;
-      } else {
-	R = 170;
-	G = 170;
-	B = 170;
-      }
-    }	
-};
-
-#endif
 
 extern /* readonly */ CProxy_Main mainProxy;
 extern /* readonly */ CProxy_Patch patchArray;
@@ -169,8 +104,8 @@ extern /* readonly */ int ptpCutOff;
 extern /* readonly */ int finalStepCount; 
 extern /* readonly */ BigReal stepTime; 
 
-//extern /* readonly */ double A;			// Force Calculation parameter 1
-//extern /* readonly */ double B;			// Force Calculation parameter 2
+extern /* readonly */ double A;		// Force Calculation parameter 1
+extern /* readonly */ double B;		// Force Calculation parameter 2
 
 #define BLOCK_SIZE	512
 
@@ -181,9 +116,6 @@ inline CkVec<int>* calcPairForcesPL(ParticleDataMsg* first, ParticleDataMsg* sec
   int secondLen = second->lengthAll;
   BigReal powTwenty, firstx, firsty, firstz, rx, ry, rz, r, rsqd, fx, fy, fz, f, fr, eField, constants;
   double rSix, rTwelve;
-  double A, B;
-  vdwPars *vdwp;
-  sqrtPars pars;
   ParticleForceMsg *firstmsg = new (firstLen) ParticleForceMsg;
   ParticleForceMsg *secondmsg = new (secondLen) ParticleForceMsg;
   firstmsg->lengthUpdates = firstLen;
@@ -213,13 +145,7 @@ inline CkVec<int>* calcPairForcesPL(ParticleDataMsg* first, ParticleDataMsg* sec
   ptpCutOffSqd = ptpCutOff * ptpCutOff;
   powTwenty = pow(10.0, -20);
 
-  /** TODO Edgar: This way of building a pairlist is stupid. The proper way to
-   *  do it is to sort by particle position (via voxels or something), then
-   *  store just 2 indices for each particle. This is more cache efficient and
-   *  uses more light-weight pairlists.
-   */
-
-  //check if pairlist needs to be updated
+ //check if pairlist needs to be updated
   if (first->updateList){
     pairList = new CkVec<int>[firstLen];
     *numLists = firstLen;
@@ -259,16 +185,7 @@ inline CkVec<int>* calcPairForcesPL(ParticleDataMsg* first, ParticleDataMsg* sec
       rsqd = rx*rx + ry*ry + rz*rz;
       if (rsqd >= 0.001){
 	rsqd = rsqd * powTwenty;
-	rootidx = (int)(rsqd/rootTable->delta);
-	if (rootidx >= 10000) r = sqrt(rsqd);
-	else {
-	  pars = rootTable->pars[(int)(rsqd/rootTable->delta)];
-	  r = pars.a + rsqd*(pars.b+rsqd*(pars.c+ rsqd*pars.d));
-	}
-	vdwp = &(vdwTable->params[first->part[i1].vdwIndex*vdwTable->numParams + second->part[jpart].vdwIndex]);
-	A = vdwp->A;
-	B = vdwp->B;
-	//r = r * 10000000000;
+	r = sqrt(rsqd);
 	rSix = ((double)rsqd) * rsqd * rsqd;
 	rTwelve = rSix * rSix;
         f = (BigReal)(A / rTwelve - B / rSix);
@@ -318,9 +235,6 @@ inline void calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, CkSe
   int secondLen = second->lengthAll;
   BigReal powTwenty, rx, ry, rz, r, rsqd, fx, fy, fz, f, fr, eField, constants;
   double rSix, rTwelve;
-  double A, B;
-  sqrtPars pars;
-  vdwPars *vdwp;
 
   ParticleForceMsg *firstmsg = new (firstLen) ParticleForceMsg;
   ParticleForceMsg *secondmsg = new (secondLen) ParticleForceMsg;
@@ -366,13 +280,7 @@ inline void calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, CkSe
       rsqd = rx*rx + ry*ry + rz*rz;
       if (rsqd >= 0.001 && rsqd < ptpCutOffSqd){
 	rsqd = rsqd * powTwenty;
-	//r = rsqd/1000000000;
-	//r = sqrt(rsqd);
-	pars = rootTable->pars[(int)(rsqd/rootTable->delta)];
-	r = pars.a + rsqd*(pars.b+rsqd*(pars.c+ rsqd*pars.d));
-	vdwp = &vdwTable->params[first->part[i].vdwIndex*vdwTable->numParams + second->part[jpart].vdwIndex];
-	A = vdwp->A;
-	B = vdwp->B;
+	r = sqrt(rsqd);
 	rSix = ((double)rsqd) * rsqd * rsqd;
 	rTwelve = rSix * rSix;
         f = (BigReal)(A / rTwelve - B / rSix);
@@ -412,9 +320,6 @@ inline void calcInternalForces(ParticleDataMsg* first, CkSectionInfo *cookie1) {
   int firstLen = first->lengthAll;
   BigReal powTwenty, firstx, firsty, firstz, rx, ry, rz, r, rsqd, fx, fy, fz, f, fr, eField, constants;
   double rSix, rTwelve;
-  double A, B;
-  vdwPars *vdwp;
-  sqrtPars pars;
 
   ParticleForceMsg *firstmsg = new (firstLen) ParticleForceMsg;
   firstmsg->lengthUpdates = firstLen;
@@ -435,15 +340,9 @@ inline void calcInternalForces(ParticleDataMsg* first, CkSectionInfo *cookie1) {
       ry = firsty - first->part[j].coord.y;
       rz = firstz - first->part[j].coord.z;
       rsqd = rx*rx + ry*ry + rz*rz;
-      //check if r >= .000001 to make sure force calc doesnt tend to 0
       if(rsqd >= 0.001 && rsqd < ptpCutOffSqd){
 	rsqd = rsqd * powTwenty;
-	//r = sqrt(rsqd);
-	pars = rootTable->pars[(int)(rsqd/rootTable->delta)];
-	r = pars.a + rsqd*(pars.b+rsqd*(pars.c+ rsqd*pars.d));
-	vdwp = &vdwTable->params[first->part[i].vdwIndex*vdwTable->numParams + first->part[j].vdwIndex];
-	A = vdwp->A;
-	B = vdwp->B;
+	r = sqrt(rsqd);
 	rSix = ((double)rsqd) * rsqd * rsqd;
 	rTwelve = rSix * rSix;
         f = (BigReal)(A / rTwelve - B / rSix);
@@ -464,15 +363,6 @@ inline void calcInternalForces(ParticleDataMsg* first, CkSectionInfo *cookie1) {
   }
 #ifdef USE_SECTION_MULTICAST
   CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
-  //CkGetSectionInfo(*cookie1, first);
-  //double might be incorrect here
-  //double *forceArr = new double[3*firstmsg->lengthUpdates];
-  //for (int i = 0; i < firstmsg->lengthUpdates; i++){
-    //forceArr[3*i] = firstmsg->forces[i].x;
-    //forceArr[3*i+1] = firstmsg->forces[i].y;
-    //forceArr[3*i+2] = firstmsg->forces[i].z;
-  //}
-  //CkPrintf("lengthupdates = %d\n", firstmsg->lengthUpdates);
   mCastGrp->contribute(sizeof(BigReal)*3*firstmsg->lengthUpdates, firstmsg->forces, CkReduction::sum_double, *cookie1);
   delete firstmsg;
 #else

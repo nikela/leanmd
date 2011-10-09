@@ -1,12 +1,7 @@
-/** \file Compute.h
- *  Author: Abhinav S Bhatele
- *  Date Created: August 11th, 2008
- */
-
 #ifndef __COMPUTE_H__
 #define __COMPUTE_H__
 
-#include "defs.h"
+#include "physics.h"
 
 struct force {
   BigReal x;
@@ -62,9 +57,6 @@ class Compute : public CBase_Compute {
     Compute(CkMigrateMessage *msg);
 
     void interact(ParticleDataMsg *msg);
-    //void calcPairForcesPL(ParticleDataMsg* first, ParticleDataMsg* second);
-    //void calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second);
-    //void calcInternalForces(ParticleDataMsg* first);
 
     void pup(PUP::er &p) {
       CBase_Compute::pup(p);
@@ -83,7 +75,6 @@ class Compute : public CBase_Compute {
       int hasMsg = (bmsgLenAll >= 0); // only pup if msg will be used
       p | hasMsg;
       if (hasMsg){
-	//CkPrintf("HERE?\n");
 	if (p.isUnpacking())
 	  bufferedMsg = new (bmsgLenAll) ParticleDataMsg;
 	p | *bufferedMsg;
@@ -100,10 +91,8 @@ class Compute : public CBase_Compute {
 	PUParray(p, pairList, numLists);
       }
       else{
-//	CkPrintf("DID NOT NEED TO PUP PAIRLIST\n");
 	pairList = NULL;
       }
-      //CkPrintf("done pupping a compute \n");
     }
     void ResumeFromSync();           
 };

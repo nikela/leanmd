@@ -1,8 +1,3 @@
-/** \file Compute.h
- *  Author: Abhinav S Bhatele
- *  Date Created: August 11th, 2008
- */
-
 #include "defs.h"
 #include "mol3d.decl.h"
 #include "Patch.h"
