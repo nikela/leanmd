@@ -2,6 +2,10 @@
 #define __PATCH_H__
 
 extern /*readonly*/ int numNbrs;
+extern /* readonly */ CkGroupID mCastGrpID;
+#ifdef USE_SECTION_MULTICAST
+  #include "ckmulticast.h"
+#endif
 
 struct force {
   BigReal x;
@@ -139,14 +143,15 @@ class Patch : public CBase_Patch {
       for (int i = 0; i < inbrs; i++){
         PUParray(p, computesList[i], 6);
       }
-     
+      p | mCastSecProxy;
+
 #ifdef USE_SECTION_MULTICAST 
       if (p.isUnpacking()){
-        //need to recreate ckmulticast section proxy
-	localCreateSection();
+        CkMulticastMgr *mg = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
+        mg->resetSection(mCastSecProxy);
+        mg->setReductionClient(mCastSecProxy, new CkCallback(CkIndex_Patch::reduceForces(NULL), thisProxy(thisIndex.x, thisIndex.y, thisIndex.z)));
       }
-#endif
- 
+#endif 
     } 
 
 };

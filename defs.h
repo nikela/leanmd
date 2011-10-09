@@ -15,8 +15,8 @@ typedef double BigReal;
 
 #define DEFAULT_DELTA		1	// in femtoseconds
 
-#define DEFAULT_FIRST_LDB	101
-#define DEFAULT_LDB_PERIOD	500
+#define DEFAULT_FIRST_LDB	10
+#define DEFAULT_LDB_PERIOD	10
 #define DEFAULT_FT_PERIOD	100000
 
 #define PATCHARRAY_DIM_X	3
