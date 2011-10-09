@@ -1,4 +1,4 @@
-include ../compile/Makefile.config
+
 
 TARGET_LIB = $(MOL3D)/compile/libNamdsrc.a
 OBJS	   = jsplugin.o PluginIOMgr.o ConfigList.o strlib.o common.o \
