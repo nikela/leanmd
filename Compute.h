@@ -3,22 +3,6 @@
 
 #include "defs.h"
 
-struct force {
-  BigReal x;
-  BigReal y;
-  BigReal z;
-};
-
-class ParticleForceMsg : public CMessage_ParticleForceMsg {
-  public:
-    int lengthX;
-    int lengthY;
-    int lengthZ;
-   
-    force* forces;
-    int lengthUpdates;
-};
-
 // Class representing the interaction agents between a couple of cells
 class Compute : public CBase_Compute {
   private:

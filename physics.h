@@ -1,6 +1,10 @@
 #ifndef __PHYSICS_H__
 #define __PHYSICS_H__
 
+#ifdef USE_SECTION_MULTICAST
+#include "ckmulticast.h"
+#endif
+
 extern /* readonly */ CProxy_Main mainProxy;
 extern /* readonly */ CProxy_Patch patchArray;
 extern /* readonly */ CProxy_Compute computeArray;
