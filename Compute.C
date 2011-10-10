@@ -1,5 +1,5 @@
 #include "defs.h"
-#include "mol3d.decl.h"
+#include "leanmd.decl.h"
 #include "Patch.h"
 #include "Compute.h"
 #include "physics.h"

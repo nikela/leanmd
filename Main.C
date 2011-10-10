@@ -4,7 +4,7 @@
 #endif
 
 #include "defs.h"
-#include "mol3d.decl.h"
+#include "leanmd.decl.h"
 #include "Main.h"
 #include "Patch.h"
 #include "Compute.h"
@@ -151,4 +151,4 @@ void Main::startUpDone() {
   }
 }
 
-#include "mol3d.def.h"
+#include "leanmd.def.h"

@@ -1,6 +1,6 @@
 #include "time.h"
 #include "defs.h"
-#include "mol3d.decl.h"
+#include "leanmd.decl.h"
 #include "Patch.h"
 #ifdef USE_SECTION_MULTICAST
 #include "ckmulticast.h"

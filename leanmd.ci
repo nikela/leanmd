@@ -1,4 +1,4 @@
-mainmodule mol3d {
+mainmodule leanmd {
 
   readonly CProxy_Main mainProxy;
   readonly CProxy_Patch patchArray;
