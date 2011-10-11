@@ -1,7 +1,6 @@
 #ifndef __PATCH_H__
 #define __PATCH_H__
 
-extern /*readonly*/ int numNbrs;
 extern /* readonly */ CkGroupID mCastGrpID;
 #ifdef USE_SECTION_MULTICAST
   #include "ckmulticast.h"

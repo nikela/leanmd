@@ -8,22 +8,23 @@ typedef double BigReal;
 #define AVAGADROS_NUMBER        (6.022141 * pow(10.0,23))
 #define COULOMBS_CONSTANT       (8.987551 * pow(10.0,-9))
 #define ELECTRON_CHARGE         (1.602176 * pow(10.0,-19))
+#define VDW_A			(1.60694452 * pow(10.0, -134))
+#define VDW_B			(1.031093844 * pow(10.0, -77))
+#define PARTICLES_PER_PATCH	1000
 
-#define NUM_PARTICLES		1000
-
-#define USE_PAIRLISTS		true	// generally faster if true
+#define USE_PAIRLISTS		false	// generally faster if true
 
 #define DEFAULT_DELTA		1	// in femtoseconds
 
 #define DEFAULT_FIRST_LDB	10
-#define DEFAULT_LDB_PERIOD	10
+#define DEFAULT_LDB_PERIOD	20
 #define DEFAULT_FT_PERIOD	100000
 
 #define PATCHARRAY_DIM_X	3
 #define PATCHARRAY_DIM_Y	3
 #define PATCHARRAY_DIM_Z	3
-#define PTP_CUT_OFF		13	//  cut off for atom to atom interactions
-#define PATCH_MARGIN		0 	// constant difference between cut off and patch size
+#define PTP_CUT_OFF		12	//  cut off for atom to atom interactions
+#define PATCH_MARGIN		4 	// constant difference between cut off and patch size
 #define PATCH_SIZE_X		(PTP_CUT_OFF + PATCH_MARGIN)
 #define PATCH_SIZE_Y		(PTP_CUT_OFF + PATCH_MARGIN)
 #define PATCH_SIZE_Z		(PTP_CUT_OFF + PATCH_MARGIN)
@@ -31,7 +32,7 @@ typedef double BigReal;
 #define PATCH_ORIGIN_Y		0
 #define PATCH_ORIGIN_Z		0
 
-#define MIGRATE_STEPCOUNT	5
+#define MIGRATE_STEPCOUNT	20
 #define DEFAULT_FINALSTEPCOUNT	101
 #define MAX_VELOCITY		30.0
 

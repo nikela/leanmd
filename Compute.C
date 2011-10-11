@@ -12,20 +12,11 @@ extern /* readonly */ CProxy_Patch patchArray;
 extern /* readonly */ CProxy_Compute computeArray;
 extern /* readonly */ CkGroupID mCastGrpID;
 
-extern /* readonly */ bool usePairLists;
-extern /* readonly */ int numParts;
 extern /* readonly */ int patchArrayDimX;	// Number of Chare Rows
 extern /* readonly */ int patchArrayDimY;	// Number of Chare Columns
 extern /* readonly */ int patchArrayDimZ;
-extern /* readonly */ int patchSizeX;
-extern /* readonly */ int patchSizeY;
-extern /* readonly */ int patchSizeZ;
-extern /* readonly */ int ptpCutOff;
 extern /* readonly */ int finalStepCount; 
 extern /* readonly */ BigReal stepTime; 
-
-extern /* readonly */ double A;			// Force Calculation parameter 1
-extern /* readonly */ double B;			// Force Calculation parameter 2
 
 // Compute - Default constructor
 Compute::Compute() {
@@ -73,7 +64,7 @@ void Compute::interact(ParticleDataMsg *msg){
       }
       if (msg->lbOn)
 	LBTurnInstrumentOn();
-      if (usePairLists){
+      if (USE_PAIRLISTS){
 	  if (bufferedMsg->x*patchArrayDimY*patchArrayDimZ + bufferedMsg->y*patchArrayDimZ + bufferedMsg->z < msg->x*patchArrayDimY*patchArrayDimZ + msg->y*patchArrayDimZ + msg->z){ 
 	    if (bufferedMsg->lengthAll <= msg->lengthAll)
 	      pairList = calcPairForcesPL(bufferedMsg, msg, pairList, &numLists, &cookie1, &cookie2);

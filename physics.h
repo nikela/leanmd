@@ -10,20 +10,11 @@ extern /* readonly */ CProxy_Patch patchArray;
 extern /* readonly */ CProxy_Compute computeArray;
 extern /* readonly */ CkGroupID mCastGrpID;
 
-extern /* readonly */ bool usePairLists;
-extern /* readonly */ int numParts;
 extern /* readonly */ int patchArrayDimX;	// Number of Chare Rows
 extern /* readonly */ int patchArrayDimY;	// Number of Chare Columns
 extern /* readonly */ int patchArrayDimZ;
-extern /* readonly */ int patchSizeX;
-extern /* readonly */ int patchSizeY;
-extern /* readonly */ int patchSizeZ;
-extern /* readonly */ int ptpCutOff;
 extern /* readonly */ int finalStepCount; 
 extern /* readonly */ BigReal stepTime; 
-
-extern /* readonly */ double A;		// Force Calculation parameter 1
-extern /* readonly */ double B;		// Force Calculation parameter 2
 
 #define BLOCK_SIZE	512
 
@@ -40,27 +31,27 @@ inline CkVec<int>* calcPairForcesPL(ParticleDataMsg* first, ParticleDataMsg* sec
   secondmsg->lengthUpdates = secondLen;
   //check for wrap around and adjust locations accordingly
   if (abs(first->x - second->x) > 1){
-    diff = patchSizeX * patchArrayDimX;
+    diff = PATCH_SIZE_X * patchArrayDimX;
     if (second->x < first->x)
       diff = -1 * diff; 
     for (i = 0; i < firstLen; i++)
       first->part[i].coord.x += diff;
   }
   if (abs(first->y - second->y) > 1){
-    diff = patchSizeY * patchArrayDimY;
+    diff = PATCH_SIZE_Y * patchArrayDimY;
     if (second->y < first->y)
       diff = -1 * diff; 
     for (i = 0; i < firstLen; i++)
       first->part[i].coord.y += diff;
   }
   if (abs(first->z - second->z) > 1){
-    diff = patchSizeZ * patchArrayDimZ;
+    diff = PATCH_SIZE_Z * patchArrayDimZ;
     if (second->z < first->z)
       diff = -1 * diff; 
     for (i = 0; i < firstLen; i++)
       first->part[i].coord.z += diff;
   } 
-  ptpCutOffSqd = ptpCutOff * ptpCutOff;
+  ptpCutOffSqd = PTP_CUT_OFF * PTP_CUT_OFF;
   powTwenty = pow(10.0, -20);
 
  //check if pairlist needs to be updated
@@ -106,7 +97,7 @@ inline CkVec<int>* calcPairForcesPL(ParticleDataMsg* first, ParticleDataMsg* sec
 	r = sqrt(rsqd);
 	rSix = ((double)rsqd) * rsqd * rsqd;
 	rTwelve = rSix * rSix;
-        f = (BigReal)(A / rTwelve - B / rSix);
+        f = (BigReal)(VDW_A / rTwelve - VDW_B / rSix);
 	f -= eField * constants * second->part[jpart].charge / rsqd;  //positive force should be attractive
 	fr = f /r;
 	fx = rx * fr;
@@ -160,27 +151,27 @@ inline void calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, CkSe
   secondmsg->lengthUpdates = secondLen;
   //check for wrap around and adjust locations accordingly
   if (abs(first->x - second->x) > 1){
-    diff = patchSizeX * patchArrayDimX;
+    diff = PATCH_SIZE_X * patchArrayDimX;
     if (second->x < first->x)
       diff = -1 * diff; 
     for (i = 0; i < firstLen; i++)
       first->part[i].coord.x += diff;
   }
   if (abs(first->y - second->y) > 1){
-    diff = patchSizeY * patchArrayDimY;
+    diff = PATCH_SIZE_Y * patchArrayDimY;
     if (second->y < first->y)
       diff = -1 * diff; 
     for (i = 0; i < firstLen; i++)
       first->part[i].coord.y += diff;
   }
   if (abs(first->z - second->z) > 1){
-    diff = patchSizeZ * patchArrayDimZ;
+    diff = PATCH_SIZE_Z * patchArrayDimZ;
     if (second->z < first->z)
       diff = -1 * diff; 
     for (i = 0; i < firstLen; i++)
       first->part[i].coord.z += diff;
   } 
-  ptpCutOffSqd = ptpCutOff * ptpCutOff;
+  ptpCutOffSqd = PTP_CUT_OFF * PTP_CUT_OFF;
   powTwenty = pow(10.0, -20);
   constants = COULOMBS_CONSTANT * ELECTRON_CHARGE * ELECTRON_CHARGE;
  
@@ -201,7 +192,7 @@ inline void calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, CkSe
 	r = sqrt(rsqd);
 	rSix = ((double)rsqd) * rsqd * rsqd;
 	rTwelve = rSix * rSix;
-        f = (BigReal)(A / rTwelve - B / rSix);
+        f = (BigReal)(VDW_A / rTwelve - VDW_B / rSix);
 	f -= eField * constants * second->part[jpart].charge / rsqd;
 	fr = f /r;
 	fx = rx * fr;
@@ -245,7 +236,7 @@ inline void calcInternalForces(ParticleDataMsg* first, CkSectionInfo *cookie1) {
   constants = COULOMBS_CONSTANT * ELECTRON_CHARGE * ELECTRON_CHARGE;
   
   memset(firstmsg->forces, 0, firstLen * 3*sizeof(BigReal));
-  ptpCutOffSqd = ptpCutOff * ptpCutOff;
+  ptpCutOffSqd = PTP_CUT_OFF * PTP_CUT_OFF;
   powTwenty = pow(10.0, -20);
   for(i = 0; i < firstLen; i++){
     eField = first->part[i].charge;
@@ -263,7 +254,7 @@ inline void calcInternalForces(ParticleDataMsg* first, CkSectionInfo *cookie1) {
 	r = sqrt(rsqd);
 	rSix = ((double)rsqd) * rsqd * rsqd;
 	rTwelve = rSix * rSix;
-        f = (BigReal)(A / rTwelve - B / rSix);
+        f = (BigReal)(VDW_A / rTwelve - VDW_B / rSix);
 	f -= eField * constants * first->part[j].charge / (rsqd);
         
 	fr = f /r;
