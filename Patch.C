@@ -176,26 +176,6 @@ void Patch::start() {
   msg->deleteList = false;
   msg->updateList = false;
   msg->doAtSync = false;
-  // If using pairlists determine whether or not its time to update the pairlist
-  if (USE_PAIRLISTS){
-    // set up pairlsit at startup
-    if (stepCount == 0)
-      msg->updateList = true;
-    if (stepCount > 1) {
-      // delete pairlist if about to migrate
-      if (stepCount % MIGRATE_STEPCOUNT == 0)
-	msg->deleteList = true;
-      // rebild pairlist once migrated
-      if (stepCount > 2 && stepCount % MIGRATE_STEPCOUNT == 1)
-	msg->updateList = true;
-      // delete pairlist if load balancing is about to be done
-      if ((stepCount >= firstLdbStep) && ((stepCount - firstLdbStep) % ldbPeriod == 0))
-	msg->deleteList = true;
-      // rebuild pairlist if load balancing was just done
-      if ((stepCount >= firstLdbStep) && ((stepCount - firstLdbStep) % ldbPeriod == 1))
-	msg->updateList = true;
-    }
-  }
 
   msg->lbOn = false;
   if (((stepCount >= firstLdbStep) && stepCount % ldbPeriod == 1) || stepCount == 0){
@@ -231,10 +211,6 @@ void Patch::start() {
       newMsg->y = y;
       newMsg->z = z;
       newMsg->lengthAll = len;
-      if (USE_PAIRLISTS){
-	newMsg->updateList = msg->updateList;
-	newMsg->deleteList = msg->deleteList;
-      }
       newMsg->doAtSync = msg->doAtSync;
       newMsg->lbOn = msg->lbOn;
       memcpy(newMsg->part, msg->part, len*sizeof(partData));

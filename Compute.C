@@ -64,33 +64,16 @@ void Compute::interact(ParticleDataMsg *msg){
       }
       if (msg->lbOn)
 	LBTurnInstrumentOn();
-      if (USE_PAIRLISTS){
-	  if (bufferedMsg->x*patchArrayDimY*patchArrayDimZ + bufferedMsg->y*patchArrayDimZ + bufferedMsg->z < msg->x*patchArrayDimY*patchArrayDimZ + msg->y*patchArrayDimZ + msg->z){ 
-	    if (bufferedMsg->lengthAll <= msg->lengthAll)
-	      pairList = calcPairForcesPL(bufferedMsg, msg, pairList, &numLists, &cookie1, &cookie2);
-	    else
-	      pairList = calcPairForcesPL(msg, bufferedMsg, pairList, &numLists, &cookie2, &cookie1);
-	  }
-	  else{
-	    if (bufferedMsg->lengthAll <= msg->lengthAll)
-	      pairList = calcPairForcesPL(bufferedMsg, msg, pairList, &numLists, &cookie2, &cookie1);
-	    else
-	      pairList = calcPairForcesPL(msg, bufferedMsg, pairList, &numLists, &cookie1, &cookie2);
-	  }
-      }
-      else {
-	if (bufferedMsg->x*patchArrayDimY*patchArrayDimZ + bufferedMsg->y*patchArrayDimZ + bufferedMsg->z < msg->x*patchArrayDimY*patchArrayDimZ + msg->y*patchArrayDimZ + msg->z){ 
-	  if (bufferedMsg->lengthAll <= msg->lengthAll)
-	    calcPairForces(bufferedMsg, msg, &cookie1, &cookie2);
-	  else
-	    calcPairForces(msg, bufferedMsg, &cookie2, &cookie1);
-	}
-	else{
-	  if (bufferedMsg->lengthAll <= msg->lengthAll)
-	    calcPairForces(bufferedMsg, msg, &cookie2, &cookie1);
-	  else
-	    calcPairForces(msg, bufferedMsg, &cookie1, &cookie2);
-	}
+      if (bufferedMsg->x*patchArrayDimY*patchArrayDimZ + bufferedMsg->y*patchArrayDimZ + bufferedMsg->z < msg->x*patchArrayDimY*patchArrayDimZ + msg->y*patchArrayDimZ + msg->z){ 
+	if (bufferedMsg->lengthAll <= msg->lengthAll)
+	  calcPairForces(bufferedMsg, msg, &cookie1, &cookie2);
+	else
+	  calcPairForces(msg, bufferedMsg, &cookie2, &cookie1);
+      } else {
+	if (bufferedMsg->lengthAll <= msg->lengthAll)
+	  calcPairForces(bufferedMsg, msg, &cookie2, &cookie1);
+	else
+          calcPairForces(msg, bufferedMsg, &cookie1, &cookie2);
       }
       bufferedMsg = NULL;
       if(doatSync)

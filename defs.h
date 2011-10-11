@@ -12,11 +12,9 @@ typedef double BigReal;
 #define VDW_B			(1.031093844 * pow(10.0, -77))
 #define PARTICLES_PER_PATCH	1000
 
-#define USE_PAIRLISTS		false	// generally faster if true
-
 #define DEFAULT_DELTA		1	// in femtoseconds
 
-#define DEFAULT_FIRST_LDB	10
+#define DEFAULT_FIRST_LDB	20
 #define DEFAULT_LDB_PERIOD	20
 #define DEFAULT_FT_PERIOD	100000
 
