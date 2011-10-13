@@ -105,7 +105,7 @@ void Main::startUpDone() {
 #endif
 
       CkPrintf("STARTING SIMULATION .... \n\n");
-      patchArray.start();
+      patchArray.run();
       break;
   }
 }

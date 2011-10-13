@@ -31,7 +31,7 @@ Compute::Compute(CkMigrateMessage *msg): CBase_Compute(msg)  {
   usesAtSync = CmiTrue;
   delete msg;
 }
-  
+
 // Entry method to receive vector of particles
 void Compute::interact(ParticleDataMsg *msg){
   int i;
@@ -60,24 +60,24 @@ void Compute::interact(ParticleDataMsg *msg){
       bool doatSync = false;
       bmsgLenAll = -1;
       if (msg->doAtSync){
-	doatSync = true;
+        doatSync = true;
       }
       if (msg->lbOn)
-	LBTurnInstrumentOn();
+        LBTurnInstrumentOn();
       if (bufferedMsg->x*patchArrayDimY*patchArrayDimZ + bufferedMsg->y*patchArrayDimZ + bufferedMsg->z < msg->x*patchArrayDimY*patchArrayDimZ + msg->y*patchArrayDimZ + msg->z){ 
-	if (bufferedMsg->lengthAll <= msg->lengthAll)
-	  calcPairForces(bufferedMsg, msg, &cookie1, &cookie2);
-	else
-	  calcPairForces(msg, bufferedMsg, &cookie2, &cookie1);
+        if (bufferedMsg->lengthAll <= msg->lengthAll)
+          calcPairForces(bufferedMsg, msg, &cookie1, &cookie2);
+        else
+          calcPairForces(msg, bufferedMsg, &cookie2, &cookie1);
       } else {
-	if (bufferedMsg->lengthAll <= msg->lengthAll)
-	  calcPairForces(bufferedMsg, msg, &cookie2, &cookie1);
-	else
+        if (bufferedMsg->lengthAll <= msg->lengthAll)
+          calcPairForces(bufferedMsg, msg, &cookie2, &cookie1);
+        else
           calcPairForces(msg, bufferedMsg, &cookie1, &cookie2);
       }
       bufferedMsg = NULL;
       if(doatSync)
-	AtSync();
+        AtSync();
     }
   }
 }

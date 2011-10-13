@@ -1,7 +1,10 @@
 #ifndef __PATCH_H__
 #define __PATCH_H__
 
+extern /* readonly */ CProxy_Main mainProxy;
 extern /* readonly */ CkGroupID mCastGrpID;
+extern /* readonly */ BigReal stepTime;
+extern /* readonly */ int finalStepCount;
 #ifdef USE_SECTION_MULTICAST
   #include "ckmulticast.h"
 #endif
@@ -76,6 +79,7 @@ class ParticleDataMsg : public CkMcastBaseMsg, public CMessage_ParticleDataMsg {
  */
 class Patch : public CBase_Patch {
   private:
+    Patch_SDAG_CODE;
     CkVec<Particle> particles;
     CkVec<Particle> incomingParticles;
     int forceCount;		// to count the returns from interactions
@@ -104,20 +108,20 @@ class Patch : public CBase_Patch {
     Patch(CkMigrateMessage *msg);
     ~Patch();
 
-    void start();
     void createComputes();
     void createSection();
     void localCreateSection();
-    void receiveParticles(CkVec<Particle> &);
-    void reduceForces(CkReductionMsg *msg);
-    void ResumeFromSync();           
     void resume();
     void ftresume();
     void receiveForces(ParticleForceMsg *updates);
     void checkNextStep();	// checks whether to continue with next step
-    
+    void migrateParticles();
+    void sendPositions();
+    void ResumeFromSync();
+
     void pup(PUP::er &p){
-      CBase_Patch::pup(p); 
+      CBase_Patch::pup(p);
+      __sdag_pup(p);
       p | particles;
       p | incomingParticles;
 

@@ -5,7 +5,7 @@
 #ifdef USE_SECTION_MULTICAST
 #include "ckmulticast.h"
 #endif
-  
+
 extern /* readonly */ CProxy_Main mainProxy;
 extern /* readonly */ CProxy_Patch patchArray;
 extern /* readonly */ CProxy_Compute computeArray;
@@ -22,6 +22,7 @@ extern /* readonly */ BigReal stepTime;
 
 // Default constructor
 Patch::Patch() {
+   __sdag_init();
   LBTurnInstrumentOff();
   int i;
   inbrs = NUM_NEIGHBORS;
@@ -65,16 +66,17 @@ Patch::Patch() {
 }
 
 // Constructor for chare object migration
-Patch::Patch(CkMigrateMessage *msg): CBase_Patch(msg) { 
+Patch::Patch(CkMigrateMessage *msg): CBase_Patch(msg) {
+  __sdag_init();
   usesAtSync = CmiTrue;
   delete msg;
 }  
-                                       
+
 Patch::~Patch() {}
 
 void Patch::createComputes() {
   int num;  
-  
+
   int x = thisIndex.x;
   int y = thisIndex.y;
   int z = thisIndex.z;
@@ -88,7 +90,7 @@ void Patch::createComputes() {
   for (int i =0; i < inbrs; i++){
     computesList[i] = new int[6];
   }
- 
+
   /*  The computes X are inserted by a given patch:
    *
    *	^  X  X  X
@@ -159,19 +161,13 @@ void Patch::localCreateSection() {
 }
 
 // Function to start interaction among particles in neighboring cells as well as its own particles
-void Patch::start() {
-  int x = thisIndex.x;
-  int y = thisIndex.y;
-  int z = thisIndex.z;
+void Patch::sendPositions() {
   int len = particles.length();
-  
-  if (stepCount == 0 && x+y+z ==0)
-    stepTime = CmiWallTimer();
 
   ParticleDataMsg* msg = new (len) ParticleDataMsg;
-  msg->x = x;
-  msg->y = y;
-  msg->z = z;
+  msg->x = thisIndex.x;
+  msg->y = thisIndex.y;
+  msg->z = thisIndex.z;
   msg->lengthAll = len;
   msg->deleteList = false;
   msg->updateList = false;
@@ -191,112 +187,35 @@ void Patch::start() {
     msg->part[i].coord.z = particles[i].z;
     msg->part[i].charge = particles[i].charge;
   }
-#ifdef USE_SECTION_MULTICAST
   mCastSecProxy.interact(msg);
-#else
-  int px1, py1, pz1, px2, py2, pz2;
-  
-  for(int num=0; num<inbrs; num++) {
-    px1 = computesList[num][0];
-    py1 = computesList[num][1];
-    pz1 = computesList[num][2];
-    px2 = computesList[num][3];
-    py2 = computesList[num][4];
-    pz2 = computesList[num][5];
-    if (num == inbrs-1)
-      computeArray(px1, py1, pz1, px2, py2, pz2).interact(msg);
-    else {
-      ParticleDataMsg* newMsg = new (len) ParticleDataMsg;
-      newMsg->x = x;
-      newMsg->y = y;
-      newMsg->z = z;
-      newMsg->lengthAll = len;
-      newMsg->doAtSync = msg->doAtSync;
-      newMsg->lbOn = msg->lbOn;
-      memcpy(newMsg->part, msg->part, len*sizeof(partData));
-      computeArray(px1, py1, pz1, px2, py2, pz2).interact(newMsg);
-    } 
-  }
-#endif
 }
 
-//reduction to update forces coming from a compute
-void Patch::reduceForces(CkReductionMsg *msg) {
-  int i, lengthUp;
-  forceCount=inbrs;
-  int* forces = (int*)msg->getData();
-  lengthUp = msg->getSize()/sizeof(BigReal);
-  for(i = 0; i < lengthUp; i+=3){
-    particles[i/3].fx += forces[i];
-    particles[i/3].fy += forces[i+1];
-    particles[i/3].fz += forces[i+2];
-  }
-  applyForces();
-  delete msg;
-}
-
-
-// Function to update forces coming from a compute
-void Patch::receiveForces(ParticleForceMsg *updates) {
-  int i;
-  // incrementing the counter for receiving updates
-  forceCount++;
-
-  // updating force information
-  for(i = 0; i < updates->lengthUpdates; i++){
-    particles[i].fx += updates->forces[i].x;
-    particles[i].fy += updates->forces[i].y;
-    particles[i].fz += updates->forces[i].z;
-  }
-  delete updates;
-  applyForces();
-}
-
-
-void Patch::applyForces(){
+void Patch::migrateParticles(){
   int i, x, y, z, x1, y1, z1;
-  // if all forces are received, then it must recompute particles location
-  if (forceCount == inbrs) {
-    CkVec<Particle> *outgoing = new CkVec<Particle>[inbrs];
+  CkVec<Particle> *outgoing = new CkVec<Particle>[inbrs];
 
-    // Received all it's forces from the interactions.
-    forceCount = 0;
-  
-    // Update properties on own particles
-    updateProperties();
-
-    // sending particles to neighboring cells
-    x = thisIndex.x;
-    y = thisIndex.y;
-    z = thisIndex.z;
-    if (stepCount > 0 && (stepCount % MIGRATE_STEPCOUNT) == 0){
-      for(i=0; i<particles.length(); i++) {
-	migrateToPatch(particles[i], x1, y1, z1);
-	if(x1 !=0 || y1!=0 || z1 !=0) {
-	  outgoing[(x1+1)*NBRS_Y*NBRS_Z + (y1+1)*NBRS_Z + (z1+1)].push_back(wrapAround(particles[i]));
-	  particles.remove(i);
-	}
-      }
+  // sending particles to neighboring cells
+  x = thisIndex.x;
+  y = thisIndex.y;
+  z = thisIndex.z;
     
-   
-      for(int num=0; num<inbrs; num++) {
-	x1 = num / (NBRS_Y * NBRS_Z)            - NBRS_X/2;
-	y1 = (num % (NBRS_Y * NBRS_Z)) / NBRS_Z - NBRS_Y/2;
-	z1 = num % NBRS_Z                       - NBRS_Z/2;
-
-	patchArray(WRAP_X(x+x1), WRAP_Y(y+y1), WRAP_Z(z+z1)).receiveParticles(outgoing[num]);
+    for(i=0; i<particles.length(); i++) {
+      migrateToPatch(particles[i], x1, y1, z1);
+      if(x1 !=0 || y1!=0 || z1 !=0) {
+        outgoing[(x1+1)*NBRS_Y*NBRS_Z + (y1+1)*NBRS_Z + (z1+1)].push_back(wrapAround(particles[i]));
+        particles.remove(i);
       }
     }
-    else
-      incomingFlag = true;
 
-    updateFlag = true;
-	      
-    // checking whether to proceed with next step
-    thisProxy(x, y, z).checkNextStep();
-    delete [] outgoing;
-  }
+    for(int num=0; num<inbrs; num++) {
+      x1 = num / (NBRS_Y * NBRS_Z)            - NBRS_X/2;
+      y1 = (num % (NBRS_Y * NBRS_Z)) / NBRS_Z - NBRS_Y/2;
+      z1 = num % NBRS_Z                       - NBRS_Z/2;
 
+      patchArray(WRAP_X(x+x1), WRAP_Y(y+y1), WRAP_Z(z+z1)).receiveParticles(outgoing[num]);
+    }
+
+  delete [] outgoing;
 }
 
 void Patch::migrateToPatch(Particle p, int &px, int &py, int &pz) {
@@ -319,77 +238,19 @@ void Patch::migrateToPatch(Particle p, int &px, int &py, int &pz) {
   else pz = 0;
 }
 
-// Function that checks whether it must start the following step or wait until other messages are received
-void Patch::checkNextStep(){
-  int i;
-  double timer;
-
-  if (updateFlag && incomingFlag) {
-    // resetting flags
-    updateFlag = false;
-    incomingFlag = false;
-    stepCount++;
-
-    // adding new elements
-    for (i = 0; i < incomingParticles.length(); i++)
-      particles.push_back(incomingParticles[i]);
-    incomingParticles.removeAll();
-
-    if (thisIndex.x==0 && thisIndex.y==0 && thisIndex.z==0 && stepCount%20==0) {
-      timer = CmiWallTimer();
-      CkPrintf("Step %d Benchmark Time %f ms/step, Total Time Elapsed %f ms\n", stepCount, ((timer - stepTime)/20)*1000, timer);
-      stepTime = timer;
-
-    }
-    // checking for next step
-    if (stepCount >= finalStepCount) {
-      print();
-      contribute(CkCallback(CkIndex_Main::allDone(), mainProxy)); 
-    } else {
-	if (perform_lb){
-	AtSync();
-	LBTurnInstrumentOff();
-	perform_lb=false;
-      }
-      else{
-	thisProxy(thisIndex.x, thisIndex.y, thisIndex.z).start();
-      }
-    }
-  }
-}
-
-void Patch::ResumeFromSync(){
-    thisProxy(thisIndex.x, thisIndex.y, thisIndex.z).start();
-    stepTime = CmiWallTimer();
-    LBTurnInstrumentOn();
-}
-
 void Patch::resume(){
 }
 
+void Patch::ResumeFromSync(){
+  thisProxy(thisIndex.x,thisIndex.y,thisIndex.z).resumeAfterLB(1);
+}
+
 void Patch::ftresume(){
-  if (thisIndex.x==0 && thisIndex.y==0 && thisIndex.z ==0)
+    if (thisIndex.x==0 && thisIndex.y==0 && thisIndex.z ==0)
       CkPrintf("patch 0 calling ftresume at %f\n",CmiWallTimer());
-  start();
+    run();
 }
 
-// Function that receives a set of particles and updates the 
-// forces of them into the local set
-void Patch::receiveParticles(CkVec<Particle> &updates) {
-  updateCount++;
-
-  for( int i=0; i < updates.length(); i++) {
-    incomingParticles.push_back(updates[i]);
-  }
-
-  // if all the incoming particle updates have been received, we must check 
-  // whether to proceed with next step
-  if(updateCount == inbrs ) {
-    updateCount = 0;
-    incomingFlag = true;
-    checkNextStep();
-  }
-}
 
 // Function to update properties (i.e. acceleration, velocity and position) in particles
 void Patch::updateProperties() {

@@ -1,4 +1,4 @@
-CHARMBASE	= $(HOME)/collegestuff/charm/net-darwin-x86_64/
+CHARMBASE	= $(HOME)/codes/charm/net-linux-x86_64
 CHARMC          = $(CHARMBASE)/bin/charmc
 OPTS            = -O3 -DUSE_SECTION_MULTICAST
 
