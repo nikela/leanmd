@@ -36,7 +36,7 @@ Patch::Patch() {
   for(i=0; i < myNumParts; i++) {
     particles.push_back(Particle());
 
-    particles[i].mass = ELECTRON_MASS;
+    particles[i].mass = HYDROGEN_MASS;
 
     particles[i].x = drand48() * PATCH_SIZE_X + thisIndex.x * PATCH_SIZE_X;
     particles[i].y = drand48() * PATCH_SIZE_Y + thisIndex.y * PATCH_SIZE_Y;
@@ -258,7 +258,7 @@ void Patch::updateProperties() {
     energy += (0.5*particles[i].mass*(particles[i].vx*particles[i].vx + particles[i].vy*particles[i].vy*particles[i].vz*particles[i].vz));
 
     // applying kinetic equations
-    invMassParticle = (AVAGADROS_NUMBER / (particles[i].mass * powTen));
+    invMassParticle = 1 / particles[i].mass;
     particles[i].ax = particles[i].fx * invMassParticle;
     particles[i].ay = particles[i].fy * invMassParticle;
     particles[i].az = particles[i].fz * invMassParticle;

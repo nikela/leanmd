@@ -5,12 +5,9 @@
 
 typedef double BigReal;
 
-#define AVAGADROS_NUMBER        (6.022141 * pow(10.0,23))
-#define COULOMBS_CONSTANT       (8.987551 * pow(10.0,-9))
-#define ELECTRON_CHARGE         (1.602176 * pow(10.0,-19))
-#define ELECTRON_MASS          (9.10938188 * pow(10.0,-31))
-#define VDW_A			(1.60694452 * pow(10.0, -134))
-#define VDW_B			(1.031093844 * pow(10.0, -77))
+#define HYDROGEN_MASS          (1.67 * pow( 10.0,-24))
+#define VDW_A			      (1.60694452 * pow(10.0, -134))
+#define VDW_B			      (1.031093844 * pow(10.0, -77))
 
 #define ENERGY_VAR  10
 #define PARTICLES_PER_PATCH	100

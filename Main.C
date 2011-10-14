@@ -121,6 +121,7 @@ void Main::energySumK(CkReductionMsg *msg) {
       CkPrintf("Energy value has varied significantly from %E to %E\n",prevEnergy,energy);
       testFailed = 1;
     }
+    prevEnergy = energy;
     energy = 0;
   }
 }
@@ -136,6 +137,7 @@ void Main::energySumP(CkReductionMsg *msg) {
       CkPrintf("Energy value has varied significantly from %E to %E\n",prevEnergy,energy);
       testFailed = 1;
     }
+    prevEnergy = energy;
     energy = 0;
   }
 }
