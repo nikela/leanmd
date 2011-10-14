@@ -95,6 +95,7 @@ class Patch : public CBase_Patch {
     
  
     void migrateToPatch(Particle p, int &px, int &py, int &pz);
+    void updateForce(BigReal *forces, int lengthUp);
     void updateProperties();	// updates properties after receiving forces from computes
     void applyForces();
     void limitVelocity(Particle &p);

@@ -245,6 +245,15 @@ void Patch::ftresume(){
     run();
 }
 
+void Patch::updateForce(BigReal *forces, int lengthUp) {
+  int i;
+  for(i = 0; i < lengthUp; i+=3) {
+    particles[i/3].fx += forces[i];
+    particles[i/3].fy += forces[i+1];
+    particles[i/3].fz += forces[i+2];
+  } 
+}
+
 
 // Function to update properties (i.e. acceleration, velocity and position) in particles
 void Patch::updateProperties() {

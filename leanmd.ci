@@ -55,14 +55,7 @@ mainmodule leanmd {
         }
         when reduceForces(CkReductionMsg *msg) {
           atomic {
-            int i, lengthUp;
-            BigReal* forces = (BigReal*)msg->getData();
-            lengthUp = msg->getSize()/sizeof(BigReal);
-            for(i = 0; i < lengthUp; i+=3){
-              particles[i/3].fx += forces[i];
-              particles[i/3].fy += forces[i+1];
-              particles[i/3].fz += forces[i+2];
-            }
+	    updateForce((BigReal*)msg->getData(),msg->getSize()/sizeof(BigReal));
             delete msg;
             updateProperties();
           }
