@@ -2,9 +2,7 @@
 #include "defs.h"
 #include "leanmd.decl.h"
 #include "Patch.h"
-#ifdef USE_SECTION_MULTICAST
 #include "ckmulticast.h"
-#endif
 
 extern /* readonly */ CProxy_Main mainProxy;
 extern /* readonly */ CProxy_Patch patchArray;
@@ -135,20 +133,15 @@ void Patch::createComputes() {
 
     //insert only the upper right half computes
   } // end of for loop
-  int contrib;
-  contribute(sizeof(int),&contrib,CkReduction::sum_double,CkCallback(CkIndex_Main::startUpDone(), mainProxy));
-  //contribute(CkCallback(CkIndex_Main::startUpDone(), mainProxy));
+  contribute(CkCallback(CkIndex_Main::startUpDone(), mainProxy));
 }
 
 void Patch::createSection() {
   localCreateSection();
-  int contrib;
-  contribute(sizeof(int),&contrib,CkReduction::sum_double,CkCallback(CkIndex_Main::startUpDone(), mainProxy));
-  //contribute(CkCallback(CkIndex_Main::startUpDone(), mainProxy));
+  contribute(CkCallback(CkIndex_Main::startUpDone(), mainProxy));
 }
 
 void Patch::localCreateSection() {
-#ifdef USE_SECTION_MULTICAST
   CkVec<CkArrayIndex6D> elems;
   for (int num=0; num<inbrs; num++)
     elems.push_back(CkArrayIndex6D(computesList[num][0], computesList[num][1], computesList[num][2], computesList[num][3], computesList[num][4], computesList[num][5]));
@@ -160,7 +153,6 @@ void Patch::localCreateSection() {
   mCastSecProxy.ckSectionDelegate(mCastGrp);
   mCastGrp->setReductionClient(mCastSecProxy, new CkCallback(CkIndex_Patch::reduceForces(NULL), thisProxy(thisIndex.x, thisIndex.y, thisIndex.z)));
 
-#endif
 }
 
 // Function to start interaction among particles in neighboring cells as well as its own particles

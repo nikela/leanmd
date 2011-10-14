@@ -1,7 +1,5 @@
 #include "time.h"
-#ifdef USE_SECTION_MULTICAST
 #include "ckmulticast.h"
-#endif
 
 #include "defs.h"
 #include "leanmd.decl.h"
@@ -60,9 +58,7 @@ Main::Main(CkArgMsg* msg) {
 
   CkPrintf("\nNUMBER OF PATCHES: %d X %d X %d .... CREATED\n", patchArrayDimX, patchArrayDimY, patchArrayDimZ);
 
-#ifdef USE_SECTION_MULTICAST
   mCastGrpID = CProxy_CkMulticastMgr::ckNew(bFactor);
-#endif
 
   // initializing the 6D compute array
   computeArray = CProxy_Compute::ckNew();
@@ -95,14 +91,12 @@ void Main::startUpDone() {
     case 0:
       computeArray.doneInserting();
       CkPrintf("NUMBER OF COMPUTES: %d .... CREATED\n", (NUM_NEIGHBORS/2+1) * patchArrayDimX * patchArrayDimY * patchArrayDimZ);
-#ifdef USE_SECTION_MULTICAST
       phase++;
       patchArray.createSection();
       break;
 
     case 1:
       CkPrintf("MULTICAST SECTIONS .... CREATED\n");
-#endif
 
       CkPrintf("STARTING SIMULATION .... \n\n");
       patchArray.run();

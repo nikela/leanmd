@@ -5,9 +5,8 @@ extern /* readonly */ CProxy_Main mainProxy;
 extern /* readonly */ CkGroupID mCastGrpID;
 extern /* readonly */ BigReal stepTime;
 extern /* readonly */ int finalStepCount;
-#ifdef USE_SECTION_MULTICAST
-  #include "ckmulticast.h"
-#endif
+
+#include "ckmulticast.h"
 
 struct force {
   BigReal x;
@@ -148,13 +147,11 @@ class Patch : public CBase_Patch {
       }
       p | mCastSecProxy;
 
-#ifdef USE_SECTION_MULTICAST 
       if (p.isUnpacking()){
         CkMulticastMgr *mg = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
         mg->resetSection(mCastSecProxy);
         mg->setReductionClient(mCastSecProxy, new CkCallback(CkIndex_Patch::reduceForces(NULL), thisProxy(thisIndex.x, thisIndex.y, thisIndex.z)));
       }
-#endif 
     } 
 
 };

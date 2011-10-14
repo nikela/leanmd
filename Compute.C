@@ -3,9 +3,7 @@
 #include "Patch.h"
 #include "Compute.h"
 #include "physics.h"
-#ifdef USE_SECTION_MULTICAST
 #include "ckmulticast.h"
-#endif
 
 extern /* readonly */ CProxy_Main mainProxy;
 extern /* readonly */ CProxy_Patch patchArray;

@@ -1,9 +1,7 @@
 #ifndef __PHYSICS_H__
 #define __PHYSICS_H__
 
-#ifdef USE_SECTION_MULTICAST
 #include "ckmulticast.h"
-#endif
 
 extern /* readonly */ CProxy_Main mainProxy;
 extern /* readonly */ CProxy_Patch patchArray;
@@ -22,7 +20,7 @@ inline void calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, CkSe
   int i, j, jpart, ptpCutOffSqd, diff;
   int firstLen = first->lengthAll;
   int secondLen = second->lengthAll;
-  BigReal powTwenty, rx, ry, rz, r, rsqd, fx, fy, fz, f, fr, eField, constants;
+  BigReal powTwenty, rx, ry, rz, r, rsqd, fx, fy, fz, f, fr;
   double rSix, rTwelve;
 
   ParticleForceMsg *firstmsg = new (firstLen) ParticleForceMsg;
@@ -53,41 +51,37 @@ inline void calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, CkSe
   } 
   ptpCutOffSqd = PTP_CUT_OFF * PTP_CUT_OFF;
   powTwenty = pow(10.0, -20);
-  constants = COULOMBS_CONSTANT * ELECTRON_CHARGE * ELECTRON_CHARGE;
- 
+
   memset(firstmsg->forces, 0, firstLen * 3*sizeof(BigReal));
   memset(secondmsg->forces, 0, secondLen * 3*sizeof(BigReal));
   int i1, j1;
   for(i1 = 0; i1 < firstLen; i1=i1+BLOCK_SIZE)
-  for(j1 = 0; j1 < secondLen; j1=j1+BLOCK_SIZE)
-   for(i = i1; i < i1+BLOCK_SIZE && i < firstLen; i++) {
-    eField = first->part[i].charge;
-    for(jpart = j1; jpart < j1+BLOCK_SIZE && jpart < secondLen; jpart++) {
-      rx = first->part[i].coord.x - second->part[jpart].coord.x;
-      ry = first->part[i].coord.y - second->part[jpart].coord.y;
-      rz = first->part[i].coord.z - second->part[jpart].coord.z;
-      rsqd = rx*rx + ry*ry + rz*rz;
-      if (rsqd >= 0.001 && rsqd < ptpCutOffSqd){
-	rsqd = rsqd * powTwenty;
-	r = sqrt(rsqd);
-	rSix = ((double)rsqd) * rsqd * rsqd;
-	rTwelve = rSix * rSix;
-        f = (BigReal)(VDW_A / rTwelve - VDW_B / rSix);
-	f -= eField * constants * second->part[jpart].charge / rsqd;
-	fr = f /r;
-	fx = rx * fr;
-	fy = ry * fr;
-	fz = rz * fr;
-	secondmsg->forces[jpart].x -= fx;
-	secondmsg->forces[jpart].y -= fy;
-	secondmsg->forces[jpart].z -= fz;
-	firstmsg->forces[i].x += fx;
-	firstmsg->forces[i].y += fy;
-	firstmsg->forces[i].z += fz;
+    for(j1 = 0; j1 < secondLen; j1=j1+BLOCK_SIZE)
+      for(i = i1; i < i1+BLOCK_SIZE && i < firstLen; i++) {
+        for(jpart = j1; jpart < j1+BLOCK_SIZE && jpart < secondLen; jpart++) {
+          rx = first->part[i].coord.x - second->part[jpart].coord.x;
+          ry = first->part[i].coord.y - second->part[jpart].coord.y;
+          rz = first->part[i].coord.z - second->part[jpart].coord.z;
+          rsqd = rx*rx + ry*ry + rz*rz;
+          if (rsqd >= 0.001 && rsqd < ptpCutOffSqd){
+            rsqd = rsqd * powTwenty;
+            r = sqrt(rsqd);
+            rSix = ((double)rsqd) * rsqd * rsqd;
+            rTwelve = rSix * rSix;
+            f = (BigReal)(VDW_A / rTwelve - VDW_B / rSix);
+            fr = f /r;
+            fx = rx * fr;
+            fy = ry * fr;
+            fz = rz * fr;
+            secondmsg->forces[jpart].x -= fx;
+            secondmsg->forces[jpart].y -= fy;
+            secondmsg->forces[jpart].z -= fz;
+            firstmsg->forces[i].x += fx;
+            firstmsg->forces[i].y += fy;
+            firstmsg->forces[i].z += fz;
+          }
+        }
       }
-    }
-  }
-#ifdef USE_SECTION_MULTICAST
   CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
   CkGetSectionInfo(*cookie1, first);
   mCastGrp->contribute(sizeof(BigReal)*3*firstmsg->lengthUpdates, firstmsg->forces, CkReduction::sum_double, *cookie1);
@@ -95,10 +89,6 @@ inline void calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, CkSe
   mCastGrp->contribute(sizeof(BigReal)*3*secondmsg->lengthUpdates, secondmsg->forces, CkReduction::sum_double, *cookie2);
   delete firstmsg;
   delete secondmsg;
-#else
-  patchArray(first->x, first->y, first->z).receiveForces(firstmsg);
-  patchArray(second->x, second->y, second->z).receiveForces(secondmsg);
-#endif
   delete first;
   delete second;
 }
@@ -107,19 +97,16 @@ inline void calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, CkSe
 inline void calcInternalForces(ParticleDataMsg* first, CkSectionInfo *cookie1) {
   int i, j, ptpCutOffSqd;
   int firstLen = first->lengthAll;
-  BigReal powTwenty, firstx, firsty, firstz, rx, ry, rz, r, rsqd, fx, fy, fz, f, fr, eField, constants;
+  BigReal powTwenty, firstx, firsty, firstz, rx, ry, rz, r, rsqd, fx, fy, fz, f, fr;
   double rSix, rTwelve;
 
   ParticleForceMsg *firstmsg = new (firstLen) ParticleForceMsg;
   firstmsg->lengthUpdates = firstLen;
-    
-  constants = COULOMBS_CONSTANT * ELECTRON_CHARGE * ELECTRON_CHARGE;
-  
+
   memset(firstmsg->forces, 0, firstLen * 3*sizeof(BigReal));
   ptpCutOffSqd = PTP_CUT_OFF * PTP_CUT_OFF;
   powTwenty = pow(10.0, -20);
   for(i = 0; i < firstLen; i++){
-    eField = first->part[i].charge;
     firstx = first->part[i].coord.x;
     firsty = first->part[i].coord.y;
     firstz = first->part[i].coord.z;
@@ -130,33 +117,28 @@ inline void calcInternalForces(ParticleDataMsg* first, CkSectionInfo *cookie1) {
       rz = firstz - first->part[j].coord.z;
       rsqd = rx*rx + ry*ry + rz*rz;
       if(rsqd >= 0.001 && rsqd < ptpCutOffSqd){
-	rsqd = rsqd * powTwenty;
-	r = sqrt(rsqd);
-	rSix = ((double)rsqd) * rsqd * rsqd;
-	rTwelve = rSix * rSix;
+        rsqd = rsqd * powTwenty;
+        r = sqrt(rsqd);
+        rSix = ((double)rsqd) * rsqd * rsqd;
+        rTwelve = rSix * rSix;
         f = (BigReal)(VDW_A / rTwelve - VDW_B / rSix);
-	f -= eField * constants * first->part[j].charge / (rsqd);
-        
-	fr = f /r;
-	fx = rx * fr;
+
+        fr = f /r;
+        fx = rx * fr;
         fy = ry * fr;
         fz = rz * fr;
-	firstmsg->forces[j].x += fx;
-	firstmsg->forces[j].y += fy;
-	firstmsg->forces[j].z += fz;
-	firstmsg->forces[i].x -= fx;
-	firstmsg->forces[i].y -= fy;
-	firstmsg->forces[i].z -= fz;
+        firstmsg->forces[j].x += fx;
+        firstmsg->forces[j].y += fy;
+        firstmsg->forces[j].z += fz;
+        firstmsg->forces[i].x -= fx;
+        firstmsg->forces[i].y -= fy;
+        firstmsg->forces[i].z -= fz;
       }
     }
   }
-#ifdef USE_SECTION_MULTICAST
   CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
   mCastGrp->contribute(sizeof(BigReal)*3*firstmsg->lengthUpdates, firstmsg->forces, CkReduction::sum_double, *cookie1);
   delete firstmsg;
-#else
-  patchArray(first->x, first->y, first->z).receiveForces(firstmsg);
-#endif
   delete first;
 }
 #endif
