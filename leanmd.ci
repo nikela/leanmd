@@ -60,7 +60,7 @@ mainmodule leanmd {
             updateProperties();
           }
         }
-        if (stepCount > 0 && (stepCount % 20) == 0) {
+        if (stepCount > 0 && (stepCount %  MIGRATE_STEPCOUNT) == 0) {
           atomic {
             migrateParticles();
           }

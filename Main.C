@@ -22,7 +22,7 @@
 /* readonly */ BigReal stepTime; 
 
 // Entry point of Charm++ application
-Main::Main(CkArgMsg* msg) {
+Main::Main(CkArgMsg* m) {
   LBTurnInstrumentOff();
   stepTime = CmiWallTimer();
   CkPrintf("\nLENNARD JONES MOLECULAR DYNAMICS START UP ...\n");
@@ -44,11 +44,43 @@ Main::Main(CkArgMsg* msg) {
 
   int numPes = CkNumPes();
   int currPe = -1, pe;
+  int cur_arg = 1;
 
-  //TODO Do something about configurable paramters
+  CkPrintf("\nInput Parameters...\n");
+
+  if (m->argc > cur_arg) {
+    bFactor=atoi(m->argv[cur_arg++]);
+    CkPrintf("Branch Factor:%d\n",bFactor);
+  }
+
+  if (m->argc > cur_arg) {
+    patchArrayDimX=atoi(m->argv[cur_arg++]);
+    patchArrayDimY=atoi(m->argv[cur_arg++]);
+    patchArrayDimZ=atoi(m->argv[cur_arg++]);
+    CkPrintf("Patch Array Dimension X:%d Y:%d Z:%d\n",patchArrayDimX,patchArrayDimY,patchArrayDimZ);
+  }
+
+  if (m->argc > cur_arg) {
+    finalStepCount=atoi(m->argv[cur_arg++]);
+    CkPrintf("Final Step Count:%d\n",finalStepCount);
+  }
+
+  if (m->argc > cur_arg) {
+    firstLdbStep=atoi(m->argv[cur_arg++]);
+    CkPrintf("First LB Step:%d\n",firstLdbStep);
+  }
+
+  if (m->argc > cur_arg) {
+    ldbPeriod=atoi(m->argv[cur_arg++]);
+    CkPrintf("LB Period:%d\n",ldbPeriod);
+  }
+
+  if (m->argc > cur_arg) {
+    ftPeriod=atoi(m->argv[cur_arg++]);
+    CkPrintf("FT Period:%d\n",ldbPeriod);
+  }
 
   // initializing the 3D patch array
-
   patchArray = CProxy_Patch::ckNew();
   for (int x=0; x<patchArrayDimX; x++)
     for (int y=0; y<patchArrayDimY; y++)
@@ -69,7 +101,7 @@ Main::Main(CkArgMsg* msg) {
       for (int z=0; z<patchArrayDimZ; z++)
 	patchArray(x, y, z).createComputes();
 
-  delete msg;
+  delete m;
 }
 
 // Constructor for chare object migration
