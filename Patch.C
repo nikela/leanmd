@@ -36,8 +36,7 @@ Patch::Patch() {
   for(i=0; i < myNumParts; i++) {
     particles.push_back(Particle());
 
-    particles[i].charge = 0;
-    particles[i].mass = 0;
+    particles[i].mass = ELECTRON_MASS;
 
     particles[i].x = drand48() * PATCH_SIZE_X + thisIndex.x * PATCH_SIZE_X;
     particles[i].y = drand48() * PATCH_SIZE_Y + thisIndex.y * PATCH_SIZE_Y;
@@ -250,11 +249,14 @@ void Patch::ftresume(){
 // Function to update properties (i.e. acceleration, velocity and position) in particles
 void Patch::updateProperties() {
   int i;
+  double energy;
   BigReal powTen, powFteen, realTimeDelta, invMassParticle;
   powTen = pow(10.0, -10);
   powFteen = pow(10.0, -15);
   realTimeDelta = DEFAULT_DELTA * powFteen;
   for(i = 0; i < particles.length(); i++) {
+    energy += (0.5*particles[i].mass*(particles[i].vx*particles[i].vx + particles[i].vy*particles[i].vy*particles[i].vz*particles[i].vz));
+
     // applying kinetic equations
     invMassParticle = (AVAGADROS_NUMBER / (particles[i].mass * powTen));
     particles[i].ax = particles[i].fx * invMassParticle;
@@ -266,14 +268,27 @@ void Patch::updateProperties() {
 
     limitVelocity(particles[i]);
 
+#ifdef LEANMD_DEBUG
+    double initial[3];
+    initial[0] = particles[i].x;
+    initial[1] = particles[i].y;
+    initial[2] = particles[i].z;
+#endif
+
     particles[i].x = particles[i].x + particles[i].vx * realTimeDelta;
     particles[i].y = particles[i].y + particles[i].vy * realTimeDelta;
     particles[i].z = particles[i].z + particles[i].vz * realTimeDelta;
+
+#if LEANMD_DEBUG
+    if(particles[i].id == 0)
+      CkPrintf("Particle Pos - %E %E %E Access %E %E %E Vel %E %E %E Force %E %E %E New %E %E %E\n",initial[0], initial[1],initial[2],particles[i].ax,particles[i].ay,particles[i].az,particles[i].vx,particles[i].vy,particles[i].vz,particles[i].fx,particles[i].fy,particles[i].fz,particles[i].x,particles[i].y,particles[i].z);
+#endif
 
     particles[i].fx = 0.0;
     particles[i].fy = 0.0;
     particles[i].fz = 0.0;
   }
+  contribute(sizeof(double),&energy,CkReduction::sum_double,CkCallback(CkIndex_Main::energySumK(NULL),mainProxy));
 }
 
 void Patch::limitVelocity(Particle &p) {
@@ -310,16 +325,4 @@ Particle& Patch::wrapAround(Particle &p) {
   return p;
 }
 
-// Prints all particles 
-void Patch::print(){
-#ifdef PRINT
-  int i;
-  CkPrintf("*****************************************************\n");
-  CkPrintf("Patch (%d, %d)\n", thisIndex.x, thisIndex.y);
-
-  for(i=0; i < particles.length(); i++)
-    CkPrintf("Patch (%d,%d) %-5d %7.4f %7.4f \n", thisIndex.x, thisIndex.y, i, particles[i].x, particles[i].y);
-  CkPrintf("*****************************************************\n");
-#endif
-}
 

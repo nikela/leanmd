@@ -37,6 +37,8 @@ Main::Main(CkArgMsg* msg) {
 
   mainProxy = thisProxy;
   phase = 0;
+  energy = prevEnergy = 0;
+  testFailed = 0;
 
   int bFactor = 2;
 
@@ -56,7 +58,7 @@ Main::Main(CkArgMsg* msg) {
       }
   patchArray.doneInserting();
 
-  CkPrintf("\nNUMBER OF PATCHES: %d X %d X %d .... CREATED\n", patchArrayDimX, patchArrayDimY, patchArrayDimZ);
+  CkPrintf("\nPatches: %d X %d X %d .... created\n", patchArrayDimX, patchArrayDimY, patchArrayDimZ);
 
   mCastGrpID = CProxy_CkMulticastMgr::ckNew(bFactor);
 
@@ -83,24 +85,58 @@ void Main::ftBarrier(){
 }
 
 void Main::allDone() {
-  CkPrintf("SIMULATION COMPLETE. \n\n");  CkExit();
+  if(testFailed)
+    CkPrintf("Simulation failed. \n\n");  
+  else
+    CkPrintf("Simulation successful. \n\n");
+  CkExit();
 }
 
 void Main::startUpDone() {
   switch(phase) {
     case 0:
       computeArray.doneInserting();
-      CkPrintf("NUMBER OF COMPUTES: %d .... CREATED\n", (NUM_NEIGHBORS/2+1) * patchArrayDimX * patchArrayDimY * patchArrayDimZ);
+      CkPrintf("Computes: %d .... created\n", (NUM_NEIGHBORS/2+1) * patchArrayDimX * patchArrayDimY * patchArrayDimZ);
       phase++;
       patchArray.createSection();
       break;
 
     case 1:
-      CkPrintf("MULTICAST SECTIONS .... CREATED\n");
+      CkPrintf("Multicast sections .... created\n");
 
-      CkPrintf("STARTING SIMULATION .... \n\n");
+      CkPrintf("Starting simulation .... \n\n");
       patchArray.run();
       break;
+  }
+}
+
+void Main::energySumK(CkReductionMsg *msg) {
+  if(energy == 0) {
+    energy = *((double*)msg->getData());
+  } else {
+    energy += *((double*)msg->getData());
+    if(prevEnergy == 0) 
+      prevEnergy = energy;
+    if(abs(energy-prevEnergy)>ENERGY_VAR) {
+      CkPrintf("Energy value has varied significantly from %E to %E\n",prevEnergy,energy);
+      testFailed = 1;
+    }
+    energy = 0;
+  }
+}
+
+void Main::energySumP(CkReductionMsg *msg) {
+  if(energy == 0) {
+    energy = *((double*)msg->getData());
+  } else {
+    energy += *((double*)msg->getData());
+    if(prevEnergy == 0) 
+      prevEnergy = energy;
+    if(abs(energy-prevEnergy)>ENERGY_VAR) {
+      CkPrintf("Energy value has varied significantly from %E to %E\n",prevEnergy,energy);
+      testFailed = 1;
+    }
+    energy = 0;
   }
 }
 

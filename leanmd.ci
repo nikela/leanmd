@@ -20,6 +20,8 @@ mainmodule leanmd {
     entry void lbBarrier();
     entry void ftBarrier();
     entry void startUpDone();
+    entry void energySumP(CkReductionMsg *msg);
+    entry void energySumK(CkReductionMsg *msg);
   };
 
   message ParticleDataMsg{
@@ -44,7 +46,7 @@ mainmodule leanmd {
     entry void run() {
       atomic {
         if((thisIndex.x + thisIndex.y + thisIndex.z) == 0) {
-          stepTime = CmiWallTimer();
+          stepTime = CkWallTimer();
         }
       }
       for(stepCount = 0; stepCount < finalStepCount; stepCount++) {
@@ -78,11 +80,11 @@ mainmodule leanmd {
           }
         }
         atomic {
-          if (thisIndex.x==0 && thisIndex.y==0 && thisIndex.z==0 && stepCount%20==0) {
-            double timer = CmiWallTimer();
-            CkPrintf("Step %d Benchmark Time %f ms/step, Total Time Elapsed %f ms\n", 
-                      stepCount, ((timer - stepTime)/20)*1000, timer);
-            stepTime = timer;
+          if (stepCount && thisIndex.x==0 && thisIndex.y==0 && thisIndex.z==0 && stepCount%20==0) {
+            double timer = CkWallTimer();
+            CkPrintf("Step %d Benchmark Time %lf ms/step\n", 
+                      stepCount, ((timer - stepTime)/20)*1000);
+            stepTime = CkWallTimer();
           }
         }
         if (perform_lb) {

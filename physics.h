@@ -16,12 +16,13 @@ extern /* readonly */ BigReal stepTime;
 
 #define BLOCK_SIZE	512
 
-inline void calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, CkSectionInfo* cookie1, CkSectionInfo* cookie2) {
+inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, CkSectionInfo* cookie1, CkSectionInfo* cookie2) {
   int i, j, jpart, ptpCutOffSqd, diff;
   int firstLen = first->lengthAll;
   int secondLen = second->lengthAll;
   BigReal powTwenty, rx, ry, rz, r, rsqd, fx, fy, fz, f, fr;
   double rSix, rTwelve;
+  double energy = 0;
 
   ParticleForceMsg *firstmsg = new (firstLen) ParticleForceMsg;
   ParticleForceMsg *secondmsg = new (secondLen) ParticleForceMsg;
@@ -69,6 +70,7 @@ inline void calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, CkSe
             rSix = ((double)rsqd) * rsqd * rsqd;
             rTwelve = rSix * rSix;
             f = (BigReal)(VDW_A / rTwelve - VDW_B / rSix);
+            energy += (BigReal)( VDW_A / (12*rTwelve) - VDW_B / (6*rSix));
             fr = f /r;
             fx = rx * fr;
             fy = ry * fr;
@@ -87,18 +89,21 @@ inline void calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, CkSe
   mCastGrp->contribute(sizeof(BigReal)*3*firstmsg->lengthUpdates, firstmsg->forces, CkReduction::sum_double, *cookie1);
   CkGetSectionInfo(*cookie2, second);
   mCastGrp->contribute(sizeof(BigReal)*3*secondmsg->lengthUpdates, secondmsg->forces, CkReduction::sum_double, *cookie2);
+
   delete firstmsg;
   delete secondmsg;
   delete first;
   delete second;
+  return energy;
 }
 
 // Local function to compute all the interactions between pairs of particles in two sets
-inline void calcInternalForces(ParticleDataMsg* first, CkSectionInfo *cookie1) {
+inline double calcInternalForces(ParticleDataMsg* first, CkSectionInfo *cookie1) {
   int i, j, ptpCutOffSqd;
   int firstLen = first->lengthAll;
   BigReal powTwenty, firstx, firsty, firstz, rx, ry, rz, r, rsqd, fx, fy, fz, f, fr;
   double rSix, rTwelve;
+  double energy = 0;
 
   ParticleForceMsg *firstmsg = new (firstLen) ParticleForceMsg;
   firstmsg->lengthUpdates = firstLen;
@@ -122,6 +127,7 @@ inline void calcInternalForces(ParticleDataMsg* first, CkSectionInfo *cookie1) {
         rSix = ((double)rsqd) * rsqd * rsqd;
         rTwelve = rSix * rSix;
         f = (BigReal)(VDW_A / rTwelve - VDW_B / rSix);
+        energy += (BigReal)( VDW_A / (12*rTwelve) - VDW_B / (6*rSix));
 
         fr = f /r;
         fx = rx * fr;
@@ -140,5 +146,6 @@ inline void calcInternalForces(ParticleDataMsg* first, CkSectionInfo *cookie1) {
   mCastGrp->contribute(sizeof(BigReal)*3*firstmsg->lengthUpdates, firstmsg->forces, CkReduction::sum_double, *cookie1);
   delete firstmsg;
   delete first;
+  return energy;
 }
 #endif

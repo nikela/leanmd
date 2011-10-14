@@ -8,9 +8,12 @@ typedef double BigReal;
 #define AVAGADROS_NUMBER        (6.022141 * pow(10.0,23))
 #define COULOMBS_CONSTANT       (8.987551 * pow(10.0,-9))
 #define ELECTRON_CHARGE         (1.602176 * pow(10.0,-19))
+#define ELECTRON_MASS          (9.10938188 * pow(10.0,-31))
 #define VDW_A			(1.60694452 * pow(10.0, -134))
 #define VDW_B			(1.031093844 * pow(10.0, -77))
-#define PARTICLES_PER_PATCH	1000
+
+#define ENERGY_VAR  10
+#define PARTICLES_PER_PATCH	100
 
 #define DEFAULT_DELTA		1	// in femtoseconds
 
@@ -31,7 +34,7 @@ typedef double BigReal;
 #define PATCH_ORIGIN_Z		0
 
 #define MIGRATE_STEPCOUNT	20
-#define DEFAULT_FINALSTEPCOUNT	101
+#define DEFAULT_FINALSTEPCOUNT	1001
 #define MAX_VELOCITY		30.0
 
 #define KAWAY_X			1

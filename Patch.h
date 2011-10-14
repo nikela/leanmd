@@ -99,7 +99,6 @@ class Patch : public CBase_Patch {
     void applyForces();
     void limitVelocity(Particle &p);
     Particle& wrapAround(Particle &p);
-    void print();		// prints all its particles
     CProxySection_Compute mCastSecProxy;
 
   public:

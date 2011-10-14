@@ -33,6 +33,7 @@ Compute::Compute(CkMigrateMessage *msg): CBase_Compute(msg)  {
 // Entry method to receive vector of particles
 void Compute::interact(ParticleDataMsg *msg){
   int i;
+  double energy;
 
   // self interaction check
   if (thisIndex.x1 ==thisIndex.x2 && thisIndex.y1 ==thisIndex.y2 && thisIndex.z1 ==thisIndex.z2) {
@@ -44,7 +45,8 @@ void Compute::interact(ParticleDataMsg *msg){
     if (msg->lbOn)
       LBTurnInstrumentOn();
     CkGetSectionInfo(cookie1,msg);
-    calcInternalForces(msg, &cookie1);
+    energy = calcInternalForces(msg, &cookie1);
+    contribute(sizeof(double),&energy,CkReduction::sum_double,CkCallback(CkIndex_Main::energySumP(NULL),mainProxy));
     if(doatSync)
       AtSync();
   } else {
@@ -64,15 +66,16 @@ void Compute::interact(ParticleDataMsg *msg){
         LBTurnInstrumentOn();
       if (bufferedMsg->x*patchArrayDimY*patchArrayDimZ + bufferedMsg->y*patchArrayDimZ + bufferedMsg->z < msg->x*patchArrayDimY*patchArrayDimZ + msg->y*patchArrayDimZ + msg->z){ 
         if (bufferedMsg->lengthAll <= msg->lengthAll)
-          calcPairForces(bufferedMsg, msg, &cookie1, &cookie2);
+          energy = calcPairForces(bufferedMsg, msg, &cookie1, &cookie2);
         else
-          calcPairForces(msg, bufferedMsg, &cookie2, &cookie1);
+          energy = calcPairForces(msg, bufferedMsg, &cookie2, &cookie1);
       } else {
         if (bufferedMsg->lengthAll <= msg->lengthAll)
-          calcPairForces(bufferedMsg, msg, &cookie2, &cookie1);
+          energy = calcPairForces(bufferedMsg, msg, &cookie2, &cookie1);
         else
-          calcPairForces(msg, bufferedMsg, &cookie1, &cookie2);
+          energy = calcPairForces(msg, bufferedMsg, &cookie1, &cookie2);
       }
+      contribute(sizeof(double),&energy,CkReduction::sum_double,CkCallback(CkIndex_Main::energySumP(NULL),mainProxy));
       bufferedMsg = NULL;
       if(doatSync)
         AtSync();
