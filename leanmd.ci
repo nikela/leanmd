@@ -98,7 +98,9 @@ mainmodule leanmd {
         }
       }
       atomic {
-        contribute(CkCallback(CkIndex_Main::allDone(), mainProxy));
+        int contrib;
+        contribute(sizeof(int),&contrib,CkReduction::sum_double,CkCallback(CkIndex_Main::allDone(), mainProxy));
+        //contribute(CkCallback(CkIndex_Main::allDone(), mainProxy));
       }
     };
 };

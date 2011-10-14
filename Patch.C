@@ -135,13 +135,16 @@ void Patch::createComputes() {
 
     //insert only the upper right half computes
   } // end of for loop
-
-  contribute(CkCallback(CkIndex_Main::startUpDone(), mainProxy));
+  int contrib;
+  contribute(sizeof(int),&contrib,CkReduction::sum_double,CkCallback(CkIndex_Main::startUpDone(), mainProxy));
+  //contribute(CkCallback(CkIndex_Main::startUpDone(), mainProxy));
 }
 
 void Patch::createSection() {
   localCreateSection();
-  contribute(CkCallback(CkIndex_Main::startUpDone(), mainProxy));
+  int contrib;
+  contribute(sizeof(int),&contrib,CkReduction::sum_double,CkCallback(CkIndex_Main::startUpDone(), mainProxy));
+  //contribute(CkCallback(CkIndex_Main::startUpDone(), mainProxy));
 }
 
 void Patch::localCreateSection() {
