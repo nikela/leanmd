@@ -18,7 +18,6 @@ extern /* readonly */ BigReal stepTime;
 
 // Compute - Default constructor
 Compute::Compute() {
-  LBTurnInstrumentOff();
   cellCount = 0;
   bmsgLenAll = -1;
   usesAtSync = CmiTrue;
@@ -41,8 +40,6 @@ void Compute::interact(ParticleDataMsg *msg){
     if (msg->doAtSync){
       doatSync = true;
     }
-    if (msg->lbOn)
-      LBTurnInstrumentOn();
     CkGetSectionInfo(cookie1,msg);
     energy = calcInternalForces(msg, &cookie1);
     contribute(sizeof(double),&energy,CkReduction::sum_double,CkCallback(CkIndex_Main::energySumP(NULL),mainProxy));
@@ -61,8 +58,6 @@ void Compute::interact(ParticleDataMsg *msg){
       if (msg->doAtSync){
         doatSync = true;
       }
-      if (msg->lbOn)
-        LBTurnInstrumentOn();
       if (bufferedMsg->x*patchArrayDimY*patchArrayDimZ + bufferedMsg->y*patchArrayDimZ + bufferedMsg->z < msg->x*patchArrayDimY*patchArrayDimZ + msg->y*patchArrayDimZ + msg->z){ 
         if (bufferedMsg->lengthAll <= msg->lengthAll)
           energy = calcPairForces(bufferedMsg, msg, &cookie1, &cookie2);
@@ -82,7 +77,3 @@ void Compute::interact(ParticleDataMsg *msg){
   }
 }
 
-
-void Compute::ResumeFromSync(){
-  LBTurnInstrumentOff();
-}

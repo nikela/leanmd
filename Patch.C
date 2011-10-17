@@ -21,7 +21,6 @@ extern /* readonly */ BigReal stepTime;
 // Default constructor
 Patch::Patch() {
    __sdag_init();
-  LBTurnInstrumentOff();
   int i;
   inbrs = NUM_NEIGHBORS;
   int numParts = PARTICLES_PER_PATCH * patchArrayDimX * patchArrayDimY * patchArrayDimZ;
@@ -163,10 +162,6 @@ void Patch::sendPositions() {
   msg->updateList = false;
   msg->doAtSync = false;
 
-  msg->lbOn = false;
-  if (((stepCount >= firstLdbStep) && stepCount % ldbPeriod == 1) || stepCount == 0){
-    msg->lbOn = true;
-  }
   if (stepCount >= firstLdbStep && (stepCount - firstLdbStep) % ldbPeriod == 0){
     msg->doAtSync = true;
     perform_lb = true;
@@ -234,12 +229,10 @@ void Patch::nextStep() {
   } else if (perform_lb) {
     perform_lb = false;
     done_lb = true;
-    LBTurnInstrumentOff();
     AtSync();
   } else {
     if(done_lb) {
       done_lb = false;
-      LBTurnInstrumentOn();
       if((thisIndex.x + thisIndex.y + thisIndex.z) == 0)
 	stepTime = CkWallTimer();
     }

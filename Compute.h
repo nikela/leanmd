@@ -39,7 +39,7 @@ class Compute : public CBase_Compute {
       else
         bufferedMsg = NULL;
     }
-    void ResumeFromSync();           
+    void ResumeFromSync() { }           
 };
 
 #endif

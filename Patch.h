@@ -56,7 +56,6 @@ class ParticleDataMsg : public CkMcastBaseMsg, public CMessage_ParticleDataMsg {
     bool updateList;
     bool deleteList;
     bool doAtSync;
-    bool lbOn;
 
     void pup(PUP::er &p){
       CMessage_ParticleDataMsg::pup(p);
@@ -65,7 +64,6 @@ class ParticleDataMsg : public CkMcastBaseMsg, public CMessage_ParticleDataMsg {
       p | updateList;
       p | deleteList;
       p | doAtSync;
-      p | lbOn;
       if (p.isUnpacking()){
 	part = new partData[lengthAll];
       }

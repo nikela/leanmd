@@ -23,7 +23,6 @@
 
 // Entry point of Charm++ application
 Main::Main(CkArgMsg* m) {
-  LBTurnInstrumentOff();
   stepTime = CmiWallTimer();
   CkPrintf("\nLENNARD JONES MOLECULAR DYNAMICS START UP ...\n");
 
