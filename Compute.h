@@ -7,10 +7,8 @@
 class Compute : public CBase_Compute {
   private:
     int cellCount;  // to count the number of interact() calls
-    int numLists;
     int bmsgLenAll;
     ParticleDataMsg *bufferedMsg;
-    CkVec<int> *pairList;
     CkSectionInfo cookie1;
     CkSectionInfo cookie2;
 
@@ -30,7 +28,6 @@ class Compute : public CBase_Compute {
         cookie2.get_redNo() = 0;
       }
       p | cellCount;
-      p | numLists;
       p | bmsgLenAll;
       int hasMsg = (bmsgLenAll >= 0); // only pup if msg will be used
       p | hasMsg;
@@ -41,17 +38,6 @@ class Compute : public CBase_Compute {
       }
       else
         bufferedMsg = NULL;
-
-      int hasList = (numLists >= 0  && pairList != NULL);
-      p | hasList;
-      if (hasList){
-	if (p.isUnpacking())
-	  pairList = new CkVec<int>[numLists];
-	PUParray(p, pairList, numLists);
-      }
-      else{
-	pairList = NULL;
-      }
     }
     void ResumeFromSync();           
 };

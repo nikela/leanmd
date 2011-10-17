@@ -20,7 +20,6 @@ extern /* readonly */ BigReal stepTime;
 Compute::Compute() {
   LBTurnInstrumentOff();
   cellCount = 0;
-  numLists = -1;
   bmsgLenAll = -1;
   usesAtSync = CmiTrue;
 }
