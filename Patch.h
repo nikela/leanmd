@@ -2,6 +2,7 @@
 #define __PATCH_H__
 
 extern /* readonly */ CProxy_Main mainProxy;
+extern /* readonly */ CProxy_Patch patchArray;
 extern /* readonly */ CkGroupID mCastGrpID;
 extern /* readonly */ BigReal stepTime;
 extern /* readonly */ int finalStepCount;
@@ -85,7 +86,7 @@ class Patch : public CBase_Patch {
     int stepCount;		// to count the number of steps, and decide when to stop
     int updateCount;
     int myNumParts;
-    bool updateFlag;
+    bool done_lb;
     bool incomingFlag;
     bool perform_lb;
     int **computesList;
@@ -101,6 +102,7 @@ class Patch : public CBase_Patch {
     void limitVelocity(Particle &p);
     Particle& wrapAround(Particle &p);
     CProxySection_Compute mCastSecProxy;
+    void nextStep();
 
   public:
     Patch();
@@ -128,7 +130,7 @@ class Patch : public CBase_Patch {
       p | stepCount;		
       p | updateCount;
       p | myNumParts;
-      p | updateFlag;
+      p | done_lb;
       p | incomingFlag;
       p | perform_lb;
       p | resumeCount;

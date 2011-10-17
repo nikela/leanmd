@@ -107,10 +107,6 @@ Main::Main(CkArgMsg* m) {
 // Constructor for chare object migration
 Main::Main(CkMigrateMessage* msg): CBase_Main(msg) { }
 
-void Main::lbBarrier(){
-  patchArray.resume();
-}
-
 void Main::ftBarrier(){
   CkCallback cb(CkIndex_Patch::ftresume(), patchArray);
   CkStartMemCheckpoint(cb);
@@ -137,7 +133,7 @@ void Main::startUpDone() {
       CkPrintf("Multicast sections .... created\n");
 
       CkPrintf("Starting simulation .... \n\n");
-      patchArray.run();
+      patchArray.nextStep();
       break;
   }
 }

@@ -17,7 +17,6 @@ mainmodule leanmd {
   mainchare [migratable] Main {
     entry Main(CkArgMsg* msg);
     entry void allDone();
-    entry void lbBarrier();
     entry void ftBarrier();
     entry void startUpDone();
     entry void energySumP(CkReductionMsg *msg);
@@ -37,63 +36,43 @@ mainmodule leanmd {
     entry void createComputes();
     entry void createSection();
     entry void reduceForces(CkReductionMsg *msg);
-    entry void resume();
     entry void ftresume();
     entry void receiveParticles(CkVec<Particle> updates);
     entry void ResumeFromSync();
-    entry void resumeAfterLB(int resume);
+    entry void nextStep();
 
-    entry void run() {
+    entry void doStep() {
       atomic {
-        if((thisIndex.x + thisIndex.y + thisIndex.z) == 0) {
-          stepTime = CkWallTimer();
+	sendPositions();
+      }
+      when reduceForces(CkReductionMsg *msg) {
+        atomic {
+	  updateForce((BigReal*)msg->getData(),msg->getSize()/sizeof(BigReal));
+          delete msg;
+          updateProperties();
         }
       }
-      for(stepCount = 0; stepCount < finalStepCount; stepCount++) {
+      if (stepCount > 0 && (stepCount %  MIGRATE_STEPCOUNT) == 0) {
         atomic {
-          sendPositions();
+          migrateParticles();
         }
-        when reduceForces(CkReductionMsg *msg) {
-          atomic {
-	    updateForce((BigReal*)msg->getData(),msg->getSize()/sizeof(BigReal));
-            delete msg;
-            updateProperties();
-          }
-        }
-        if (stepCount > 0 && (stepCount %  MIGRATE_STEPCOUNT) == 0) {
-          atomic {
-            migrateParticles();
-          }
-          for(updateCount = 0; updateCount < inbrs; updateCount++) {
-            when receiveParticles(CkVec<Particle> &updates) atomic {
-              for(int i=0; i < updates.length(); i++) {
-                particles.push_back(updates[i]);
-              }
+        for(updateCount = 0; updateCount < inbrs; updateCount++) {
+          when receiveParticles(CkVec<Particle> &updates) atomic {
+            for(int i=0; i < updates.length(); i++) {
+              particles.push_back(updates[i]);
             }
           }
         }
-        atomic {
-          if (stepCount && thisIndex.x==0 && thisIndex.y==0 && thisIndex.z==0 && stepCount%20==0) {
-            double timer = CkWallTimer();
-            CkPrintf("Step %d Benchmark Time %lf ms/step\n", 
-                      stepCount, ((timer - stepTime)/20)*1000);
-            stepTime = CkWallTimer();
-          }
-        }
-        if (perform_lb) {
-          atomic {
-            AtSync();
-            LBTurnInstrumentOff();
-            perform_lb=false;
-          }
-          when resumeAfterLB(int resume) atomic {
-            stepTime = CkWallTimer();
-            LBTurnInstrumentOn();
-          }
-        }
       }
       atomic {
-        contribute(CkCallback(CkIndex_Main::allDone(), mainProxy));
+        if (stepCount && thisIndex.x==0 && thisIndex.y==0 && thisIndex.z==0 && stepCount%20==0) {
+          double timer = CkWallTimer();
+          CkPrintf("Step %d Benchmark Time %lf ms/step\n", 
+                    stepCount, ((timer - stepTime)/20)*1000);
+          stepTime = CkWallTimer();
+        }
+	stepCount++;
+	patchArray(thisIndex.x,thisIndex.y,thisIndex.z).nextStep();
       }
     };
 };

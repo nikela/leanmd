@@ -55,11 +55,10 @@ Patch::Patch() {
   forceCount = 0;
   stepCount = 0;
   resumeCount = 0;
-  updateFlag = false;
+  done_lb = true;
   incomingFlag = false;
   perform_lb = false;
   incomingParticles.resize(0);
-  setMigratable(CmiFalse);
 }
 
 // Constructor for chare object migration
@@ -232,17 +231,33 @@ void Patch::migrateToPatch(Particle p, int &px, int &py, int &pz) {
   else pz = 0;
 }
 
-void Patch::resume(){
+void Patch::nextStep() {
+  if(stepCount == finalStepCount) {
+    contribute(CkCallback(CkIndex_Main::allDone(), mainProxy));
+  } else if (perform_lb) {
+    perform_lb = false;
+    done_lb = true;
+    LBTurnInstrumentOff();
+    AtSync();
+  } else {
+    if(done_lb) {
+      done_lb = false;
+      LBTurnInstrumentOn();
+      if((thisIndex.x + thisIndex.y + thisIndex.z) == 0)
+	stepTime = CkWallTimer();
+    }
+    patchArray(thisIndex.x,thisIndex.y,thisIndex.z).doStep();
+  }
 }
 
 void Patch::ResumeFromSync(){
-  thisProxy(thisIndex.x,thisIndex.y,thisIndex.z).resumeAfterLB(1);
+  patchArray(thisIndex.x,thisIndex.y,thisIndex.z).nextStep();
 }
 
 void Patch::ftresume(){
-    if (thisIndex.x==0 && thisIndex.y==0 && thisIndex.z ==0)
-      CkPrintf("patch 0 calling ftresume at %f\n",CmiWallTimer());
-    run();
+  if (thisIndex.x==0 && thisIndex.y==0 && thisIndex.z ==0)
+    CkPrintf("patch 0 calling ftresume at %f\n",CmiWallTimer());
+  patchArray(thisIndex.x,thisIndex.y,thisIndex.z).nextStep();
 }
 
 void Patch::updateForce(BigReal *forces, int lengthUp) {
