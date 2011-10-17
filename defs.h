@@ -9,7 +9,7 @@ typedef double BigReal;
 #define VDW_A			      (1.60694452 * pow(10.0, -134))
 #define VDW_B			      (1.031093844 * pow(10.0, -77))
 
-#define ENERGY_VAR  10
+#define ENERGY_VAR  		(1.0 * pow(10.0,-5))
 #define PARTICLES_PER_PATCH	100
 
 #define DEFAULT_DELTA		1	// in femtoseconds

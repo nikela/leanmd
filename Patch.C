@@ -54,11 +54,8 @@ Patch::Patch() {
   updateCount = 0;
   forceCount = 0;
   stepCount = 0;
-  resumeCount = 0;
   done_lb = true;
-  incomingFlag = false;
   perform_lb = false;
-  incomingParticles.resize(0);
 }
 
 // Constructor for chare object migration
@@ -292,21 +289,9 @@ void Patch::updateProperties() {
 
     limitVelocity(particles[i]);
 
-#ifdef LEANMD_DEBUG
-    double initial[3];
-    initial[0] = particles[i].x;
-    initial[1] = particles[i].y;
-    initial[2] = particles[i].z;
-#endif
-
     particles[i].x = particles[i].x + particles[i].vx * realTimeDelta;
     particles[i].y = particles[i].y + particles[i].vy * realTimeDelta;
     particles[i].z = particles[i].z + particles[i].vz * realTimeDelta;
-
-#if LEANMD_DEBUG
-    if(particles[i].id == 0)
-      CkPrintf("Particle Pos - %E %E %E Access %E %E %E Vel %E %E %E Force %E %E %E New %E %E %E\n",initial[0], initial[1],initial[2],particles[i].ax,particles[i].ay,particles[i].az,particles[i].vx,particles[i].vy,particles[i].vz,particles[i].fx,particles[i].fy,particles[i].fz,particles[i].x,particles[i].y,particles[i].z);
-#endif
 
     particles[i].fx = 0.0;
     particles[i].fy = 0.0;

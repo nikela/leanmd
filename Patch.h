@@ -81,17 +81,13 @@ class Patch : public CBase_Patch {
   private:
     Patch_SDAG_CODE;
     CkVec<Particle> particles;
-    CkVec<Particle> incomingParticles;
+    int **computesList;
     int forceCount;		// to count the returns from interactions
     int stepCount;		// to count the number of steps, and decide when to stop
     int updateCount;
     int myNumParts;
     bool done_lb;
-    bool incomingFlag;
     bool perform_lb;
-    int **computesList;
-    int resumeCount;
-    double loadTime;
     int inbrs;
     
  
@@ -124,17 +120,12 @@ class Patch : public CBase_Patch {
       CBase_Patch::pup(p);
       __sdag_pup(p);
       p | particles;
-      p | incomingParticles;
-
       p | forceCount;		
       p | stepCount;		
       p | updateCount;
       p | myNumParts;
       p | done_lb;
-      p | incomingFlag;
       p | perform_lb;
-      p | resumeCount;
-      p | loadTime;
       p | inbrs;
 
       if (p.isUnpacking()){
@@ -147,8 +138,8 @@ class Patch : public CBase_Patch {
       for (int i = 0; i < inbrs; i++){
         PUParray(p, computesList[i], 6);
       }
-      p | mCastSecProxy;
 
+      p | mCastSecProxy;
       if (p.isUnpacking()){
         CkMulticastMgr *mg = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
         mg->resetSection(mCastSecProxy);

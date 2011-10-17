@@ -1,8 +1,8 @@
 #for compilation do a make
 
 #for run use following - Either provide no arguments or provide all
-#./charmrun +p<Procs> ./leanmd <bFactor,dimX,dimY,dimZ,steps,firstLBstep,LBPeriod,ftPeriod>
-# Example - ./charmrun +p8 ./leanmd 8 2 2 2 1001 20 20 10000
+#./charmrun +p<Procs> ./leanmd <dimX,dimY,dimZ,steps,firstLBstep,LBPeriod,ftPeriod>
+# Example - ./charmrun +p8 ./leanmd 2 2 2 1001 20 20 10000
 
 CHARMBASE	= $(HOME)/collegestuff/charm/net-darwin-x86_64
 CHARMC          = $(CHARMBASE)/bin/charmc

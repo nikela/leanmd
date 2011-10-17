@@ -19,7 +19,6 @@ class Main : public CBase_Main {
     }
 
     void allDone();
-    void lbBarrier();
     void ftBarrier();
     void startUpDone();
     void energySumP(CkReductionMsg *msg);

@@ -40,18 +40,13 @@ Main::Main(CkArgMsg* m) {
   energy = prevEnergy = 0;
   testFailed = 0;
 
-  int bFactor = 2;
+  int bFactor = 8;
 
   int numPes = CkNumPes();
   int currPe = -1, pe;
   int cur_arg = 1;
 
   CkPrintf("\nInput Parameters...\n");
-
-  if (m->argc > cur_arg) {
-    bFactor=atoi(m->argv[cur_arg++]);
-    CkPrintf("Branch Factor:%d\n",bFactor);
-  }
 
   if (m->argc > cur_arg) {
     patchArrayDimX=atoi(m->argv[cur_arg++]);
@@ -114,9 +109,9 @@ void Main::ftBarrier(){
 
 void Main::allDone() {
   if(testFailed)
-    CkPrintf("Simulation failed. \n\n");  
+    CkPrintf("\nEnergy conservation test failed for maximum allowed variation of %E units.\nSIMULATION UNSUCCESSFULL\n",ENERGY_VAR);  
   else
-    CkPrintf("Simulation successful. \n\n");
+    CkPrintf("\nEnergy conservation test passed for maximum allowed variation of %E units.\nSIMULATION SUCCESSFULL \n",ENERGY_VAR);
   CkExit();
 }
 
