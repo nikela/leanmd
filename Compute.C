@@ -31,7 +31,7 @@ Compute::Compute(CkMigrateMessage *msg): CBase_Compute(msg)  {
 // Entry method to receive vector of particles
 void Compute::interact(ParticleDataMsg *msg){
   int i;
-  double energy;
+  double energy = 0;
 
   // self interaction check
   if (thisIndex.x1 ==thisIndex.x2 && thisIndex.y1 ==thisIndex.y2 && thisIndex.z1 ==thisIndex.z2) {

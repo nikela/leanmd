@@ -263,7 +263,7 @@ void Patch::updateForce(BigReal *forces, int lengthUp) {
 // Function to update properties (i.e. acceleration, velocity and position) in particles
 void Patch::updateProperties() {
   int i;
-  double energy;
+  double energy = 0;
   BigReal powTen, powFteen, realTimeDelta, invMassParticle;
   powTen = pow(10.0, -10);
   powFteen = pow(10.0, -15);

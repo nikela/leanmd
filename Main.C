@@ -39,7 +39,7 @@ Main::Main(CkArgMsg* m) {
   energy = prevEnergy = 0;
   testFailed = 0;
 
-  int bFactor = 8;
+  int bFactor = 4;
 
   int numPes = CkNumPes();
   int currPe = -1, pe;
@@ -145,6 +145,7 @@ void Main::energySumK(CkReductionMsg *msg) {
     }
     prevEnergy = energy;
     energy = 0;
+    patchArray.testDone(1);
   }
 }
 
@@ -161,6 +162,7 @@ void Main::energySumP(CkReductionMsg *msg) {
     }
     prevEnergy = energy;
     energy = 0;
+    patchArray.testDone(1);
   }
 }
 

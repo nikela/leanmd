@@ -40,6 +40,7 @@ mainmodule leanmd {
     entry void receiveParticles(CkVec<Particle> updates);
     entry void ResumeFromSync();
     entry void nextStep();
+    entry void testDone(int proceed);
 
     entry void doStep() {
       atomic {
@@ -71,6 +72,8 @@ mainmodule leanmd {
                     stepCount, ((timer - stepTime)/20)*1000);
           stepTime = CkWallTimer();
         }
+      }
+      when testDone(int proceed) atomic {
 	stepCount++;
 	patchArray(thisIndex.x,thisIndex.y,thisIndex.z).nextStep();
       }
