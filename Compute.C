@@ -20,6 +20,7 @@ extern /* readonly */ BigReal stepTime;
 Compute::Compute() {
   cellCount = 0;
   bmsgLenAll = -1;
+  stepCount = 0;
   usesAtSync = CmiTrue;
 }
 
@@ -35,14 +36,16 @@ void Compute::interact(ParticleDataMsg *msg){
 
   // self interaction check
   if (thisIndex.x1 ==thisIndex.x2 && thisIndex.y1 ==thisIndex.y2 && thisIndex.z1 ==thisIndex.z2) {
+    stepCount++;
     bool doatSync = false;
     bmsgLenAll = -1;
     if (msg->doAtSync){
       doatSync = true;
     }
     CkGetSectionInfo(cookie1,msg);
-    energy = calcInternalForces(msg, &cookie1);
-    contribute(sizeof(double),&energy,CkReduction::sum_double,CkCallback(CkIndex_Main::energySumP(NULL),mainProxy));
+    energy = calcInternalForces(msg, &cookie1, stepCount);
+    if(stepCount == 1 || stepCount == finalStepCount)
+      contribute(sizeof(double),&energy,CkReduction::sum_double,CkCallback(CkIndex_Main::energySumP(NULL),mainProxy));
     if(doatSync)
       AtSync();
   } else {
@@ -53,6 +56,7 @@ void Compute::interact(ParticleDataMsg *msg){
     } else if (cellCount == 1) {
       // if both particle sets are received, compute interaction
       cellCount = 0;
+      stepCount++;
       bool doatSync = false;
       bmsgLenAll = -1;
       if (msg->doAtSync){
@@ -60,16 +64,17 @@ void Compute::interact(ParticleDataMsg *msg){
       }
       if (bufferedMsg->x*patchArrayDimY*patchArrayDimZ + bufferedMsg->y*patchArrayDimZ + bufferedMsg->z < msg->x*patchArrayDimY*patchArrayDimZ + msg->y*patchArrayDimZ + msg->z){ 
         if (bufferedMsg->lengthAll <= msg->lengthAll)
-          energy = calcPairForces(bufferedMsg, msg, &cookie1, &cookie2);
+          energy = calcPairForces(bufferedMsg, msg, &cookie1, &cookie2,stepTime);
         else
-          energy = calcPairForces(msg, bufferedMsg, &cookie2, &cookie1);
+          energy = calcPairForces(msg, bufferedMsg, &cookie2, &cookie1,stepTime);
       } else {
         if (bufferedMsg->lengthAll <= msg->lengthAll)
-          energy = calcPairForces(bufferedMsg, msg, &cookie2, &cookie1);
+          energy = calcPairForces(bufferedMsg, msg, &cookie2, &cookie1,stepTime);
         else
-          energy = calcPairForces(msg, bufferedMsg, &cookie1, &cookie2);
+          energy = calcPairForces(msg, bufferedMsg, &cookie1, &cookie2,stepTime);
       }
-      contribute(sizeof(double),&energy,CkReduction::sum_double,CkCallback(CkIndex_Main::energySumP(NULL),mainProxy));
+      if(stepCount == 1 || stepCount == finalStepCount)
+	contribute(sizeof(double),&energy,CkReduction::sum_double,CkCallback(CkIndex_Main::energySumP(NULL),mainProxy));
       bufferedMsg = NULL;
       if(doatSync)
         AtSync();

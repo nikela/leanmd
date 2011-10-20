@@ -40,9 +40,9 @@ Patch::Patch() {
     particles[i].x = drand48() * PATCH_SIZE_X + thisIndex.x * PATCH_SIZE_X;
     particles[i].y = drand48() * PATCH_SIZE_Y + thisIndex.y * PATCH_SIZE_Y;
     particles[i].z = drand48() * PATCH_SIZE_Z + thisIndex.z * PATCH_SIZE_Z;
-    particles[i].vx = 0;
-    particles[i].vy = 0;
-    particles[i].vz = 0;
+    particles[i].vx = (drand48() - 0.5) * .2 * MAX_VELOCITY;
+    particles[i].vy = (drand48() - 0.5) * .2 * MAX_VELOCITY;
+    particles[i].vz = (drand48() - 0.5) * .2 * MAX_VELOCITY;
     particles[i].fx = 0;
     particles[i].fy = 0;
     particles[i].fz = 0;
@@ -269,7 +269,8 @@ void Patch::updateProperties() {
   powFteen = pow(10.0, -15);
   realTimeDelta = DEFAULT_DELTA * powFteen;
   for(i = 0; i < particles.length(); i++) {
-    energy += (0.5*particles[i].mass*(particles[i].vx*particles[i].vx + particles[i].vy*particles[i].vy*particles[i].vz*particles[i].vz));
+    if(stepCount == 0 || stepCount == (finalStepCount - 1)) 
+      energy += (0.5*particles[i].mass*(particles[i].vx*particles[i].vx + particles[i].vy*particles[i].vy*particles[i].vz*particles[i].vz));
 
     // applying kinetic equations
     invMassParticle = 1 / particles[i].mass;
@@ -290,7 +291,8 @@ void Patch::updateProperties() {
     particles[i].fy = 0.0;
     particles[i].fz = 0.0;
   }
-  contribute(sizeof(double),&energy,CkReduction::sum_double,CkCallback(CkIndex_Main::energySumK(NULL),mainProxy));
+  if(stepCount == 0 || stepCount == (finalStepCount - 1)) 
+    contribute(sizeof(double),&energy,CkReduction::sum_double,CkCallback(CkIndex_Main::energySumK(NULL),mainProxy));
 }
 
 void Patch::limitVelocity(Particle &p) {

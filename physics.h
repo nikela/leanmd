@@ -16,13 +16,16 @@ extern /* readonly */ BigReal stepTime;
 
 #define BLOCK_SIZE	512
 
-inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, CkSectionInfo* cookie1, CkSectionInfo* cookie2) {
+inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, CkSectionInfo* cookie1, CkSectionInfo* cookie2, int stepCount) {
   int i, j, jpart, ptpCutOffSqd, diff;
   int firstLen = first->lengthAll;
   int secondLen = second->lengthAll;
   BigReal powTwenty, powTen, rx, ry, rz, r, rsqd, fx, fy, fz, f, fr;
   double rSix, rTwelve;
   double energy = 0;
+  int doEnergy = 0;
+  if(stepCount == 1 || stepCount == finalStepCount)
+    doEnergy = 1;
 
   ParticleForceMsg *firstmsg = new (firstLen) ParticleForceMsg;
   ParticleForceMsg *secondmsg = new (secondLen) ParticleForceMsg;
@@ -71,7 +74,8 @@ inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, Ck
             rSix = ((double)rsqd) * rsqd * rsqd;
             rTwelve = rSix * rSix;
             f = (BigReal)(VDW_A / rTwelve - VDW_B / rSix);
-            energy += (BigReal)( VDW_A / (12*rTwelve) - VDW_B / (6*rSix));
+            if(doEnergy)
+	      energy += (BigReal)( VDW_A / (12*rTwelve) - VDW_B / (6*rSix));
             fr = f /r;
             fx = rx * fr * powTen;
             fy = ry * fr * powTen;
@@ -99,13 +103,15 @@ inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, Ck
 }
 
 // Local function to compute all the interactions between pairs of particles in two sets
-inline double calcInternalForces(ParticleDataMsg* first, CkSectionInfo *cookie1) {
+inline double calcInternalForces(ParticleDataMsg* first, CkSectionInfo *cookie1, int stepCount) {
   int i, j, ptpCutOffSqd;
   int firstLen = first->lengthAll;
   BigReal powTwenty, powTen, firstx, firsty, firstz, rx, ry, rz, r, rsqd, fx, fy, fz, f, fr;
   double rSix, rTwelve;
   double energy = 0;
-
+  int doEnergy = 0;
+  if(stepCount == 1 || stepCount == finalStepCount)
+    doEnergy = 1;
   ParticleForceMsg *firstmsg = new (firstLen) ParticleForceMsg;
   firstmsg->lengthUpdates = firstLen;
 
@@ -129,7 +135,8 @@ inline double calcInternalForces(ParticleDataMsg* first, CkSectionInfo *cookie1)
         rSix = ((double)rsqd) * rsqd * rsqd;
         rTwelve = rSix * rSix;
         f = (BigReal)(VDW_A / rTwelve - VDW_B / rSix);
-        energy += (BigReal)( VDW_A / (12*rTwelve) - VDW_B / (6*rSix));
+        if(doEnergy)
+	  energy += (BigReal)( VDW_A / (12*rTwelve) - VDW_B / (6*rSix));
 
         fr = f /r;
         fx = rx * fr * powTen;

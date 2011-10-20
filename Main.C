@@ -145,7 +145,7 @@ void Main::energySumK(CkReductionMsg *msg) {
     }
     prevEnergy = energy;
     energy = 0;
-    patchArray.testDone(1);
+    //patchArray.testDone(1);
   }
 }
 
@@ -162,7 +162,7 @@ void Main::energySumP(CkReductionMsg *msg) {
     }
     prevEnergy = energy;
     energy = 0;
-    patchArray.testDone(1);
+    //patchArray.testDone(1);
   }
 }
 

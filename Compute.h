@@ -8,6 +8,7 @@ class Compute : public CBase_Compute {
   private:
     int cellCount;  // to count the number of interact() calls
     int bmsgLenAll;
+    int stepCount;
     ParticleDataMsg *bufferedMsg;
     CkSectionInfo cookie1;
     CkSectionInfo cookie2;
@@ -20,6 +21,7 @@ class Compute : public CBase_Compute {
 
     void pup(PUP::er &p) {
       CBase_Compute::pup(p);
+      p | stepCount;
       p | cookie1;
       p | cookie2;
       if (p.isUnpacking() && CkInRestarting()) {
