@@ -132,11 +132,11 @@ void Main::startUpDone() {
   }
 }
 
-void Main::energySumK(CkReductionMsg *msg) {
+void Main::energySumK(BigReal energyK) {
   if(energy == 0) {
-    energy = *((double*)msg->getData());
+    energy = energyK;
   } else {
-    energy += *((double*)msg->getData());
+    energy += energyK;
     if(prevEnergy == 0) 
       prevEnergy = energy;
     if(abs(energy-prevEnergy)>ENERGY_VAR) {
@@ -149,11 +149,11 @@ void Main::energySumK(CkReductionMsg *msg) {
   }
 }
 
-void Main::energySumP(CkReductionMsg *msg) {
+void Main::energySumP(BigReal energyP) {
   if(energy == 0) {
-    energy = *((double*)msg->getData());
+    energy = energyP;
   } else {
-    energy += *((double*)msg->getData());
+    energy += energyP;
     if(prevEnergy == 0) 
       prevEnergy = energy;
     if(abs(energy-prevEnergy)>ENERGY_VAR) {

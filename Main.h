@@ -21,7 +21,7 @@ class Main : public CBase_Main {
     void allDone();
     void ftBarrier();
     void startUpDone();
-    void energySumP(CkReductionMsg *msg);
-    void energySumK(CkReductionMsg *msg);
+    void energySumP(double energyP);
+    void energySumK(double energyK);
 };
 #endif

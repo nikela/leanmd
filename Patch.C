@@ -145,7 +145,7 @@ void Patch::localCreateSection() {
 
   CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
   mCastSecProxy.ckSectionDelegate(mCastGrp);
-  mCastGrp->setReductionClient(mCastSecProxy, new CkCallback(CkIndex_Patch::reduceForces(NULL), thisProxy(thisIndex.x, thisIndex.y, thisIndex.z)));
+  mCastGrp->setReductionClient(mCastSecProxy, new CkCallback(CkReductionTarget(Patch,reduceForces), thisProxy(thisIndex.x, thisIndex.y, thisIndex.z)));
 
 }
 
@@ -292,7 +292,7 @@ void Patch::updateProperties() {
     particles[i].fz = 0.0;
   }
   if(stepCount == 0 || stepCount == (finalStepCount - 1)) 
-    contribute(sizeof(double),&energy,CkReduction::sum_double,CkCallback(CkIndex_Main::energySumK(NULL),mainProxy));
+    contribute(sizeof(double),&energy,CkReduction::sum_double,CkCallback(CkReductionTarget(Main,energySumK),mainProxy));
 }
 
 void Patch::limitVelocity(Particle &p) {

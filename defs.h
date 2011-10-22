@@ -10,7 +10,7 @@ typedef double BigReal;
 #define VDW_B			      (1.031093844 * pow(10.0, -77))
 
 #define ENERGY_VAR  		(1.0 * pow(10.0,-5))
-#define PARTICLES_PER_PATCH   	75	
+#define PARTICLES_PER_PATCH   	150	
 
 #define DEFAULT_DELTA		1	// in femtoseconds
 
@@ -36,7 +36,7 @@ typedef double BigReal;
 
 #define KAWAY_X			2
 #define KAWAY_Y			2
-#define KAWAY_Z			2
+#define KAWAY_Z			1
 #define NBRS_X			(2*KAWAY_X+1)
 #define NBRS_Y			(2*KAWAY_Y+1)
 #define NBRS_Z			(2*KAWAY_Z+1)

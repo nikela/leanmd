@@ -12,7 +12,7 @@ all: leanmd
 
 leanmd: Main.o Patch.o Compute.o leanmd.decl.h
 	$(CHARMC) $(OPTS) -module CkMulticast -module CommonLBs \
-	-language charm++ -o leanmd Main.o Patch.o Compute.o
+	-module HybridLB -language charm++ -o leanmd Main.o Patch.o Compute.o
 
 Main.o: Main.C Main.h leanmd.decl.h defs.h
 	$(CHARMC) $(OPTS) -o Main.o Main.C
