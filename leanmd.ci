@@ -48,7 +48,6 @@ mainmodule leanmd {
       when reduceForces(BigReal forces[n], int n) {
         atomic {
 	  updateForce(forces,n);
-          delete forces;
           updateProperties();
         }
       }
