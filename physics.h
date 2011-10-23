@@ -98,6 +98,7 @@ inline double calcInternalForces(ParticleDataMsg* first, CkSectionInfo *cookie1,
   int i, j, ptpCutOffSqd;
   int firstLen = first->lengthAll;
   double powTwenty, powTen, firstx, firsty, firstz, rx, ry, rz, r, rsqd, fx, fy, fz, f, fr;
+  vec3 firstpos, separation, force;
   double rSix, rTwelve;
   double energy = 0;
   int doEnergy = 0;
@@ -105,20 +106,15 @@ inline double calcInternalForces(ParticleDataMsg* first, CkSectionInfo *cookie1,
     doEnergy = 1;
   vec3 *firstmsg = new vec3[firstLen];
 
-  memset(firstmsg, 1, firstLen * 3*sizeof(double));
   ptpCutOffSqd = PTP_CUT_OFF * PTP_CUT_OFF;
   powTen = pow(10.0, -10);
   powTwenty = pow(10.0, -20);
   for(i = 0; i < firstLen; i++){
-    firstx = first->part[i].x;
-    firsty = first->part[i].y;
-    firstz = first->part[i].z;
+    firstpos = first->part[i];
     for(j = i+1; j < firstLen; j++) {
       // computing base values
-      rx = firstx - first->part[j].x;
-      ry = firsty - first->part[j].y;
-      rz = firstz - first->part[j].z;
-      rsqd = rx*rx + ry*ry + rz*rz;
+      separation = firstpos - first->part[j];
+      rsqd = dot(separation, separation);
       if(rsqd >= 0.001 && rsqd < ptpCutOffSqd){
         rsqd = rsqd * powTwenty;
         r = sqrt(rsqd);
@@ -129,20 +125,14 @@ inline double calcInternalForces(ParticleDataMsg* first, CkSectionInfo *cookie1,
 	  energy += (double)( VDW_A / (12*rTwelve) - VDW_B / (6*rSix));
 
         fr = f /r;
-        fx = rx * fr * powTen;
-        fy = ry * fr * powTen;
-        fz = rz * fr * powTen;
-        firstmsg[j].x += fx;
-        firstmsg[j].y += fy;
-        firstmsg[j].z += fz;
-        firstmsg[i].x -= fx;
-        firstmsg[i].y -= fy;
-        firstmsg[i].z -= fz;
+        force = separation * (fr * powTen);
+        firstmsg[j] += force;
+        firstmsg[i] -= force;
       }
     }
   }
   CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
-  mCastGrp->contribute(sizeof(double)*3*firstLen, firstmsg, CkReduction::sum_double, *cookie1);
+  mCastGrp->contribute(sizeof(vec3)*firstLen, firstmsg, CkReduction::sum_double, *cookie1);
   delete firstmsg;
   delete first;
   return energy;
