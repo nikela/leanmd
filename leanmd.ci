@@ -12,7 +12,7 @@ mainmodule leanmd {
   readonly int firstLdbStep;		// begin load balancing after this many steps
   readonly int ldbPeriod;		// do load balancing every period
   readonly int ftPeriod;		// do fault tolerance backup every period
-  readonly double stepTime;
+  readonly double stepTime; // time taken for iteration to be done
 
   //central controller chare
   mainchare [migratable] Main {

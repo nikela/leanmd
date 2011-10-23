@@ -12,9 +12,9 @@
 /* readonly */ CProxy_Compute computeArray;
 /* readonly */ CkGroupID mCastGrpID;
 
-/* readonly */ int patchArrayDimX;	// Number of Chares in X
-/* readonly */ int patchArrayDimY;	// Number of Chares in Y
-/* readonly */ int patchArrayDimZ;	// Number of Chares in Z
+/* readonly */ int patchArrayDimX;
+/* readonly */ int patchArrayDimY;
+/* readonly */ int patchArrayDimZ;
 /* readonly */ int finalStepCount; 
 /* readonly */ int firstLdbStep; 
 /* readonly */ int ldbPeriod; 
@@ -26,6 +26,7 @@ Main::Main(CkArgMsg* m) {
   stepTime = CmiWallTimer();
   CkPrintf("\nLENNARD JONES MOLECULAR DYNAMICS START UP ...\n");
 
+  //set variable values to a default set
   patchArrayDimX = PATCHARRAY_DIM_X;
   patchArrayDimY = PATCHARRAY_DIM_Y;
   patchArrayDimZ = PATCHARRAY_DIM_Z;
@@ -39,7 +40,10 @@ Main::Main(CkArgMsg* m) {
   energy = prevEnergy = 0;
   testFailed = 0;
 
+  //branch factor for spanning tree of multicast
   int bFactor = 4;
+  //creating the multicast spanning tree
+  mCastGrpID = CProxy_CkMulticastMgr::ckNew(bFactor);
 
   int numPes = CkNumPes();
   int currPe = -1, pe;
@@ -47,6 +51,8 @@ Main::Main(CkArgMsg* m) {
 
   CkPrintf("\nInput Parameters...\n");
 
+  //read user parameters
+  //number of patches/cells in each dimension
   if (m->argc > cur_arg) {
     patchArrayDimX=atoi(m->argv[cur_arg++]);
     patchArrayDimY=atoi(m->argv[cur_arg++]);
@@ -54,27 +60,31 @@ Main::Main(CkArgMsg* m) {
     CkPrintf("Patch Array Dimension X:%d Y:%d Z:%d\n",patchArrayDimX,patchArrayDimY,patchArrayDimZ);
   }
 
+  //number of steps in simulation
   if (m->argc > cur_arg) {
     finalStepCount=atoi(m->argv[cur_arg++]);
     CkPrintf("Final Step Count:%d\n",finalStepCount);
   }
 
+  //step after which load balancing starts
   if (m->argc > cur_arg) {
     firstLdbStep=atoi(m->argv[cur_arg++]);
     CkPrintf("First LB Step:%d\n",firstLdbStep);
   }
 
+  //periodicity of load balancing
   if (m->argc > cur_arg) {
     ldbPeriod=atoi(m->argv[cur_arg++]);
     CkPrintf("LB Period:%d\n",ldbPeriod);
   }
 
+  //periodicity of fault tolerance
   if (m->argc > cur_arg) {
     ftPeriod=atoi(m->argv[cur_arg++]);
     CkPrintf("FT Period:%d\n",ldbPeriod);
   }
 
-  // initializing the 3D patch array
+  //initializing the 3D patch array
   patchArray = CProxy_Patch::ckNew();
   for (int x=0; x<patchArrayDimX; x++)
     for (int y=0; y<patchArrayDimY; y++)
@@ -86,43 +96,46 @@ Main::Main(CkArgMsg* m) {
 
   CkPrintf("\nPatches: %d X %d X %d .... created\n", patchArrayDimX, patchArrayDimY, patchArrayDimZ);
 
-  mCastGrpID = CProxy_CkMulticastMgr::ckNew(bFactor);
-
-  // initializing the 6D compute array
+  //initializing the 6D compute array
   computeArray = CProxy_Compute::ckNew();
   for (int x=0; x<patchArrayDimX; x++)
     for (int y=0; y<patchArrayDimY; y++)
       for (int z=0; z<patchArrayDimZ; z++)
-	patchArray(x, y, z).createComputes();
+        patchArray(x, y, z).createComputes();
 
   delete m;
 }
 
-// Constructor for chare object migration
+//constructor for chare object migration
 Main::Main(CkMigrateMessage* msg): CBase_Main(msg) { }
 
+//backup current state to files and resume in patchArray
 void Main::ftBarrier(){
   CkCallback cb(CkIndex_Patch::ftresume(), patchArray);
   CkStartMemCheckpoint(cb);
 }
 
+//simulation is done, test if it was successfull and report
 void Main::allDone() {
-  if(testFailed)
+  if(testFailed) {
     CkPrintf("\nEnergy conservation test failed for maximum allowed variation of %E units.\nSIMULATION UNSUCCESSFULL\n",ENERGY_VAR);  
-  else
+  } else {
     CkPrintf("\nEnergy conservation test passed for maximum allowed variation of %E units.\nSIMULATION SUCCESSFULL \n",ENERGY_VAR);
+  }
   CkExit();
 }
 
+//after every phase of initial set up, we come here and decide what to do next
 void Main::startUpDone() {
   switch(phase) {
+    //compute array has been created, create multicast sections now
     case 0:
       computeArray.doneInserting();
       CkPrintf("Computes: %d .... created\n", (NUM_NEIGHBORS/2+1) * patchArrayDimX * patchArrayDimY * patchArrayDimZ);
       phase++;
       patchArray.createSection();
       break;
-
+      //multicast sections have been created, start simulation
     case 1:
       CkPrintf("Multicast sections .... created\n");
 
@@ -132,10 +145,13 @@ void Main::startUpDone() {
   }
 }
 
+//receive reduction value for kinetic energy
 void Main::energySumK(double energyK) {
+  //check if kinetic energy value is received first
   if(energy == 0) {
     energy = energyK;
   } else {
+    //otherwise add to the value of potential energy and check for correctness
     energy += energyK;
     if(prevEnergy == 0) 
       prevEnergy = energy;
@@ -145,14 +161,16 @@ void Main::energySumK(double energyK) {
     }
     prevEnergy = energy;
     energy = 0;
-    //patchArray.testDone(1);
   }
 }
 
+//receive reduction value for potential energy
 void Main::energySumP(double energyP) {
+  //check if potential energy value is received first
   if(energy == 0) {
     energy = energyP;
   } else {
+    //otherwise add to the value of kinetic energy and check for correctness
     energy += energyP;
     if(prevEnergy == 0) 
       prevEnergy = energy;
