@@ -54,33 +54,34 @@ void Compute::interact(ParticleDataMsg *msg){
       bufferedMsg = msg;
       bmsgLenAll = bufferedMsg->lengthAll;
       cellCount++;
-    } else if (cellCount == 1) {
-      // if both particle sets are received, compute interaction
-      cellCount = 0;
-      stepCount++;
-      bool doatSync = false;
-      bmsgLenAll = -1;
-      if (msg->doAtSync){
-        doatSync = true;
-      }
-      if (bufferedMsg->x*patchArrayDimY*patchArrayDimZ + bufferedMsg->y*patchArrayDimZ + bufferedMsg->z < msg->x*patchArrayDimY*patchArrayDimZ + msg->y*patchArrayDimZ + msg->z){ 
-        if (bufferedMsg->lengthAll <= msg->lengthAll)
-          energy = calcPairForces(bufferedMsg, msg, &cookie1, &cookie2,stepTime);
-        else
-          energy = calcPairForces(msg, bufferedMsg, &cookie2, &cookie1,stepTime);
-      } else {
-        if (bufferedMsg->lengthAll <= msg->lengthAll)
-          energy = calcPairForces(bufferedMsg, msg, &cookie2, &cookie1,stepTime);
-        else
-          energy = calcPairForces(msg, bufferedMsg, &cookie1, &cookie2,stepTime);
-      }
-      //energy reduction only in begining and end
-      if(stepCount == 1 || stepCount == finalStepCount)
-        contribute(sizeof(double),&energy,CkReduction::sum_double,CkCallback(CkReductionTarget(Main, energySumP),mainProxy));
-      bufferedMsg = NULL;
-      if(doatSync)
-        AtSync();
+      return;
     }
+
+    // Both particle sets have been received, so compute interaction
+    cellCount = 0;
+    stepCount++;
+    bool doatSync = false;
+    bmsgLenAll = -1;
+    if (msg->doAtSync){
+      doatSync = true;
+    }
+    if (bufferedMsg->x*patchArrayDimY*patchArrayDimZ + bufferedMsg->y*patchArrayDimZ + bufferedMsg->z < msg->x*patchArrayDimY*patchArrayDimZ + msg->y*patchArrayDimZ + msg->z){ 
+      if (bufferedMsg->lengthAll <= msg->lengthAll)
+        energy = calcPairForces(bufferedMsg, msg, &cookie1, &cookie2,stepTime);
+      else
+        energy = calcPairForces(msg, bufferedMsg, &cookie2, &cookie1,stepTime);
+    } else {
+      if (bufferedMsg->lengthAll <= msg->lengthAll)
+        energy = calcPairForces(bufferedMsg, msg, &cookie2, &cookie1,stepTime);
+      else
+        energy = calcPairForces(msg, bufferedMsg, &cookie1, &cookie2,stepTime);
+    }
+    //energy reduction only in begining and end
+    if(stepCount == 1 || stepCount == finalStepCount)
+      contribute(sizeof(double),&energy,CkReduction::sum_double,CkCallback(CkReductionTarget(Main, energySumP),mainProxy));
+    bufferedMsg = NULL;
+    if(doatSync)
+      AtSync();
   }
 }
 
