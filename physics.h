@@ -29,8 +29,8 @@ inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, Ck
   if(stepCount == 1 || stepCount == finalStepCount)
     doEnergy = 1;
 
-  vec3 *firstmsg = new vec3[firstLen] ;
-  vec3 *secondmsg = new vec3[secondLen] ;
+  vec3 *firstmsg = new vec3[firstLen];
+  vec3 *secondmsg = new vec3[secondLen];
   //check for wrap around and adjust locations accordingly
   if (abs(first->x - second->x) > 1){
     diff = PATCH_SIZE_X * patchArrayDimX;
