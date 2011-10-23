@@ -16,6 +16,7 @@ extern /* readonly */ double stepTime;
 
 #define BLOCK_SIZE	512
 
+//function to calculate forces among 2 lists of atoms
 inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, CkSectionInfo* cookie1, CkSectionInfo* cookie2, int stepCount) {
   int i, j, jpart, ptpCutOffSqd, diff;
   int firstLen = first->lengthAll;
@@ -35,21 +36,21 @@ inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, Ck
     if (second->x < first->x)
       diff = -1 * diff; 
     for (i = 0; i < firstLen; i++)
-      first->part[i].coord.x += diff;
+      first->part[i].x += diff;
   }
   if (abs(first->y - second->y) > 1){
     diff = PATCH_SIZE_Y * patchArrayDimY;
     if (second->y < first->y)
       diff = -1 * diff; 
     for (i = 0; i < firstLen; i++)
-      first->part[i].coord.y += diff;
+      first->part[i].y += diff;
   }
   if (abs(first->z - second->z) > 1){
     diff = PATCH_SIZE_Z * patchArrayDimZ;
     if (second->z < first->z)
       diff = -1 * diff; 
     for (i = 0; i < firstLen; i++)
-      first->part[i].coord.z += diff;
+      first->part[i].z += diff;
   } 
   ptpCutOffSqd = PTP_CUT_OFF * PTP_CUT_OFF;
   powTen = pow(10.0, -10);
@@ -62,9 +63,9 @@ inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, Ck
     for(j1 = 0; j1 < secondLen; j1=j1+BLOCK_SIZE)
       for(i = i1; i < i1+BLOCK_SIZE && i < firstLen; i++) {
         for(jpart = j1; jpart < j1+BLOCK_SIZE && jpart < secondLen; jpart++) {
-          rx = first->part[i].coord.x - second->part[jpart].coord.x;
-          ry = first->part[i].coord.y - second->part[jpart].coord.y;
-          rz = first->part[i].coord.z - second->part[jpart].coord.z;
+          rx = first->part[i].x - second->part[jpart].x;
+          ry = first->part[i].y - second->part[jpart].y;
+          rz = first->part[i].z - second->part[jpart].z;
           rsqd = rx*rx + ry*ry + rz*rz;
           if (rsqd >= 0.001 && rsqd < ptpCutOffSqd){
             rsqd = rsqd * powTwenty;
@@ -100,7 +101,7 @@ inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, Ck
   return energy;
 }
 
-// Local function to compute all the interactions between pairs of particles in two sets
+//function to calculate forces among atoms in a single list
 inline double calcInternalForces(ParticleDataMsg* first, CkSectionInfo *cookie1, int stepCount) {
   int i, j, ptpCutOffSqd;
   int firstLen = first->lengthAll;
@@ -117,14 +118,14 @@ inline double calcInternalForces(ParticleDataMsg* first, CkSectionInfo *cookie1,
   powTen = pow(10.0, -10);
   powTwenty = pow(10.0, -20);
   for(i = 0; i < firstLen; i++){
-    firstx = first->part[i].coord.x;
-    firsty = first->part[i].coord.y;
-    firstz = first->part[i].coord.z;
+    firstx = first->part[i].x;
+    firsty = first->part[i].y;
+    firstz = first->part[i].z;
     for(j = i+1; j < firstLen; j++) {
       // computing base values
-      rx = firstx - first->part[j].coord.x;
-      ry = firsty - first->part[j].coord.y;
-      rz = firstz - first->part[j].coord.z;
+      rx = firstx - first->part[j].x;
+      ry = firsty - first->part[j].y;
+      rz = firstz - first->part[j].z;
       rsqd = rx*rx + ry*ry + rz*rz;
       if(rsqd >= 0.001 && rsqd < ptpCutOffSqd){
         rsqd = rsqd * powTwenty;

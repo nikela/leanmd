@@ -52,6 +52,7 @@ Patch::Patch() {
   }
 
   stepCount = 0;
+  updateCount = 0;
   done_lb = true;
   perform_lb = false;
 }

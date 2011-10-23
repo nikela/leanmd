@@ -3,7 +3,7 @@
 
 #include "pup.h"
 
-#define HYDROGEN_MASS          (1.67 * pow( 10.0,-24))
+#define HYDROGEN_MASS   (1.67 * pow( 10.0,-24))
 #define VDW_A			      (1.60694452 * pow(10.0, -134))
 #define VDW_B			      (1.031093844 * pow(10.0, -77))
 
@@ -44,13 +44,12 @@
 #define WRAP_Y(a)		(((a)+patchArrayDimY)%patchArrayDimY)
 #define WRAP_Z(a)		(((a)+patchArrayDimZ)%patchArrayDimZ)
 
-// Class for keeping track of the properties for a particle
+//class for keeping track of the properties for a particle
 class Particle {
   public:
 
     int id;
     double mass;	// mass of the particle
-    double charge;     // charge of particle
     double x;		// position in x axis
     double y;		// position in y axis
     double z;		// position in z axis
@@ -74,7 +73,7 @@ class Particle {
 
     // Function for pupping properties
     void pup(PUP::er &p) {
-      p | id; p | mass; p | charge;
+      p | id; p | mass;
       p | x;  p | y;  p | z;
       p | fx; p | fy; p | fz;
       p | ax; p | ay; p | az;

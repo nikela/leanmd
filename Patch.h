@@ -40,7 +40,7 @@ class ParticleDataMsg : public CkMcastBaseMsg, public CMessage_ParticleDataMsg {
 
     //pack important information
     void pup(PUP::er &p){
-      CMessage_ParticleDataMsg::pup(p);
+    CMessage_ParticleDataMsg::pup(p);
       p | lengthAll;
       p | x; p | y; p | z;
       p | doAtSync;
@@ -62,7 +62,7 @@ class Patch : public CBase_Patch {
     bool done_lb;     //was load balancing done in last step?
     bool perform_lb;  //should I do load balancing in this step?
     int inbrs;        //number of interacting neighbors
-
+    int updateCount;
 
     void migrateToPatch(Particle p, int &px, int &py, int &pz);
     void updateForce(double *forces, int lengthUp); //update forces after reduction
@@ -94,6 +94,7 @@ class Patch : public CBase_Patch {
       p | myNumParts;
       p | done_lb;
       p | perform_lb;
+      p | updateCount;
       p | inbrs;
 
       if (p.isUnpacking()){
