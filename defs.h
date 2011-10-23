@@ -72,14 +72,14 @@ PUPbytes(vec3)
 
 //class for keeping track of the properties for a particle
 struct Particle {
-  int id;
+//  int id;
   double mass;
   //   Position, accumulated forces, acceleration, velocity
   vec3 pos,      forces,             acc,          vel;
 
   // Function for pupping properties
   void pup(PUP::er &p) {
-    p | id; p | mass;
+    p | mass;
     p | pos;
     p | forces;
     p | acc;

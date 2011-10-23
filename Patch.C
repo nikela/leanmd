@@ -44,8 +44,6 @@ Patch::Patch() {
     particles[i].vel.x = (drand48() - 0.5) * .2 * MAX_VELOCITY;
     particles[i].vel.y = (drand48() - 0.5) * .2 * MAX_VELOCITY;
     particles[i].vel.z = (drand48() - 0.5) * .2 * MAX_VELOCITY;
-
-    particles[i].id = (thisIndex.x*patchArrayDimX + thisIndex.y) * numParts / (patchArrayDimX*patchArrayDimY)  + i;
   }
 
   stepCount = 0;
