@@ -16,22 +16,9 @@ struct force {
   double z;
 };
 
-//structure to store location of atoms
-class partData{
-  public:
-    double x;
-    double y;
-    double z;
-
-    void pup(PUP::er &p){
-      p|x; p|y; p|z;
-    }
-};
-
 //data message to be sent to computes
-class ParticleDataMsg : public CkMcastBaseMsg, public CMessage_ParticleDataMsg {
-  public:
-    partData* part; //list of atoms
+struct ParticleDataMsg : public CkMcastBaseMsg, public CMessage_ParticleDataMsg {
+    vec3* part; //list of atoms
     int lengthAll;  //length of list
     int x;    //x coordinate of patch sending this message
     int y;    //y coordinate
@@ -45,7 +32,7 @@ class ParticleDataMsg : public CkMcastBaseMsg, public CMessage_ParticleDataMsg {
       p | x; p | y; p | z;
       p | doAtSync;
       if (p.isUnpacking()){
-        part = new partData[lengthAll];
+        part = new vec3[lengthAll];
       }
       PUParray(p, part, lengthAll);
     } 

@@ -38,15 +38,12 @@ Patch::Patch() {
     particles[i].mass = HYDROGEN_MASS;
 
     //give random values for position and velocity
-    particles[i].x = drand48() * PATCH_SIZE_X + thisIndex.x * PATCH_SIZE_X;
-    particles[i].y = drand48() * PATCH_SIZE_Y + thisIndex.y * PATCH_SIZE_Y;
-    particles[i].z = drand48() * PATCH_SIZE_Z + thisIndex.z * PATCH_SIZE_Z;
-    particles[i].vx = (drand48() - 0.5) * .2 * MAX_VELOCITY;
-    particles[i].vy = (drand48() - 0.5) * .2 * MAX_VELOCITY;
-    particles[i].vz = (drand48() - 0.5) * .2 * MAX_VELOCITY;
-    particles[i].fx = 0;
-    particles[i].fy = 0;
-    particles[i].fz = 0;
+    particles[i].pos.x = drand48() * PATCH_SIZE_X + thisIndex.x * PATCH_SIZE_X;
+    particles[i].pos.y = drand48() * PATCH_SIZE_Y + thisIndex.y * PATCH_SIZE_Y;
+    particles[i].pos.z = drand48() * PATCH_SIZE_Z + thisIndex.z * PATCH_SIZE_Z;
+    particles[i].vel.x = (drand48() - 0.5) * .2 * MAX_VELOCITY;
+    particles[i].vel.y = (drand48() - 0.5) * .2 * MAX_VELOCITY;
+    particles[i].vel.z = (drand48() - 0.5) * .2 * MAX_VELOCITY;
 
     particles[i].id = (thisIndex.x*patchArrayDimX + thisIndex.y) * numParts / (patchArrayDimX*patchArrayDimY)  + i;
   }
@@ -169,11 +166,9 @@ void Patch::sendPositions() {
     msg->doAtSync = true;
     perform_lb = true;
   }
-  for (int i = 0; i < len; i++){
-    msg->part[i].x = particles[i].x;
-    msg->part[i].y = particles[i].y;
-    msg->part[i].z = particles[i].z;
-  }
+  for (int i = 0; i < len; i++)
+    msg->part[i] = particles[i].pos;
+
   mCastSecProxy.interact(msg);
 }
 
@@ -214,16 +209,16 @@ void Patch::migrateToPatch(Particle p, int &px, int &py, int &pz) {
   int y = thisIndex.y * PATCH_SIZE_Y + PATCH_ORIGIN_Y;
   int z = thisIndex.z * PATCH_SIZE_Z + PATCH_ORIGIN_Z;
 
-  if (p.x < x) px = -1;
-  else if (p.x > x+PATCH_SIZE_X) px = 1;
+  if (p.pos.x < x) px = -1;
+  else if (p.pos.x > x+PATCH_SIZE_X) px = 1;
   else px = 0;
 
-  if (p.y < y) py = -1;
-  else if (p.y > y+PATCH_SIZE_Y) py = 1;
+  if (p.pos.y < y) py = -1;
+  else if (p.pos.y > y+PATCH_SIZE_Y) py = 1;
   else py = 0;
 
-  if (p.z < z) pz = -1;
-  else if (p.z > z+PATCH_SIZE_Z) pz = 1;
+  if (p.pos.z < z) pz = -1;
+  else if (p.pos.z > z+PATCH_SIZE_Z) pz = 1;
   else pz = 0;
 }
 
@@ -265,9 +260,9 @@ void Patch::ResumeFromSync(){
 void Patch::updateForce(double *forces, int lengthUp) {
   int i;
   for(i = 0; i < lengthUp; i+=3) {
-    particles[i/3].fx += forces[i];
-    particles[i/3].fy += forces[i+1];
-    particles[i/3].fz += forces[i+2];
+    particles[i/3].forces.x += forces[i];
+    particles[i/3].forces.y += forces[i+1];
+    particles[i/3].forces.z += forces[i+2];
   } 
 }
 
@@ -283,26 +278,18 @@ void Patch::updateProperties() {
   for(i = 0; i < particles.length(); i++) {
     //calculate energy only in begining and end
     if(stepCount == 0 || stepCount == (finalStepCount - 1)) 
-      energy += (0.5*particles[i].mass*(particles[i].vx*particles[i].vx + particles[i].vy*particles[i].vy*particles[i].vz*particles[i].vz));
+      energy += (0.5 * particles[i].mass * dot(particles[i].vel, particles[i].vel));
 
     // applying kinetic equations
     invMassParticle = 1 / particles[i].mass;
-    particles[i].ax = particles[i].fx * invMassParticle;
-    particles[i].ay = particles[i].fy * invMassParticle;
-    particles[i].az = particles[i].fz * invMassParticle;
-    particles[i].vx = particles[i].vx + particles[i].ax * realTimeDelta;
-    particles[i].vy = particles[i].vy + particles[i].ay * realTimeDelta;
-    particles[i].vz = particles[i].vz + particles[i].az * realTimeDelta;
+    particles[i].acc = particles[i].forces * invMassParticle;
+    particles[i].vel += particles[i].acc * realTimeDelta;
 
     limitVelocity(particles[i]);
 
-    particles[i].x = particles[i].x + particles[i].vx * realTimeDelta;
-    particles[i].y = particles[i].y + particles[i].vy * realTimeDelta;
-    particles[i].z = particles[i].z + particles[i].vz * realTimeDelta;
+    particles[i].pos += particles[i].vel * realTimeDelta;
 
-    particles[i].fx = 0.0;
-    particles[i].fy = 0.0;
-    particles[i].fz = 0.0;
+    particles[i].forces = vec3(0.0);
   }
   //reduction on energy only in begining and end
   if(stepCount == 0 || stepCount == (finalStepCount - 1)) 
@@ -310,35 +297,35 @@ void Patch::updateProperties() {
 }
 
 void Patch::limitVelocity(Particle &p) {
-  if( fabs( p.vx ) > MAX_VELOCITY ) {
-    if( p.vx < 0.0 )
-      p.vx = -MAX_VELOCITY;
+  if( fabs( p.vel.x ) > MAX_VELOCITY ) {
+    if( p.vel.x < 0.0 )
+      p.vel.x = -MAX_VELOCITY;
     else
-      p.vx = MAX_VELOCITY;
+      p.vel.x = MAX_VELOCITY;
   }
 
-  if( fabs(p.vy) > MAX_VELOCITY ) {
-    if( p.vy < 0.0 )
-      p.vy = -MAX_VELOCITY;
+  if( fabs(p.vel.y) > MAX_VELOCITY ) {
+    if( p.vel.y < 0.0 )
+      p.vel.y = -MAX_VELOCITY;
     else
-      p.vy = MAX_VELOCITY;
+      p.vel.y = MAX_VELOCITY;
   }
 
-  if( fabs(p.vz) > MAX_VELOCITY ) {
-    if( p.vz < 0.0 )
-      p.vz = -MAX_VELOCITY;
+  if( fabs(p.vel.z) > MAX_VELOCITY ) {
+    if( p.vel.z < 0.0 )
+      p.vel.z = -MAX_VELOCITY;
     else
-      p.vz = MAX_VELOCITY;
+      p.vel.z = MAX_VELOCITY;
   }
 }
 
 Particle& Patch::wrapAround(Particle &p) {
-  if(p.x < PATCH_ORIGIN_X) p.x += PATCH_SIZE_X*patchArrayDimX;
-  if(p.y < PATCH_ORIGIN_Y) p.y += PATCH_SIZE_Y*patchArrayDimY;
-  if(p.z < PATCH_ORIGIN_Z) p.z += PATCH_SIZE_Z*patchArrayDimZ;
-  if(p.x > PATCH_ORIGIN_X + PATCH_SIZE_X*patchArrayDimX) p.x -= PATCH_SIZE_X*patchArrayDimX;
-  if(p.y > PATCH_ORIGIN_Y + PATCH_SIZE_Y*patchArrayDimY) p.y -= PATCH_SIZE_Y*patchArrayDimY;
-  if(p.z > PATCH_ORIGIN_Z + PATCH_SIZE_Z*patchArrayDimZ) p.z -= PATCH_SIZE_Z*patchArrayDimZ;
+  if(p.pos.x < PATCH_ORIGIN_X) p.pos.x += PATCH_SIZE_X*patchArrayDimX;
+  if(p.pos.y < PATCH_ORIGIN_Y) p.pos.y += PATCH_SIZE_Y*patchArrayDimY;
+  if(p.pos.z < PATCH_ORIGIN_Z) p.pos.z += PATCH_SIZE_Z*patchArrayDimZ;
+  if(p.pos.x > PATCH_ORIGIN_X + PATCH_SIZE_X*patchArrayDimX) p.pos.x -= PATCH_SIZE_X*patchArrayDimX;
+  if(p.pos.y > PATCH_ORIGIN_Y + PATCH_SIZE_Y*patchArrayDimY) p.pos.y -= PATCH_SIZE_Y*patchArrayDimY;
+  if(p.pos.z > PATCH_ORIGIN_Z + PATCH_SIZE_Z*patchArrayDimZ) p.pos.z -= PATCH_SIZE_Z*patchArrayDimZ;
 
   return p;
 }

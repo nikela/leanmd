@@ -1,3 +1,4 @@
+
 #ifndef __DEFS__
 #define __DEFS__
 
@@ -44,40 +45,40 @@
 #define WRAP_Y(a)		(((a)+patchArrayDimY)%patchArrayDimY)
 #define WRAP_Z(a)		(((a)+patchArrayDimZ)%patchArrayDimZ)
 
+struct vec3 {
+  double x, y, z;
+  vec3(double d = 0.0) : x(d), y(d), z(d) { }
+  vec3(double x_, double y_, double z_) : x(x_), y(y_), z(z_) { }
+  inline vec3& operator += (const vec3 &rhs) {
+    x += rhs.x; y += rhs.y; z += rhs.z;
+    return *this;
+  }
+  inline vec3& operator -= (const vec3 &rhs) {
+    return *this += (rhs * -1.0);
+  }
+  inline vec3 operator* (const double d) const {
+    return vec3(d*x, d*y, d*z);
+  }
+};
+inline double dot(const vec3& a, const vec3& b) {
+  return a.x*b.x + a.y*b.y + a.z*b.z;
+}
+PUPbytes(vec3)
+
 //class for keeping track of the properties for a particle
-class Particle {
-  public:
+struct Particle {
+  int id;
+  double mass;
+  //   Position, accumulated forces, acceleration, velocity
+  vec3 pos,      forces,             acc,          vel;
 
-    int id;
-    double mass;	// mass of the particle
-    double x;		// position in x axis
-    double y;		// position in y axis
-    double z;		// position in z axis
-
-    double fx;		// total forces on x axis
-    double fy;		// total forces on y axis
-    double fz;		// total forces on z axis
-
-    double ax;		// acceleration on x axis
-    double ay;		// acceleration on y axis
-    double az;		// acceleration on z axis
-
-    double vx;		// velocity on x axis
-    double vy;		// velocity on y axis
-    double vz;		// velocity on z axis
-
-    // Default constructor
-    Particle() {
-      fx = fy = fz = 0.0;
-    }
-
-    // Function for pupping properties
-    void pup(PUP::er &p) {
-      p | id; p | mass;
-      p | x;  p | y;  p | z;
-      p | fx; p | fy; p | fz;
-      p | ax; p | ay; p | az;
-      p | vx; p | vy; p | vz;
-    }
+  // Function for pupping properties
+  void pup(PUP::er &p) {
+    p | id; p | mass;
+    p | pos;
+    p | forces;
+    p | acc;
+    p | vel;
+  }
 };
 #endif

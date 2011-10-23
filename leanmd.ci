@@ -26,7 +26,7 @@ mainmodule leanmd {
 
   //message used to convey particle to computes
   message ParticleDataMsg{
-    partData part[];
+    vec3 part[];
   };
 
   //chares to house atoms
