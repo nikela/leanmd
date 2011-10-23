@@ -47,7 +47,7 @@ void Compute::interact(ParticleDataMsg *msg){
     CkGetSectionInfo(cookie1,msg);
     energy = calcInternalForces(msg, &cookie1, stepCount);
     if(stepCount == 1 || stepCount == finalStepCount)
-      contribute(sizeof(double),&energy,CkReduction::sum_double,CkCallback(CkReductionTarget(Main,energySumP),mainProxy));
+      contribute(sizeof(double),&energy,CkReduction::sum_double,CkCallback(CkReductionTarget(Main,energySum),mainProxy));
     if(doatSync)
       AtSync();
   } else {
@@ -82,7 +82,7 @@ void Compute::interact(ParticleDataMsg *msg){
 
     //energy reduction only in begining and end
     if(stepCount == 1 || stepCount == finalStepCount)
-      contribute(sizeof(double),&energy,CkReduction::sum_double,CkCallback(CkReductionTarget(Main, energySumP),mainProxy));
+      contribute(sizeof(double),&energy,CkReduction::sum_double,CkCallback(CkReductionTarget(Main, energySum),mainProxy));
     bufferedMsg = NULL;
     if(doatSync)
       AtSync();

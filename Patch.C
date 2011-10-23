@@ -278,7 +278,7 @@ void Patch::updateProperties(vec3 *forces, int lengthUp) {
   }
   //reduction on energy only in begining and end
   if(stepCount == 0 || stepCount == (finalStepCount - 1)) 
-    contribute(sizeof(double),&energy,CkReduction::sum_double,CkCallback(CkReductionTarget(Main,energySumK),mainProxy));
+    contribute(sizeof(double),&energy,CkReduction::sum_double,CkCallback(CkReductionTarget(Main,energySum),mainProxy));
 }
 
 void Patch::limitVelocity(Particle &p) {

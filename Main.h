@@ -17,7 +17,6 @@ class Main : public CBase_Main {
     void allDone();
     void ftBarrier();
     void startUpDone();
-    void energySumP(double energyP);
-    void energySumK(double energyK);
+    void energySum(double energyIn);
 };
 #endif

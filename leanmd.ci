@@ -20,8 +20,7 @@ mainmodule leanmd {
     entry void allDone();     //called when simulation is done
     entry void ftBarrier();   //called when fault tolerance backup is done
     entry void startUpDone(); //called when initial set up is done
-    entry [reductiontarget] void energySumP(double energyP);  //reduction of potential energy
-    entry [reductiontarget] void energySumK(double energyK);  //reduction of kinetic energy
+    entry [reductiontarget] void energySum(double energyIn);  //reduction of potential energy
   };
 
   //message used to convey particle to computes

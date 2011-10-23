@@ -154,14 +154,14 @@ void Main::startUpDone() {
   }
 }
 
-//receive reduction value for kinetic energy
-void Main::energySumK(double energyK) {
-  //check if kinetic energy value is received first
+//receive reduction value for energy
+void Main::energySum(double energyIn) {
+  //check if this energy value is received first (can be kinetic or potential)
   if(energy == 0) {
-    energy = energyK;
+    energy = energyIn;
   } else {
-    //otherwise add to the value of potential energy and check for correctness
-    energy += energyK;
+    //otherwise add to the value obtained earlier and check for correctness
+    energy += energyIn;
     if(prevEnergy == 0) 
       prevEnergy = energy;
     if(abs(energy-prevEnergy)>ENERGY_VAR) {
@@ -170,26 +170,6 @@ void Main::energySumK(double energyK) {
     }
     prevEnergy = energy;
     energy = 0;
-  }
-}
-
-//receive reduction value for potential energy
-void Main::energySumP(double energyP) {
-  //check if potential energy value is received first
-  if(energy == 0) {
-    energy = energyP;
-  } else {
-    //otherwise add to the value of kinetic energy and check for correctness
-    energy += energyP;
-    if(prevEnergy == 0) 
-      prevEnergy = energy;
-    if(abs(energy-prevEnergy)>ENERGY_VAR) {
-      CkPrintf("Energy value has varied significantly from %E to %E\n",prevEnergy,energy);
-      testFailed = 1;
-    }
-    prevEnergy = energy;
-    energy = 0;
-    //patchArray.testDone(1);
   }
 }
 
