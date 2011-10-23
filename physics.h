@@ -86,8 +86,8 @@ inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, Ck
   CkGetSectionInfo(*cookie2, second);
   mCastGrp->contribute(sizeof(vec3)*secondLen, secondmsg, CkReduction::sum_double, *cookie2);
 
-  delete firstmsg;
-  delete secondmsg;
+  delete [] firstmsg;
+  delete [] secondmsg;
   delete first;
   delete second;
   return energy;
@@ -133,7 +133,7 @@ inline double calcInternalForces(ParticleDataMsg* first, CkSectionInfo *cookie1,
   }
   CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
   mCastGrp->contribute(sizeof(vec3)*firstLen, firstmsg, CkReduction::sum_double, *cookie1);
-  delete firstmsg;
+  delete [] firstmsg;
   delete first;
   return energy;
 }
