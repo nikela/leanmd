@@ -12,7 +12,7 @@ extern /* readonly */ int patchArrayDimX;	// Number of Chare Rows
 extern /* readonly */ int patchArrayDimY;	// Number of Chare Columns
 extern /* readonly */ int patchArrayDimZ;
 extern /* readonly */ int finalStepCount; 
-extern /* readonly */ BigReal stepTime; 
+extern /* readonly */ double stepTime; 
 
 #define BLOCK_SIZE	512
 
@@ -20,17 +20,15 @@ inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, Ck
   int i, j, jpart, ptpCutOffSqd, diff;
   int firstLen = first->lengthAll;
   int secondLen = second->lengthAll;
-  BigReal powTwenty, powTen, rx, ry, rz, r, rsqd, fx, fy, fz, f, fr;
+  double powTwenty, powTen, rx, ry, rz, r, rsqd, fx, fy, fz, f, fr;
   double rSix, rTwelve;
   double energy = 0;
   int doEnergy = 0;
   if(stepCount == 1 || stepCount == finalStepCount)
     doEnergy = 1;
 
-  ParticleForceMsg *firstmsg = new (firstLen) ParticleForceMsg;
-  ParticleForceMsg *secondmsg = new (secondLen) ParticleForceMsg;
-  firstmsg->lengthUpdates = firstLen;
-  secondmsg->lengthUpdates = secondLen;
+  force *firstmsg = new force[firstLen] ;
+  force *secondmsg = new force[secondLen] ;
   //check for wrap around and adjust locations accordingly
   if (abs(first->x - second->x) > 1){
     diff = PATCH_SIZE_X * patchArrayDimX;
@@ -57,8 +55,8 @@ inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, Ck
   powTen = pow(10.0, -10);
   powTwenty = pow(10.0, -20);
 
-  memset(firstmsg->forces, 0, firstLen * 3*sizeof(BigReal));
-  memset(secondmsg->forces, 0, secondLen * 3*sizeof(BigReal));
+  memset(firstmsg, 0, firstLen * 3*sizeof(double));
+  memset(secondmsg, 0, secondLen * 3*sizeof(double));
   int i1, j1;
   for(i1 = 0; i1 < firstLen; i1=i1+BLOCK_SIZE)
     for(j1 = 0; j1 < secondLen; j1=j1+BLOCK_SIZE)
@@ -73,27 +71,27 @@ inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, Ck
             r = sqrt(rsqd);
             rSix = ((double)rsqd) * rsqd * rsqd;
             rTwelve = rSix * rSix;
-            f = (BigReal)(VDW_A / rTwelve - VDW_B / rSix);
+            f = (double)(VDW_A / rTwelve - VDW_B / rSix);
             if(doEnergy)
-	      energy += (BigReal)( VDW_A / (12*rTwelve) - VDW_B / (6*rSix));
+	      energy += (double)( VDW_A / (12*rTwelve) - VDW_B / (6*rSix));
             fr = f /r;
             fx = rx * fr * powTen;
             fy = ry * fr * powTen;
             fz = rz * fr * powTen;
-            secondmsg->forces[jpart].x -= fx;
-            secondmsg->forces[jpart].y -= fy;
-            secondmsg->forces[jpart].z -= fz;
-            firstmsg->forces[i].x += fx;
-            firstmsg->forces[i].y += fy;
-            firstmsg->forces[i].z += fz;
+            secondmsg[jpart].x -= fx;
+            secondmsg[jpart].y -= fy;
+            secondmsg[jpart].z -= fz;
+            firstmsg[i].x += fx;
+            firstmsg[i].y += fy;
+            firstmsg[i].z += fz;
           }
         }
       }
   CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
   CkGetSectionInfo(*cookie1, first);
-  mCastGrp->contribute(sizeof(double)*3*firstmsg->lengthUpdates, firstmsg->forces, CkReduction::sum_double, *cookie1);
+  mCastGrp->contribute(sizeof(double)*3*firstLen, firstmsg, CkReduction::sum_double, *cookie1);
   CkGetSectionInfo(*cookie2, second);
-  mCastGrp->contribute(sizeof(double)*3*secondmsg->lengthUpdates, secondmsg->forces, CkReduction::sum_double, *cookie2);
+  mCastGrp->contribute(sizeof(double)*3*secondLen, secondmsg, CkReduction::sum_double, *cookie2);
 
   delete firstmsg;
   delete secondmsg;
@@ -106,16 +104,15 @@ inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, Ck
 inline double calcInternalForces(ParticleDataMsg* first, CkSectionInfo *cookie1, int stepCount) {
   int i, j, ptpCutOffSqd;
   int firstLen = first->lengthAll;
-  BigReal powTwenty, powTen, firstx, firsty, firstz, rx, ry, rz, r, rsqd, fx, fy, fz, f, fr;
+  double powTwenty, powTen, firstx, firsty, firstz, rx, ry, rz, r, rsqd, fx, fy, fz, f, fr;
   double rSix, rTwelve;
   double energy = 0;
   int doEnergy = 0;
   if(stepCount == 1 || stepCount == finalStepCount)
     doEnergy = 1;
-  ParticleForceMsg *firstmsg = new (firstLen) ParticleForceMsg;
-  firstmsg->lengthUpdates = firstLen;
+  force *firstmsg = new force[firstLen];
 
-  memset(firstmsg->forces, 1, firstLen * 3*sizeof(BigReal));
+  memset(firstmsg, 1, firstLen * 3*sizeof(double));
   ptpCutOffSqd = PTP_CUT_OFF * PTP_CUT_OFF;
   powTen = pow(10.0, -10);
   powTwenty = pow(10.0, -20);
@@ -134,25 +131,25 @@ inline double calcInternalForces(ParticleDataMsg* first, CkSectionInfo *cookie1,
         r = sqrt(rsqd);
         rSix = ((double)rsqd) * rsqd * rsqd;
         rTwelve = rSix * rSix;
-        f = (BigReal)(VDW_A / rTwelve - VDW_B / rSix);
+        f = (double)(VDW_A / rTwelve - VDW_B / rSix);
         if(doEnergy)
-	  energy += (BigReal)( VDW_A / (12*rTwelve) - VDW_B / (6*rSix));
+	  energy += (double)( VDW_A / (12*rTwelve) - VDW_B / (6*rSix));
 
         fr = f /r;
         fx = rx * fr * powTen;
         fy = ry * fr * powTen;
         fz = rz * fr * powTen;
-        firstmsg->forces[j].x += fx;
-        firstmsg->forces[j].y += fy;
-        firstmsg->forces[j].z += fz;
-        firstmsg->forces[i].x -= fx;
-        firstmsg->forces[i].y -= fy;
-        firstmsg->forces[i].z -= fz;
+        firstmsg[j].x += fx;
+        firstmsg[j].y += fy;
+        firstmsg[j].z += fz;
+        firstmsg[i].x -= fx;
+        firstmsg[i].y -= fy;
+        firstmsg[i].z -= fz;
       }
     }
   }
   CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
-  mCastGrp->contribute(sizeof(double)*3*firstmsg->lengthUpdates, firstmsg->forces, CkReduction::sum_double, *cookie1);
+  mCastGrp->contribute(sizeof(double)*3*firstLen, firstmsg, CkReduction::sum_double, *cookie1);
   delete firstmsg;
   delete first;
   return energy;

@@ -3,8 +3,6 @@
 
 #include "pup.h"
 
-typedef double BigReal;
-
 #define HYDROGEN_MASS          (1.67 * pow( 10.0,-24))
 #define VDW_A			      (1.60694452 * pow(10.0, -134))
 #define VDW_B			      (1.031093844 * pow(10.0, -77))
@@ -51,23 +49,23 @@ class Particle {
   public:
 
     int id;
-    BigReal mass;	// mass of the particle
-    BigReal charge;     // charge of particle
-    BigReal x;		// position in x axis
-    BigReal y;		// position in y axis
-    BigReal z;		// position in z axis
+    double mass;	// mass of the particle
+    double charge;     // charge of particle
+    double x;		// position in x axis
+    double y;		// position in y axis
+    double z;		// position in z axis
 
-    BigReal fx;		// total forces on x axis
-    BigReal fy;		// total forces on y axis
-    BigReal fz;		// total forces on z axis
+    double fx;		// total forces on x axis
+    double fy;		// total forces on y axis
+    double fz;		// total forces on z axis
 
-    BigReal ax;		// acceleration on x axis
-    BigReal ay;		// acceleration on y axis
-    BigReal az;		// acceleration on z axis
+    double ax;		// acceleration on x axis
+    double ay;		// acceleration on y axis
+    double az;		// acceleration on z axis
 
-    BigReal vx;		// velocity on x axis
-    BigReal vy;		// velocity on y axis
-    BigReal vz;		// velocity on z axis
+    double vx;		// velocity on x axis
+    double vy;		// velocity on y axis
+    double vz;		// velocity on z axis
 
     // Default constructor
     Particle() {

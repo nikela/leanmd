@@ -16,7 +16,7 @@ extern /* readonly */ int finalStepCount;
 extern /* readonly */ int firstLdbStep; 
 extern /* readonly */ int ldbPeriod; 
 extern /* readonly */ int ftPeriod; 
-extern /* readonly */ BigReal stepTime; 
+extern /* readonly */ double stepTime; 
 
 // Default constructor
 Patch::Patch() {
@@ -250,7 +250,7 @@ void Patch::ftresume(){
   patchArray(thisIndex.x,thisIndex.y,thisIndex.z).nextStep();
 }
 
-void Patch::updateForce(BigReal *forces, int lengthUp) {
+void Patch::updateForce(double *forces, int lengthUp) {
   int i;
   for(i = 0; i < lengthUp; i+=3) {
     particles[i/3].fx += forces[i];
@@ -264,7 +264,7 @@ void Patch::updateForce(BigReal *forces, int lengthUp) {
 void Patch::updateProperties() {
   int i;
   double energy = 0;
-  BigReal powTen, powFteen, realTimeDelta, invMassParticle;
+  double powTen, powFteen, realTimeDelta, invMassParticle;
   powTen = pow(10.0, -10);
   powFteen = pow(10.0, -15);
   realTimeDelta = DEFAULT_DELTA * powFteen;

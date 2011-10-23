@@ -19,7 +19,7 @@
 /* readonly */ int firstLdbStep; 
 /* readonly */ int ldbPeriod; 
 /* readonly */ int ftPeriod; 
-/* readonly */ BigReal stepTime; 
+/* readonly */ double stepTime; 
 
 // Entry point of Charm++ application
 Main::Main(CkArgMsg* m) {
@@ -132,7 +132,7 @@ void Main::startUpDone() {
   }
 }
 
-void Main::energySumK(BigReal energyK) {
+void Main::energySumK(double energyK) {
   if(energy == 0) {
     energy = energyK;
   } else {
@@ -149,7 +149,7 @@ void Main::energySumK(BigReal energyK) {
   }
 }
 
-void Main::energySumP(BigReal energyP) {
+void Main::energySumP(double energyP) {
   if(energy == 0) {
     energy = energyP;
   } else {

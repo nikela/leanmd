@@ -4,32 +4,22 @@
 extern /* readonly */ CProxy_Main mainProxy;
 extern /* readonly */ CProxy_Patch patchArray;
 extern /* readonly */ CkGroupID mCastGrpID;
-extern /* readonly */ BigReal stepTime;
+extern /* readonly */ double stepTime;
 extern /* readonly */ int finalStepCount;
 
 #include "ckmulticast.h"
 
 struct force {
-  BigReal x;
-  BigReal y;
-  BigReal z;
-};
-
-class ParticleForceMsg : public CMessage_ParticleForceMsg {
-  public:
-    int lengthX;
-    int lengthY;
-    int lengthZ;
-
-    force* forces;
-    int lengthUpdates;
+  double x;
+  double y;
+  double z;
 };
 
 class loc{
   public:
-    BigReal x;
-    BigReal y;
-    BigReal z;
+    double x;
+    double y;
+    double z;
 
     void pup(PUP::er &p){
       p|x; p|y; p|z;
@@ -39,7 +29,7 @@ class loc{
 class partData{
   public:
     loc coord;
-    BigReal charge;
+    double charge;
     
     void pup(PUP::er &p){
       p|coord; p|charge; 
@@ -90,7 +80,7 @@ class Patch : public CBase_Patch {
     
  
     void migrateToPatch(Particle p, int &px, int &py, int &pz);
-    void updateForce(BigReal *forces, int lengthUp);
+    void updateForce(double *forces, int lengthUp);
     void updateProperties();	// updates properties after receiving forces from computes
     void applyForces();
     void limitVelocity(Particle &p);
@@ -108,7 +98,6 @@ class Patch : public CBase_Patch {
     void localCreateSection();
     void resume();
     void ftresume();
-    void receiveForces(ParticleForceMsg *updates);
     void checkNextStep();	// checks whether to continue with next step
     void migrateParticles();
     void sendPositions();

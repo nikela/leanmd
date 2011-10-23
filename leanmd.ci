@@ -12,7 +12,7 @@ mainmodule leanmd {
   readonly int firstLdbStep;		// do load balancing after this many steps
   readonly int ldbPeriod;		// do load balancing every period
   readonly int ftPeriod;		// do load balancing every period
-  readonly BigReal stepTime;
+  readonly double stepTime;
 
   mainchare [migratable] Main {
     entry Main(CkArgMsg* msg);
@@ -27,15 +27,11 @@ mainmodule leanmd {
     partData part[];
   };
 
-  message ParticleForceMsg{
-    force forces[];
-  };
-
   array [3D] Patch {
     entry Patch();
     entry void createComputes();
     entry void createSection();
-    entry [reductiontarget] void reduceForces(BigReal forces[n], int n);
+    entry [reductiontarget] void reduceForces(double forces[n], int n);
     entry void ftresume();
     entry void receiveParticles(CkVec<Particle> updates);
     entry void ResumeFromSync();
@@ -45,7 +41,7 @@ mainmodule leanmd {
       atomic {
 	sendPositions();
       }
-      when reduceForces(BigReal forces[n], int n) {
+      when reduceForces(double forces[n], int n) {
         atomic {
 	  updateForce(forces,n);
           updateProperties();
