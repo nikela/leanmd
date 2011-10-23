@@ -11,15 +11,7 @@ class Main : public CBase_Main {
   public:
     Main(CkArgMsg* msg);
     Main(CkMigrateMessage* msg);
-
-    //pup routine incase the main chare moves, pack important information
-    void pup(PUP::er &p) {
-      Chare::pup(p);
-      p|phase;
-      p|energy;
-      p|prevEnergy;
-      p|testFailed;
-    }
+    void pup(PUP::er &p);
 
     //member functions
     void allDone();

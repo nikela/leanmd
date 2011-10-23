@@ -17,32 +17,9 @@ class Compute : public CBase_Compute {
   public:
     Compute();
     Compute(CkMigrateMessage *msg);
+    void pup(PUP::er &p);
 
     void interact(ParticleDataMsg *msg);
-
-    //pack important information if I am moving
-    void pup(PUP::er &p) {
-      CBase_Compute::pup(p);
-      p | stepCount;
-      p | cookie1;
-      p | cookie2;
-      if (p.isUnpacking() && CkInRestarting()) {
-        cookie1.get_redNo() = 0;
-        if (!(thisIndex.x1 ==thisIndex.x2 && thisIndex.y1 ==thisIndex.y2 && thisIndex.z1 ==thisIndex.z2))
-          cookie2.get_redNo() = 0;
-      }
-      p | cellCount;
-      p | bmsgLenAll;
-      int hasMsg = (bmsgLenAll >= 0); // only pup if msg will be used
-      p | hasMsg;
-      if (hasMsg){
-        if (p.isUnpacking())
-          bufferedMsg = new (bmsgLenAll) ParticleDataMsg;
-        p | *bufferedMsg;
-      }
-      else
-        bufferedMsg = NULL;
-    }
     void ResumeFromSync() { }           
 };
 

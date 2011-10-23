@@ -109,8 +109,17 @@ Main::Main(CkArgMsg* m) {
 //constructor for chare object migration
 Main::Main(CkMigrateMessage* msg): CBase_Main(msg) { }
 
+//pup routine incase the main chare moves, pack important information
+void Main::pup(PUP::er &p) {
+  CBase_Main::pup(p);
+  p|phase;
+  p|energy;
+  p|prevEnergy;
+  p|testFailed;
+}
+
 //backup current state to files and resume in patchArray
-void Main::ftBarrier(){
+void Main::ftBarrier() {
   CkCallback cb(CkIndex_Patch::ftresume(), patchArray);
   CkStartMemCheckpoint(cb);
 }

@@ -330,4 +330,34 @@ Particle& Patch::wrapAround(Particle &p) {
   return p;
 }
 
+//pack important data when I move
+void Patch::pup(PUP::er &p) {
+  CBase_Patch::pup(p);
+  __sdag_pup(p);
+  p | particles;
+  p | stepCount;
+  p | myNumParts;
+  p | done_lb;
+  p | perform_lb;
+  p | updateCount;
+  p | inbrs;
 
+  if (p.isUnpacking()){
+    computesList = new int*[inbrs];
+    for (int i = 0; i < inbrs; i++){
+      computesList[i] = new int[6];
+    }
+  }
+
+  for (int i = 0; i < inbrs; i++){
+    PUParray(p, computesList[i], 6);
+  }
+
+  p | mCastSecProxy;
+  //adjust the multicast tree to give best performance after moving
+  if (p.isUnpacking()){
+    CkMulticastMgr *mg = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
+    mg->resetSection(mCastSecProxy);
+    mg->setReductionClient(mCastSecProxy, new CkCallback(CkReductionTarget(Patch,reduceForces), thisProxy(thisIndex.x, thisIndex.y, thisIndex.z)));
+  }
+}
