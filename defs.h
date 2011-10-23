@@ -74,14 +74,13 @@ PUPbytes(vec3)
 struct Particle {
 //  int id;
   double mass;
-  //   Position, accumulated forces, acceleration, velocity
-  vec3 pos,      forces,             acc,          vel;
+  //   Position, acceleration, velocity
+  vec3 pos,      acc,          vel;
 
   // Function for pupping properties
   void pup(PUP::er &p) {
     p | mass;
     p | pos;
-    p | forces;
     p | acc;
     p | vel;
   }

@@ -254,19 +254,8 @@ void Patch::ResumeFromSync(){
     patchArray(thisIndex.x,thisIndex.y,thisIndex.z).nextStep();
   }
 
-//update forces on my atoms on values received from my computes
-void Patch::updateForce(double *forces, int lengthUp) {
-  int i;
-  for(i = 0; i < lengthUp; i+=3) {
-    particles[i/3].forces.x += forces[i];
-    particles[i/3].forces.y += forces[i+1];
-    particles[i/3].forces.z += forces[i+2];
-  } 
-}
-
-
 // Function to update properties (i.e. acceleration, velocity and position) in particles
-void Patch::updateProperties() {
+void Patch::updateProperties(vec3 *forces, int lengthUp) {
   int i;
   double energy = 0;
   double powTen, powFteen, realTimeDelta, invMassParticle;
@@ -280,14 +269,12 @@ void Patch::updateProperties() {
 
     // applying kinetic equations
     invMassParticle = 1 / particles[i].mass;
-    particles[i].acc = particles[i].forces * invMassParticle;
+    particles[i].acc = forces[i] * invMassParticle;
     particles[i].vel += particles[i].acc * realTimeDelta;
 
     limitVelocity(particles[i]);
 
     particles[i].pos += particles[i].vel * realTimeDelta;
-
-    particles[i].forces = vec3(0.0);
   }
   //reduction on energy only in begining and end
   if(stepCount == 0 || stepCount == (finalStepCount - 1)) 

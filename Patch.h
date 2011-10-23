@@ -45,8 +45,7 @@ class Patch : public CBase_Patch {
     int updateCount;
 
     void migrateToPatch(Particle p, int &px, int &py, int &pz);
-    void updateForce(double *forces, int lengthUp); //update forces after reduction
-    void updateProperties();	//updates properties after receiving forces from computes
+    void updateProperties(vec3 *forces, int lengthUp);	//updates properties after receiving forces from computes
     void limitVelocity(Particle &p); //limit velcities to an upper limit
     Particle& wrapAround(Particle &p); //particles going out of right enters from left
     CProxySection_Compute mCastSecProxy; //handle to section proxy of computes
