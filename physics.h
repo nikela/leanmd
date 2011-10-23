@@ -21,7 +21,8 @@ inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, Ck
   int i, j, jpart, ptpCutOffSqd, diff;
   int firstLen = first->lengthAll;
   int secondLen = second->lengthAll;
-  double powTwenty, powTen, rx, ry, rz, r, rsqd, fx, fy, fz, f, fr;
+  double powTwenty, powTen, r, rsqd, f, fr;
+  vec3 separation, force;
   double rSix, rTwelve;
   double energy = 0;
   int doEnergy = 0;
@@ -61,11 +62,9 @@ inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, Ck
     for(j1 = 0; j1 < secondLen; j1=j1+BLOCK_SIZE)
       for(i = i1; i < i1+BLOCK_SIZE && i < firstLen; i++) {
         for(jpart = j1; jpart < j1+BLOCK_SIZE && jpart < secondLen; jpart++) {
-          rx = first->part[i].x - second->part[jpart].x;
-          ry = first->part[i].y - second->part[jpart].y;
-          rz = first->part[i].z - second->part[jpart].z;
-          rsqd = rx*rx + ry*ry + rz*rz;
-          if (rsqd >= 0.001 && rsqd < ptpCutOffSqd){
+          separation = first->part[i] - second->part[jpart];
+          rsqd = dot(separation, separation);
+          if (rsqd >= 0.001 && rsqd < ptpCutOffSqd) {
             rsqd = rsqd * powTwenty;
             r = sqrt(rsqd);
             rSix = ((double)rsqd) * rsqd * rsqd;
@@ -74,18 +73,13 @@ inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, Ck
             if(doEnergy)
 	      energy += (double)( VDW_A / (12*rTwelve) - VDW_B / (6*rSix));
             fr = f /r;
-            fx = rx * fr * powTen;
-            fy = ry * fr * powTen;
-            fz = rz * fr * powTen;
-            secondmsg[jpart].x -= fx;
-            secondmsg[jpart].y -= fy;
-            secondmsg[jpart].z -= fz;
-            firstmsg[i].x += fx;
-            firstmsg[i].y += fy;
-            firstmsg[i].z += fz;
+	    force = separation * (fr * powTen);
+	    firstmsg[i] += force;
+	    secondmsg[jpart] -= force;
           }
         }
       }
+
   CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
   CkGetSectionInfo(*cookie1, first);
   mCastGrp->contribute(sizeof(vec3)*firstLen, firstmsg, CkReduction::sum_double, *cookie1);

@@ -59,6 +59,9 @@ struct vec3 {
   inline vec3 operator* (const double d) const {
     return vec3(d*x, d*y, d*z);
   }
+  inline vec3 operator- (const vec3& rhs) const {
+    return vec3(x - rhs.x, y - rhs.y, z - rhs.z);
+  }
 };
 inline double dot(const vec3& a, const vec3& b) {
   return a.x*b.x + a.y*b.y + a.z*b.z;
