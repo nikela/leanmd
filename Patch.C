@@ -16,7 +16,6 @@ extern /* readonly */ int finalStepCount;
 extern /* readonly */ int firstLdbStep; 
 extern /* readonly */ int ldbPeriod; 
 extern /* readonly */ int ftPeriod; 
-extern /* readonly */ double stepTime; 
 
 //default constructor
 Patch::Patch() {
@@ -48,6 +47,7 @@ Patch::Patch() {
 
   stepCount = 0;
   updateCount = 0;
+  stepTime = 0;
   done_lb = true;
   perform_lb = false;
 }
@@ -326,6 +326,7 @@ void Patch::pup(PUP::er &p) {
   p | perform_lb;
   p | updateCount;
   p | inbrs;
+  p | stepTime;
 
   if (p.isUnpacking()){
     computesList = new int*[inbrs];

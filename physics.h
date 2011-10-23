@@ -12,7 +12,6 @@ extern /* readonly */ int patchArrayDimX;	// Number of Chare Rows
 extern /* readonly */ int patchArrayDimY;	// Number of Chare Columns
 extern /* readonly */ int patchArrayDimZ;
 extern /* readonly */ int finalStepCount; 
-extern /* readonly */ double stepTime; 
 
 #define BLOCK_SIZE	512
 

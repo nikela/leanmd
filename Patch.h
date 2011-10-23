@@ -18,17 +18,6 @@ struct ParticleDataMsg : public CkMcastBaseMsg, public CMessage_ParticleDataMsg 
     int z;    //z coordinate
     bool doAtSync;  //flag for indicating load balancing step
 
-    //pack important information
-    void pup(PUP::er &p){
-      CMessage_ParticleDataMsg::pup(p);
-      p | lengthAll;
-      p | x; p | y; p | z;
-      p | doAtSync;
-      if (p.isUnpacking()){
-        part = new vec3[lengthAll];
-      }
-      PUParray(p, part, lengthAll);
-    } 
 };
 
 //chare used to represent a cell
@@ -43,6 +32,7 @@ class Patch : public CBase_Patch {
     bool perform_lb;  //should I do load balancing in this step?
     int inbrs;        //number of interacting neighbors
     int updateCount;
+    int stepTime;
 
     void migrateToPatch(Particle p, int &px, int &py, int &pz);
     void updateProperties(vec3 *forces, int lengthUp);	//updates properties after receiving forces from computes

@@ -16,7 +16,6 @@ extern /* readonly */ int patchArrayDimX;	// Number of Chare Rows
 extern /* readonly */ int patchArrayDimY;	// Number of Chare Columns
 extern /* readonly */ int patchArrayDimZ;
 extern /* readonly */ int finalStepCount; 
-extern /* readonly */ double stepTime; 
 
 //compute - Default constructor
 Compute::Compute() {
@@ -78,7 +77,7 @@ void Compute::interact(ParticleDataMsg *msg){
       swap(handleA, handleB);
     }
 
-    energy = calcPairForces(msgA, msgB, handleA, handleB, stepTime);
+    energy = calcPairForces(msgA, msgB, handleA, handleB, stepCount);
 
     //energy reduction only in begining and end
     if(stepCount == 1 || stepCount == finalStepCount)
