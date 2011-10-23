@@ -47,8 +47,10 @@
 
 struct vec3 {
   double x, y, z;
+
   vec3(double d = 0.0) : x(d), y(d), z(d) { }
   vec3(double x_, double y_, double z_) : x(x_), y(y_), z(z_) { }
+
   inline vec3& operator += (const vec3 &rhs) {
     x += rhs.x; y += rhs.y; z += rhs.z;
     return *this;
