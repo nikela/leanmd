@@ -9,34 +9,35 @@ extern /* readonly */ CProxy_Patch patchArray;
 extern /* readonly */ CProxy_Compute computeArray;
 extern /* readonly */ CkGroupID mCastGrpID;
 
-extern /* readonly */ int patchArrayDimX;	// Number of Chares in X
-extern /* readonly */ int patchArrayDimY;	// Number of Chares in Y
-extern /* readonly */ int patchArrayDimZ;	// Number of Chares in Z
+extern /* readonly */ int patchArrayDimX;
+extern /* readonly */ int patchArrayDimY;
+extern /* readonly */ int patchArrayDimZ;
 extern /* readonly */ int finalStepCount; 
 extern /* readonly */ int firstLdbStep; 
 extern /* readonly */ int ldbPeriod; 
 extern /* readonly */ int ftPeriod; 
 extern /* readonly */ double stepTime; 
 
-// Default constructor
+//default constructor
 Patch::Patch() {
-   __sdag_init();
+  __sdag_init();
   int i;
   inbrs = NUM_NEIGHBORS;
+  //total number of atoms in the system
   int numParts = PARTICLES_PER_PATCH * patchArrayDimX * patchArrayDimY * patchArrayDimZ;
+  //load balancing to be called when AtSync is called
   usesAtSync = CmiTrue;
-  // Particle initialization
-  myNumParts = PARTICLES_PER_PATCH;
 
+  myNumParts = PARTICLES_PER_PATCH;
   // starting random generator
   srand48(25763);
 
   // Particle initialization
   for(i=0; i < myNumParts; i++) {
     particles.push_back(Particle());
-
     particles[i].mass = HYDROGEN_MASS;
 
+    //give random values for position and velocity
     particles[i].x = drand48() * PATCH_SIZE_X + thisIndex.x * PATCH_SIZE_X;
     particles[i].y = drand48() * PATCH_SIZE_Y + thisIndex.y * PATCH_SIZE_Y;
     particles[i].z = drand48() * PATCH_SIZE_Z + thisIndex.z * PATCH_SIZE_Z;
@@ -50,14 +51,12 @@ Patch::Patch() {
     particles[i].id = (thisIndex.x*patchArrayDimX + thisIndex.y) * numParts / (patchArrayDimX*patchArrayDimY)  + i;
   }
 
-  updateCount = 0;
-  forceCount = 0;
   stepCount = 0;
   done_lb = true;
   perform_lb = false;
 }
 
-// Constructor for chare object migration
+//constructor for chare object migration
 Patch::Patch(CkMigrateMessage *msg): CBase_Patch(msg) {
   __sdag_init();
   usesAtSync = CmiTrue;
@@ -66,6 +65,7 @@ Patch::Patch(CkMigrateMessage *msg): CBase_Patch(msg) {
 
 Patch::~Patch() {}
 
+//function to create my computes
 void Patch::createComputes() {
   int num;  
 
@@ -91,7 +91,6 @@ void Patch::createComputes() {
    *	   x ---->
    */
 
-  // these computes will be created by other patches
   for (num=0; num<inbrs; num++) {
     dx = num / (NBRS_Y * NBRS_Z)            - NBRS_X/2;
     dy = (num % (NBRS_Y * NBRS_Z)) / NBRS_Z   - NBRS_Y/2;
@@ -109,6 +108,7 @@ void Patch::createComputes() {
       computesList[num][3] = px2; computesList[num][4] = py2; computesList[num][5] = pz2;
     }
     else {
+      // these computes will be created by pairing patches
       px2 = WRAP_X(x+dx);
       py2 = WRAP_Y(y+dy);
       pz2 = WRAP_Z(z+dz);
@@ -124,57 +124,59 @@ void Patch::createComputes() {
       computesList[num][0] = px2; computesList[num][1] = py2; computesList[num][2] = pz2; 
       computesList[num][3] = px1; computesList[num][4] = py1; computesList[num][5] = pz1;
     }
-
-    //insert only the upper right half computes
   } // end of for loop
   contribute(CkCallback(CkIndex_Main::startUpDone(), mainProxy));
 }
 
+//call multicast section creation
 void Patch::createSection() {
   localCreateSection();
   contribute(CkCallback(CkIndex_Main::startUpDone(), mainProxy));
 }
 
+//function to create the multicast section of computes
 void Patch::localCreateSection() {
   CkVec<CkArrayIndex6D> elems;
+  //create a vector list of my computes
   for (int num=0; num<inbrs; num++)
     elems.push_back(CkArrayIndex6D(computesList[num][0], computesList[num][1], computesList[num][2], computesList[num][3], computesList[num][4], computesList[num][5]));
 
   CkArrayID computeArrayID = computeArray.ckGetArrayID();
+  //knit the computes into a section
   mCastSecProxy = CProxySection_Compute::ckNew(computeArrayID, elems.getVec(), elems.size()); 
 
+  //delegate the communication responsibility for this section to multicast library
   CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
   mCastSecProxy.ckSectionDelegate(mCastGrp);
   mCastGrp->setReductionClient(mCastSecProxy, new CkCallback(CkReductionTarget(Patch,reduceForces), thisProxy(thisIndex.x, thisIndex.y, thisIndex.z)));
-
 }
 
 // Function to start interaction among particles in neighboring cells as well as its own particles
 void Patch::sendPositions() {
   int len = particles.length();
 
+  //create the particle and control message to be sent to computes
   ParticleDataMsg* msg = new (len) ParticleDataMsg;
   msg->x = thisIndex.x;
   msg->y = thisIndex.y;
   msg->z = thisIndex.z;
   msg->lengthAll = len;
-  msg->deleteList = false;
-  msg->updateList = false;
   msg->doAtSync = false;
 
+  //detect if load balancing is to be done
   if (stepCount >= firstLdbStep && (stepCount - firstLdbStep) % ldbPeriod == 0){
     msg->doAtSync = true;
     perform_lb = true;
   }
   for (int i = 0; i < len; i++){
-    msg->part[i].coord.x = particles[i].x;
-    msg->part[i].coord.y = particles[i].y;
-    msg->part[i].coord.z = particles[i].z;
-    msg->part[i].charge = particles[i].charge;
+    msg->part[i].x = particles[i].x;
+    msg->part[i].y = particles[i].y;
+    msg->part[i].z = particles[i].z;
   }
   mCastSecProxy.interact(msg);
 }
 
+//send the atoms that have moved beyond my cell to neighbors
 void Patch::migrateParticles(){
   int i, x, y, z, x1, y1, z1;
   CkVec<Particle> *outgoing = new CkVec<Particle>[inbrs];
@@ -183,26 +185,27 @@ void Patch::migrateParticles(){
   x = thisIndex.x;
   y = thisIndex.y;
   z = thisIndex.z;
-    
-    for(i=0; i<particles.length(); i++) {
-      migrateToPatch(particles[i], x1, y1, z1);
-      if(x1 !=0 || y1!=0 || z1 !=0) {
-        outgoing[(x1+1)*NBRS_Y*NBRS_Z + (y1+1)*NBRS_Z + (z1+1)].push_back(wrapAround(particles[i]));
-        particles.remove(i);
-      }
-    }
 
-    for(int num=0; num<inbrs; num++) {
-      x1 = num / (NBRS_Y * NBRS_Z)            - NBRS_X/2;
-      y1 = (num % (NBRS_Y * NBRS_Z)) / NBRS_Z - NBRS_Y/2;
-      z1 = num % NBRS_Z                       - NBRS_Z/2;
-
-      patchArray(WRAP_X(x+x1), WRAP_Y(y+y1), WRAP_Z(z+z1)).receiveParticles(outgoing[num]);
+  for(i=0; i<particles.length(); i++) {
+    migrateToPatch(particles[i], x1, y1, z1);
+    if(x1 !=0 || y1!=0 || z1 !=0) {
+      outgoing[(x1+1)*NBRS_Y*NBRS_Z + (y1+1)*NBRS_Z + (z1+1)].push_back(wrapAround(particles[i]));
+      particles.remove(i);
     }
+  }
+
+  for(int num=0; num<inbrs; num++) {
+    x1 = num / (NBRS_Y * NBRS_Z)            - NBRS_X/2;
+    y1 = (num % (NBRS_Y * NBRS_Z)) / NBRS_Z - NBRS_Y/2;
+    z1 = num % NBRS_Z                       - NBRS_Z/2;
+
+    patchArray(WRAP_X(x+x1), WRAP_Y(y+y1), WRAP_Z(z+z1)).receiveParticles(outgoing[num]);
+  }
 
   delete [] outgoing;
 }
 
+//check if the particle is to be moved
 void Patch::migrateToPatch(Particle p, int &px, int &py, int &pz) {
   // currently this is assuming that particles are
   // migrating only to the immediate neighbors
@@ -223,33 +226,41 @@ void Patch::migrateToPatch(Particle p, int &px, int &py, int &pz) {
   else pz = 0;
 }
 
+//function to decide on what to do now
 void Patch::nextStep() {
+  //if all steps are done, exit
   if(stepCount == finalStepCount) {
     contribute(CkCallback(CkIndex_Main::allDone(), mainProxy));
   } else if (perform_lb) {
+    //call AtSync and go for load balancing
     perform_lb = false;
     done_lb = true;
     AtSync();
   } else {
+    //continue to next step
     if(done_lb) {
+      //reset timers if load balacing was just done
       done_lb = false;
       if((thisIndex.x + thisIndex.y + thisIndex.z) == 0)
-	stepTime = CkWallTimer();
+        stepTime = CkWallTimer();
     }
     patchArray(thisIndex.x,thisIndex.y,thisIndex.z).doStep();
   }
 }
 
+//call nextStep if load balancing is done
 void Patch::ResumeFromSync(){
   patchArray(thisIndex.x,thisIndex.y,thisIndex.z).nextStep();
 }
 
-void Patch::ftresume(){
-  if (thisIndex.x==0 && thisIndex.y==0 && thisIndex.z ==0)
-    CkPrintf("patch 0 calling ftresume at %f\n",CmiWallTimer());
-  patchArray(thisIndex.x,thisIndex.y,thisIndex.z).nextStep();
-}
+//call nextStep if fault tolerance backup is done
+  void Patch::ftresume(){
+    if (thisIndex.x==0 && thisIndex.y==0 && thisIndex.z ==0)
+      CkPrintf("patch 0 calling ftresume at %f\n",CmiWallTimer());
+    patchArray(thisIndex.x,thisIndex.y,thisIndex.z).nextStep();
+  }
 
+//update forces on my atoms on values received from my computes
 void Patch::updateForce(double *forces, int lengthUp) {
   int i;
   for(i = 0; i < lengthUp; i+=3) {
@@ -269,6 +280,7 @@ void Patch::updateProperties() {
   powFteen = pow(10.0, -15);
   realTimeDelta = DEFAULT_DELTA * powFteen;
   for(i = 0; i < particles.length(); i++) {
+    //calculate energy only in begining and end
     if(stepCount == 0 || stepCount == (finalStepCount - 1)) 
       energy += (0.5*particles[i].mass*(particles[i].vx*particles[i].vx + particles[i].vy*particles[i].vy*particles[i].vz*particles[i].vz));
 
@@ -291,6 +303,7 @@ void Patch::updateProperties() {
     particles[i].fy = 0.0;
     particles[i].fz = 0.0;
   }
+  //reduction on energy only in begining and end
   if(stepCount == 0 || stepCount == (finalStepCount - 1)) 
     contribute(sizeof(double),&energy,CkReduction::sum_double,CkCallback(CkReductionTarget(Main,energySumK),mainProxy));
 }
