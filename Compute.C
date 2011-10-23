@@ -16,7 +16,7 @@ extern /* readonly */ int patchArrayDimZ;
 extern /* readonly */ int finalStepCount; 
 extern /* readonly */ double stepTime; 
 
-// Compute - Default constructor
+//compute - Default constructor
 Compute::Compute() {
   cellCount = 0;
   bmsgLenAll = -1;
@@ -29,12 +29,12 @@ Compute::Compute(CkMigrateMessage *msg): CBase_Compute(msg)  {
   delete msg;
 }
 
-// Entry method to receive vector of particles
+//entry method to receive vector of particles
 void Compute::interact(ParticleDataMsg *msg){
   int i;
   double energy = 0;
 
-  // self interaction check
+  //self interaction check
   if (thisIndex.x1 ==thisIndex.x2 && thisIndex.y1 ==thisIndex.y2 && thisIndex.z1 ==thisIndex.z2) {
     stepCount++;
     bool doatSync = false;
@@ -49,6 +49,7 @@ void Compute::interact(ParticleDataMsg *msg){
     if(doatSync)
       AtSync();
   } else {
+    //check if this is the first message or second
     if (cellCount == 0) {
       bufferedMsg = msg;
       bmsgLenAll = bufferedMsg->lengthAll;
@@ -73,8 +74,9 @@ void Compute::interact(ParticleDataMsg *msg){
         else
           energy = calcPairForces(msg, bufferedMsg, &cookie1, &cookie2,stepTime);
       }
+      //energy reduction only in begining and end
       if(stepCount == 1 || stepCount == finalStepCount)
-	contribute(sizeof(double),&energy,CkReduction::sum_double,CkCallback(CkReductionTarget(Main, energySumP),mainProxy));
+        contribute(sizeof(double),&energy,CkReduction::sum_double,CkCallback(CkReductionTarget(Main, energySumP),mainProxy));
       bufferedMsg = NULL;
       if(doatSync)
         AtSync();
