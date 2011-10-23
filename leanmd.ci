@@ -12,7 +12,6 @@ mainmodule leanmd {
   readonly int firstLdbStep;		// begin load balancing after this many steps
   readonly int ldbPeriod;		// do load balancing every period
   readonly int ftPeriod;		// do fault tolerance backup every period
-  readonly double stepTime; // time taken for iteration to be done
 
   //central controller chare
   mainchare [migratable] Main {
@@ -34,44 +33,56 @@ mainmodule leanmd {
     entry void createComputes();    //call to insert computes that I need  
     entry void createSection();     //creation multicast section of computes
     entry void ftresume();          //resume from here after fault tolerance backup
-    entry void receiveParticles(CkVec<Particle> updates); //receive atoms that have migrated to neighboring patches to me
+    //entry void resumeAfterFT(int resume);    //resume from here after FT 
+    entry void receiveParticles(CkVec<Particle> updates);   //receive atoms that have migrated to neighboring patches to me
     entry void ResumeFromSync();    //resume from here after load balancing
-    entry void nextStep();          //decide what to do after an iteration ends
-    entry [reductiontarget] void reduceForces(vec3 forces[n], int n);
-    //receives forces from my computes on my atoms
+    entry void resumeAfterLB(int resume);    //resume from here after load balancing
+    entry [reductiontarget] void reduceForces(vec3 forces[n], int n);   //receives forces from my computes on my atoms
 
     //function to perform one iteration of LeanMD
-    entry void doStep() {
-      atomic {
-        sendPositions();    //send current atom positions to my computes
+    entry void run() {
+      if(thisIndex.x==0 && thisIndex.y==0 && thisIndex.z==0) atomic {
+        stepTime = CkWallTimer();
       }
-      when reduceForces(vec3 forces[n], int n) {
+      for(stepCount = 0; stepCount < finalStepCount; stepCount++) {
         atomic {
-          updateProperties(forces, n);   //update properties of atoms using new force values
+          sendPositions();    //send current atom positions to my computes
         }
-      }
-      if (stepCount > 0 && (stepCount %  MIGRATE_STEPCOUNT) == 0) {
-        atomic {
-          migrateParticles(); //send atoms that have moved beyond my cell to neighbors
+        when reduceForces(vec3 forces[n], int n) {
+          atomic {
+            updateProperties(forces, n);   //update properties of atoms using new force values
+          }
         }
-        //receive particles from my neighbors
-        for(updateCount = 0; updateCount < inbrs; updateCount++) {
-          when receiveParticles(CkVec<Particle> &updates) atomic {
-            for(int i=0; i < updates.length(); i++) {
-              particles.push_back(updates[i]);    //add particles that have moved from neighboring patches to my cell
+        if (stepCount > 0 && (stepCount %  MIGRATE_STEPCOUNT) == 0) {
+          atomic {
+            migrateParticles(); //send atoms that have moved beyond my cell to neighbors
+          }
+          //receive particles from my neighbors
+          for(updateCount = 0; updateCount < inbrs; updateCount++) {
+            when receiveParticles(CkVec<Particle> &updates) atomic {
+              for(int i=0; i < updates.length(); i++) {
+                particles.push_back(updates[i]);    //add particles that have moved from neighboring patches to my cell
+              }
             }
+          }
+        }
+        if (stepCount && thisIndex.x==0 && thisIndex.y==0 && thisIndex.z==0 && stepCount%20==0) atomic {
+          double timer = CkWallTimer();
+          CkPrintf("Step %d Benchmark Time %lf ms/step\n", 
+                    stepCount, ((timer - stepTime)/20)*1000);
+          stepTime = CkWallTimer();
+        }
+        if (stepCount >= firstLdbStep && (stepCount - firstLdbStep) % ldbPeriod == 0) {
+          atomic {
+            AtSync();
+          }
+          when resumeAfterLB(int resume) atomic {
+            stepTime = CkWallTimer();
           }
         }
       }
       atomic {
-        if (stepCount && thisIndex.x==0 && thisIndex.y==0 && thisIndex.z==0 && stepCount%20==0) {
-          double timer = CkWallTimer();
-          CkPrintf("Step %d Benchmark Time %lf ms/step\n", 
-              stepCount, ((timer - stepTime)/20)*1000);
-          stepTime = CkWallTimer();
-        }
-        stepCount++;
-        patchArray(thisIndex.x,thisIndex.y,thisIndex.z).nextStep();
+        contribute(CkCallback(CkIndex_Main::allDone(), mainProxy));
       }
     };
   };
@@ -79,7 +90,23 @@ mainmodule leanmd {
   //chares that does the force computations for pair of patches
   array [6D] Compute {
     entry Compute();
-    entry void interact(ParticleDataMsg *msg);  //receive current particle position from patches
-    entry void ResumeFromSync();  
+    entry void ResumeFromSync();
+    entry void calculateForces(ParticleDataMsg *msg);
+
+    entry void run() {
+      for(stepCount = 0; stepCount < finalStepCount; stepCount++) {
+        when calculateForces(ParticleDataMsg *msg) atomic {
+          interact(msg);
+        }
+        if(thisIndex.x1!=thisIndex.x2 || thisIndex.y1!=thisIndex.y2 || thisIndex.z1!=thisIndex.z2) {
+          when calculateForces(ParticleDataMsg *msg) atomic {
+            interact(msg);
+          }
+        }
+        if (stepCount >= firstLdbStep && (stepCount - firstLdbStep) % ldbPeriod== 0) atomic {
+          AtSync();
+        }
+      }
+    };
   };
 };

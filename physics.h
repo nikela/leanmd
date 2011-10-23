@@ -12,7 +12,6 @@ extern /* readonly */ int patchArrayDimX;	// Number of Chare Rows
 extern /* readonly */ int patchArrayDimY;	// Number of Chare Columns
 extern /* readonly */ int patchArrayDimZ;
 extern /* readonly */ int finalStepCount; 
-extern /* readonly */ double stepTime; 
 
 #define BLOCK_SIZE	512
 
@@ -26,7 +25,7 @@ inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, Ck
   double rSix, rTwelve;
   double energy = 0;
   int doEnergy = 0;
-  if(stepCount == 1 || stepCount == finalStepCount)
+  if(stepCount == 0 || stepCount == (finalStepCount-1))
     doEnergy = 1;
 
   vec3 *firstmsg = new vec3[firstLen];
@@ -102,7 +101,7 @@ inline double calcInternalForces(ParticleDataMsg* first, CkSectionInfo *cookie1,
   double rSix, rTwelve;
   double energy = 0;
   int doEnergy = 0;
-  if(stepCount == 1 || stepCount == finalStepCount)
+  if(stepCount == 0 || stepCount == (finalStepCount-1))
     doEnergy = 1;
   vec3 *firstmsg = new vec3[firstLen];
 

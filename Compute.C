@@ -12,14 +12,14 @@ extern /* readonly */ CProxy_Patch patchArray;
 extern /* readonly */ CProxy_Compute computeArray;
 extern /* readonly */ CkGroupID mCastGrpID;
 
-extern /* readonly */ int patchArrayDimX;	// Number of Chare Rows
-extern /* readonly */ int patchArrayDimY;	// Number of Chare Columns
+extern /* readonly */ int patchArrayDimX;
+extern /* readonly */ int patchArrayDimY;
 extern /* readonly */ int patchArrayDimZ;
 extern /* readonly */ int finalStepCount; 
-extern /* readonly */ double stepTime; 
 
 //compute - Default constructor
 Compute::Compute() {
+  __sdag_init();
   cellCount = 0;
   bmsgLenAll = -1;
   stepCount = 0;
@@ -27,29 +27,23 @@ Compute::Compute() {
 }
 
 Compute::Compute(CkMigrateMessage *msg): CBase_Compute(msg)  { 
+  __sdag_init();
   usesAtSync = CmiTrue;
   delete msg;
 }
 
-//entry method to receive vector of particles
+//local method to compute forces
 void Compute::interact(ParticleDataMsg *msg){
   int i;
   double energy = 0;
 
   //self interaction check
   if (thisIndex.x1 ==thisIndex.x2 && thisIndex.y1 ==thisIndex.y2 && thisIndex.z1 ==thisIndex.z2) {
-    stepCount++;
-    bool doatSync = false;
     bmsgLenAll = -1;
-    if (msg->doAtSync){
-      doatSync = true;
-    }
     CkGetSectionInfo(cookie1,msg);
     energy = calcInternalForces(msg, &cookie1, stepCount);
-    if(stepCount == 1 || stepCount == finalStepCount)
+    if(stepCount == 0 || stepCount == (finalStepCount-1))
       contribute(sizeof(double),&energy,CkReduction::sum_double,CkCallback(CkReductionTarget(Main,energySum),mainProxy));
-    if(doatSync)
-      AtSync();
   } else {
     //check if this is the first message or second
     if (cellCount == 0) {
@@ -61,12 +55,8 @@ void Compute::interact(ParticleDataMsg *msg){
 
     // Both particle sets have been received, so compute interaction
     cellCount = 0;
-    stepCount++;
     bool doatSync = false;
     bmsgLenAll = -1;
-    if (msg->doAtSync){
-      doatSync = true;
-    }
 
     ParticleDataMsg *msgA = msg, *msgB = bufferedMsg;
     CkSectionInfo *handleA = &cookie1, *handleB = &cookie2;
@@ -78,37 +68,36 @@ void Compute::interact(ParticleDataMsg *msg){
       swap(handleA, handleB);
     }
 
-    energy = calcPairForces(msgA, msgB, handleA, handleB, stepTime);
+    energy = calcPairForces(msgA, msgB, handleA, handleB, stepCount);
 
     //energy reduction only in begining and end
-    if(stepCount == 1 || stepCount == finalStepCount)
+    if(stepCount == 0 || stepCount == (finalStepCount-1))
       contribute(sizeof(double),&energy,CkReduction::sum_double,CkCallback(CkReductionTarget(Main, energySum),mainProxy));
     bufferedMsg = NULL;
-    if(doatSync)
-      AtSync();
   }
 }
 
 //pack important information if I am moving
 void Compute::pup(PUP::er &p) {
-      CBase_Compute::pup(p);
-      p | stepCount;
-      p | cookie1;
-      p | cookie2;
-      if (p.isUnpacking() && CkInRestarting()) {
-        cookie1.get_redNo() = 0;
-        if (!(thisIndex.x1 ==thisIndex.x2 && thisIndex.y1 ==thisIndex.y2 && thisIndex.z1 ==thisIndex.z2))
-          cookie2.get_redNo() = 0;
-      }
-      p | cellCount;
-      p | bmsgLenAll;
-      int hasMsg = (bmsgLenAll >= 0); // only pup if msg will be used
-      p | hasMsg;
-      if (hasMsg){
-        if (p.isUnpacking())
-          bufferedMsg = new (bmsgLenAll) ParticleDataMsg;
-        p | *bufferedMsg;
-      }
-      else
-        bufferedMsg = NULL;
+  CBase_Compute::pup(p);
+  __sdag_pup(p);
+  p | stepCount;
+  p | cookie1;
+  p | cookie2;
+  if (p.isUnpacking() && CkInRestarting()) {
+    cookie1.get_redNo() = 0;
+    if (!(thisIndex.x1 ==thisIndex.x2 && thisIndex.y1 ==thisIndex.y2 && thisIndex.z1 ==thisIndex.z2))
+      cookie2.get_redNo() = 0;
+  }
+  p | cellCount;
+  p | bmsgLenAll;
+  int hasMsg = (bmsgLenAll >= 0); // only pup if msg will be used
+  p | hasMsg;
+  if (hasMsg){
+    if (p.isUnpacking())
+      bufferedMsg = new (bmsgLenAll) ParticleDataMsg;
+    p | *bufferedMsg;
+  }
+  else
+    bufferedMsg = NULL;
 }

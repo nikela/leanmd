@@ -19,11 +19,9 @@
 /* readonly */ int firstLdbStep; 
 /* readonly */ int ldbPeriod; 
 /* readonly */ int ftPeriod; 
-/* readonly */ double stepTime; 
 
 // Entry point of Charm++ application
 Main::Main(CkArgMsg* m) {
-  stepTime = CmiWallTimer();
   CkPrintf("\nLENNARD JONES MOLECULAR DYNAMICS START UP ...\n");
 
   //set variable values to a default set
@@ -149,7 +147,8 @@ void Main::startUpDone() {
       CkPrintf("Multicast sections .... created\n");
 
       CkPrintf("Starting simulation .... \n\n");
-      patchArray.nextStep();
+      patchArray.run();
+      computeArray.run();
       break;
   }
 }

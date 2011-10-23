@@ -13,10 +13,6 @@ extern /* readonly */ int patchArrayDimX;
 extern /* readonly */ int patchArrayDimY;
 extern /* readonly */ int patchArrayDimZ;
 extern /* readonly */ int finalStepCount; 
-extern /* readonly */ int firstLdbStep; 
-extern /* readonly */ int ldbPeriod; 
-extern /* readonly */ int ftPeriod; 
-extern /* readonly */ double stepTime; 
 
 //default constructor
 Patch::Patch() {
@@ -48,8 +44,7 @@ Patch::Patch() {
 
   stepCount = 0;
   updateCount = 0;
-  done_lb = true;
-  perform_lb = false;
+  stepTime = 0;
 }
 
 //constructor for chare object migration
@@ -157,17 +152,11 @@ void Patch::sendPositions() {
   msg->y = thisIndex.y;
   msg->z = thisIndex.z;
   msg->lengthAll = len;
-  msg->doAtSync = false;
 
-  //detect if load balancing is to be done
-  if (stepCount >= firstLdbStep && (stepCount - firstLdbStep) % ldbPeriod == 0){
-    msg->doAtSync = true;
-    perform_lb = true;
-  }
   for (int i = 0; i < len; i++)
     msg->part[i] = particles[i].pos;
 
-  mCastSecProxy.interact(msg);
+  mCastSecProxy.calculateForces(msg);
 }
 
 //send the atoms that have moved beyond my cell to neighbors
@@ -220,39 +209,17 @@ void Patch::migrateToPatch(Particle p, int &px, int &py, int &pz) {
   else pz = 0;
 }
 
-//function to decide on what to do now
-void Patch::nextStep() {
-  //if all steps are done, exit
-  if(stepCount == finalStepCount) {
-    contribute(CkCallback(CkIndex_Main::allDone(), mainProxy));
-  } else if (perform_lb) {
-    //call AtSync and go for load balancing
-    perform_lb = false;
-    done_lb = true;
-    AtSync();
-  } else {
-    //continue to next step
-    if(done_lb) {
-      //reset timers if load balacing was just done
-      done_lb = false;
-      if((thisIndex.x + thisIndex.y + thisIndex.z) == 0)
-        stepTime = CkWallTimer();
-    }
-    patchArray(thisIndex.x,thisIndex.y,thisIndex.z).doStep();
-  }
-}
-
 //call nextStep if load balancing is done
 void Patch::ResumeFromSync(){
-  patchArray(thisIndex.x,thisIndex.y,thisIndex.z).nextStep();
+  patchArray(thisIndex.x,thisIndex.y,thisIndex.z).resumeAfterLB(1);
 }
 
 //call nextStep if fault tolerance backup is done
-  void Patch::ftresume(){
-    if (thisIndex.x==0 && thisIndex.y==0 && thisIndex.z ==0)
-      CkPrintf("patch 0 calling ftresume at %f\n",CmiWallTimer());
-    patchArray(thisIndex.x,thisIndex.y,thisIndex.z).nextStep();
-  }
+void Patch::ftresume(){
+  if (thisIndex.x==0 && thisIndex.y==0 && thisIndex.z ==0)
+    CkPrintf("patch 0 calling ftresume at %f\n",CmiWallTimer());
+  //patchArray(thisIndex.x,thisIndex.y,thisIndex.z).resumeAfterFT(1);
+}
 
 // Function to update properties (i.e. acceleration, velocity and position) in particles
 void Patch::updateProperties(vec3 *forces, int lengthUp) {
@@ -322,10 +289,9 @@ void Patch::pup(PUP::er &p) {
   p | particles;
   p | stepCount;
   p | myNumParts;
-  p | done_lb;
-  p | perform_lb;
   p | updateCount;
   p | inbrs;
+  p | stepTime;
 
   if (p.isUnpacking()){
     computesList = new int*[inbrs];
