@@ -28,8 +28,8 @@ inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, Ck
   if(stepCount == 1 || stepCount == finalStepCount)
     doEnergy = 1;
 
-  force *firstmsg = new force[firstLen] ;
-  force *secondmsg = new force[secondLen] ;
+  vec3 *firstmsg = new vec3[firstLen] ;
+  vec3 *secondmsg = new vec3[secondLen] ;
   //check for wrap around and adjust locations accordingly
   if (abs(first->x - second->x) > 1){
     diff = PATCH_SIZE_X * patchArrayDimX;
@@ -90,9 +90,9 @@ inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, Ck
       }
   CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
   CkGetSectionInfo(*cookie1, first);
-  mCastGrp->contribute(sizeof(double)*3*firstLen, firstmsg, CkReduction::sum_double, *cookie1);
+  mCastGrp->contribute(sizeof(vec3)*firstLen, firstmsg, CkReduction::sum_double, *cookie1);
   CkGetSectionInfo(*cookie2, second);
-  mCastGrp->contribute(sizeof(double)*3*secondLen, secondmsg, CkReduction::sum_double, *cookie2);
+  mCastGrp->contribute(sizeof(vec3)*secondLen, secondmsg, CkReduction::sum_double, *cookie2);
 
   delete firstmsg;
   delete secondmsg;
@@ -111,7 +111,7 @@ inline double calcInternalForces(ParticleDataMsg* first, CkSectionInfo *cookie1,
   int doEnergy = 0;
   if(stepCount == 1 || stepCount == finalStepCount)
     doEnergy = 1;
-  force *firstmsg = new force[firstLen];
+  vec3 *firstmsg = new vec3[firstLen];
 
   memset(firstmsg, 1, firstLen * 3*sizeof(double));
   ptpCutOffSqd = PTP_CUT_OFF * PTP_CUT_OFF;

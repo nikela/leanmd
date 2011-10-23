@@ -9,13 +9,6 @@ extern /* readonly */ int finalStepCount;
 
 #include "ckmulticast.h"
 
-//structure to store force on atoms
-struct force {
-  double x;
-  double y;
-  double z;
-};
-
 //data message to be sent to computes
 struct ParticleDataMsg : public CkMcastBaseMsg, public CMessage_ParticleDataMsg {
     vec3* part; //list of atoms
