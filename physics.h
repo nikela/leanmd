@@ -56,8 +56,6 @@ inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, Ck
   powTen = pow(10.0, -10);
   powTwenty = pow(10.0, -20);
 
-  memset(firstmsg, 0, firstLen * 3*sizeof(double));
-  memset(secondmsg, 0, secondLen * 3*sizeof(double));
   int i1, j1;
   for(i1 = 0; i1 < firstLen; i1=i1+BLOCK_SIZE)
     for(j1 = 0; j1 < secondLen; j1=j1+BLOCK_SIZE)
