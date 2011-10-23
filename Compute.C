@@ -4,6 +4,8 @@
 #include "Compute.h"
 #include "physics.h"
 #include "ckmulticast.h"
+#include <algorithm>
+using std::swap;
 
 extern /* readonly */ CProxy_Main mainProxy;
 extern /* readonly */ CProxy_Patch patchArray;
@@ -65,17 +67,19 @@ void Compute::interact(ParticleDataMsg *msg){
     if (msg->doAtSync){
       doatSync = true;
     }
+
+    ParticleDataMsg *msgA = msg, *msgB = bufferedMsg;
+    CkSectionInfo *handleA = &cookie1, *handleB = &cookie2;
     if (bufferedMsg->x*patchArrayDimY*patchArrayDimZ + bufferedMsg->y*patchArrayDimZ + bufferedMsg->z < msg->x*patchArrayDimY*patchArrayDimZ + msg->y*patchArrayDimZ + msg->z){ 
-      if (bufferedMsg->lengthAll <= msg->lengthAll)
-        energy = calcPairForces(bufferedMsg, msg, &cookie1, &cookie2,stepTime);
-      else
-        energy = calcPairForces(msg, bufferedMsg, &cookie2, &cookie1,stepTime);
-    } else {
-      if (bufferedMsg->lengthAll <= msg->lengthAll)
-        energy = calcPairForces(bufferedMsg, msg, &cookie2, &cookie1,stepTime);
-      else
-        energy = calcPairForces(msg, bufferedMsg, &cookie1, &cookie2,stepTime);
+      swap(handleA, handleB);
     }
+    if (bufferedMsg->lengthAll <= msg->lengthAll) {
+      swap(msgA, msgB);
+      swap(handleA, handleB);
+    }
+
+    energy = calcPairForces(msgA, msgB, handleA, handleB, stepTime);
+
     //energy reduction only in begining and end
     if(stepCount == 1 || stepCount == finalStepCount)
       contribute(sizeof(double),&energy,CkReduction::sum_double,CkCallback(CkReductionTarget(Main, energySumP),mainProxy));
