@@ -4,7 +4,7 @@
 #./charmrun +p<Procs> ./leanmd <dimX,dimY,dimZ,steps,firstLBstep,LBPeriod,ftPeriod>
 # Example - ./charmrun +p8 ./leanmd 2 2 2 1001 20 20 10000
 
-CHARMBASE				=	$(HOME)/codes/charm/net-linux-x86_64
+CHARMBASE				=	$(HOME)/codes/charm/net-linux-x86_64-syncft
 CHARMC          = $(CHARMBASE)/bin/charmc
 OPTS            = -O3 
 

@@ -30,6 +30,7 @@ class Patch : public CBase_Patch {
     int myNumParts;   //number of atoms in my cell
     bool done_lb;     //was load balancing done in last step?
     bool perform_lb;  //should I do load balancing in this step?
+    bool perform_ft;
     int inbrs;        //number of interacting neighbors
     int updateCount;
     int stepTime;

@@ -50,6 +50,7 @@ Patch::Patch() {
   stepTime = 0;
   done_lb = true;
   perform_lb = false;
+  perform_ft = false;
 }
 
 //constructor for chare object migration
@@ -164,6 +165,11 @@ void Patch::sendPositions() {
     msg->doAtSync = true;
     perform_lb = true;
   }
+
+  if(stepCount > 0 && stepCount % ftPeriod == 0) {
+    perform_ft = true;
+  }
+
   for (int i = 0; i < len; i++)
     msg->part[i] = particles[i].pos;
 
@@ -225,6 +231,9 @@ void Patch::nextStep() {
   //if all steps are done, exit
   if(stepCount == finalStepCount) {
     contribute(CkCallback(CkIndex_Main::allDone(), mainProxy));
+  } else if(perform_ft) {
+    perform_ft = false;
+    contribute(CkCallback(CkIndex_Main::ftBarrier(), mainProxy));
   } else if (perform_lb) {
     //call AtSync and go for load balancing
     perform_lb = false;
@@ -324,6 +333,7 @@ void Patch::pup(PUP::er &p) {
   p | myNumParts;
   p | done_lb;
   p | perform_lb;
+  p | perform_ft;
   p | updateCount;
   p | inbrs;
   p | stepTime;
