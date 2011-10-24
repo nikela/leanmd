@@ -62,12 +62,14 @@ mainmodule leanmd {
             }
           }
         }
+        //periodically print time values
         if (stepCount && thisIndex.x==0 && thisIndex.y==0 && thisIndex.z==0 && stepCount%20==0) atomic {
           double timer = CkWallTimer();
           CkPrintf("Step %d Benchmark Time %lf ms/step\n", 
-                    stepCount, ((timer - stepTime)/20)*1000);
+              stepCount, ((timer - stepTime)/20)*1000);
           stepTime = CkWallTimer();
         }
+        //periodically call load balancer
         if (stepCount >= firstLdbStep && (stepCount - firstLdbStep) % ldbPeriod == 0) {
           atomic {
             AtSync();
@@ -77,6 +79,7 @@ mainmodule leanmd {
           }
         }
       }
+      //everything is done, call end
       atomic {
         contribute(CkCallback(CkIndex_Main::allDone(), mainProxy));
       }
@@ -99,6 +102,7 @@ mainmodule leanmd {
             interact(msg);
           }
         }
+        //periodically call load balancer
         if (stepCount >= firstLdbStep && (stepCount - firstLdbStep) % ldbPeriod== 0) atomic {
           AtSync();
         }

@@ -19,7 +19,6 @@ extern /* readonly */ int finalStepCount;
 Compute::Compute() {
   __sdag_init();
   cellCount = 0;
-  bmsgLenAll = -1;
   stepCount = 0;
   usesAtSync = CmiTrue;
 }
@@ -37,7 +36,6 @@ void Compute::interact(ParticleDataMsg *msg){
 
   //self interaction check
   if (thisIndex.x1 ==thisIndex.x2 && thisIndex.y1 ==thisIndex.y2 && thisIndex.z1 ==thisIndex.z2) {
-    bmsgLenAll = -1;
     CkGetSectionInfo(mcast1,msg);
     energy = calcInternalForces(msg, &mcast1, stepCount);
     if(stepCount == 0 || stepCount == (finalStepCount-1))
@@ -46,15 +44,12 @@ void Compute::interact(ParticleDataMsg *msg){
     //check if this is the first message or second
     if (cellCount == 0) {
       bufferedMsg = msg;
-      bmsgLenAll = bufferedMsg->lengthAll;
       cellCount++;
       return;
     }
 
     // Both particle sets have been received, so compute interaction
     cellCount = 0;
-    bool doatSync = false;
-    bmsgLenAll = -1;
 
     ParticleDataMsg *msgA = msg, *msgB = bufferedMsg;
     CkSectionInfo *handleA = &mcast1, *handleB = &mcast2;
@@ -88,6 +83,5 @@ void Compute::pup(PUP::er &p) {
       mcast2.get_redNo() = 0;
   }
   p | cellCount;
-  p | bmsgLenAll;
   bufferedMsg = NULL;
 }

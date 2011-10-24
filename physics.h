@@ -67,11 +67,11 @@ inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, Ck
             rTwelve = rSix * rSix;
             f = (double)(VDW_A / rTwelve - VDW_B / rSix);
             if(doEnergy)
-	      energy += (double)( VDW_A / (12*rTwelve) - VDW_B / (6*rSix));
+              energy += (double)( VDW_A / (12*rTwelve) - VDW_B / (6*rSix));
             fr = f /r;
-	    force = separation * (fr * powTen);
-	    firstmsg[i] += force;
-	    secondmsg[jpart] -= force;
+            force = separation * (fr * powTen);
+            firstmsg[i] += force;
+            secondmsg[jpart] -= force;
           }
         }
       }
@@ -118,7 +118,7 @@ inline double calcInternalForces(ParticleDataMsg* first, CkSectionInfo *mcast1, 
         rTwelve = rSix * rSix;
         f = (double)(VDW_A / rTwelve - VDW_B / rSix);
         if(doEnergy)
-	  energy += (double)( VDW_A / (12*rTwelve) - VDW_B / (6*rSix));
+          energy += (double)( VDW_A / (12*rTwelve) - VDW_B / (6*rSix));
 
         fr = f /r;
         force = separation * (fr * powTen);

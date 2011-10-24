@@ -8,7 +8,6 @@ class Compute : public CBase_Compute {
   private:
     Compute_SDAG_CODE
     int cellCount;  // to count the number of interact() calls
-    int bmsgLenAll;
     int stepCount;  //current step number
     ParticleDataMsg *bufferedMsg; //copy of first message received for interaction
     //handles to differentiate the two multicast sections I am part of

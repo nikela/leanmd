@@ -12,11 +12,11 @@ extern /* readonly */ int finalStepCount;
 
 //data message to be sent to computes
 struct ParticleDataMsg : public CkMcastBaseMsg, public CMessage_ParticleDataMsg {
-    vec3* part; //list of atoms
-    int lengthAll;  //length of list
-    int x;    //x coordinate of patch sending this message
-    int y;    //y coordinate
-    int z;    //z coordinate
+  vec3* part; //list of atoms
+  int lengthAll;  //length of list
+  int x;    //x coordinate of patch sending this message
+  int y;    //y coordinate
+  int z;    //z coordinate
 
 };
 
@@ -24,13 +24,13 @@ struct ParticleDataMsg : public CkMcastBaseMsg, public CMessage_ParticleDataMsg 
 class Patch : public CBase_Patch {
   private:
     Patch_SDAG_CODE   //SDAG code
-    CkVec<Particle> particles;  //list of atoms
+      CkVec<Particle> particles;  //list of atoms
     int **computesList;   //my compute locations
     int stepCount;		// to count the number of steps, and decide when to stop
     int myNumParts;   //number of atoms in my cell
     int inbrs;        //number of interacting neighbors
     int updateCount;
-    double stepTime;
+    double stepTime;  //time taken to do iterations
 
     void migrateToPatch(Particle p, int &px, int &py, int &pz);
     void updateProperties(vec3 *forces, int lengthUp);	//updates properties after receiving forces from computes

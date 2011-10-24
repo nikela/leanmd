@@ -70,19 +70,19 @@ inline double dot(const vec3& a, const vec3& b) {
 }
 PUPbytes(vec3)
 
-//class for keeping track of the properties for a particle
-struct Particle {
-//  int id;
-  double mass;
-  //   Position, acceleration, velocity
-  vec3 pos,      acc,          vel;
+  //class for keeping track of the properties for a particle
+  struct Particle {
+    //  int id;
+    double mass;
+    //   Position, acceleration, velocity
+    vec3 pos,      acc,          vel;
 
-  // Function for pupping properties
-  void pup(PUP::er &p) {
-    p | mass;
-    p | pos;
-    p | acc;
-    p | vel;
-  }
-};
+    // Function for pupping properties
+    void pup(PUP::er &p) {
+      p | mass;
+      p | pos;
+      p | acc;
+      p | vel;
+    }
+  };
 #endif
