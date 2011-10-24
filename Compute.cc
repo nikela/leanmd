@@ -43,8 +43,8 @@ void Compute::interact(ParticleDataMsg *msg){
     if (msg->doAtSync){
       doatSync = true;
     }
-    CkGetSectionInfo(cookie1,msg);
-    energy = calcInternalForces(msg, &cookie1, stepCount);
+    CkGetSectionInfo(mcast1,msg);
+    energy = calcInternalForces(msg, &mcast1, stepCount);
     if(stepCount == 1 || stepCount == finalStepCount)
       contribute(sizeof(double),&energy,CkReduction::sum_double,CkCallback(CkReductionTarget(Main,energySum),mainProxy));
     if(doatSync)
@@ -68,7 +68,7 @@ void Compute::interact(ParticleDataMsg *msg){
     }
 
     ParticleDataMsg *msgA = msg, *msgB = bufferedMsg;
-    CkSectionInfo *handleA = &cookie1, *handleB = &cookie2;
+    CkSectionInfo *handleA = &mcast1, *handleB = &mcast2;
     if (bufferedMsg->x*patchArrayDimY*patchArrayDimZ + bufferedMsg->y*patchArrayDimZ + bufferedMsg->z < msg->x*patchArrayDimY*patchArrayDimZ + msg->y*patchArrayDimZ + msg->z){ 
       swap(handleA, handleB);
     }
@@ -92,22 +92,13 @@ void Compute::interact(ParticleDataMsg *msg){
 void Compute::pup(PUP::er &p) {
       CBase_Compute::pup(p);
       p | stepCount;
-      p | cookie1;
-      p | cookie2;
+      p | mcast1;
+      p | mcast2;
       if (p.isUnpacking() && CkInRestarting()) {
-        cookie1.get_redNo() = 0;
+        mcast1.get_redNo() = 0;
         if (!(thisIndex.x1 ==thisIndex.x2 && thisIndex.y1 ==thisIndex.y2 && thisIndex.z1 ==thisIndex.z2))
-          cookie2.get_redNo() = 0;
+          mcast2.get_redNo() = 0;
       }
       p | cellCount;
-      p | bmsgLenAll;
-      int hasMsg = (bmsgLenAll >= 0); // only pup if msg will be used
-      p | hasMsg;
-      if (hasMsg){
-        if (p.isUnpacking())
-          bufferedMsg = new (bmsgLenAll) ParticleDataMsg;
-        p | *bufferedMsg;
-      }
-      else
-        bufferedMsg = NULL;
+      bufferedMsg = NULL;
 }

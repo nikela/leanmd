@@ -37,6 +37,7 @@ Main::Main(CkArgMsg* m) {
   phase = 0;
   energy = prevEnergy = 0;
   testFailed = 0;
+  endCount = 0;
 
   //branch factor for spanning tree of multicast
   int bFactor = 4;
@@ -124,12 +125,16 @@ void Main::ftBarrier() {
 
 //simulation is done, test if it was successfull and report
 void Main::allDone() {
-  if(testFailed) {
-    CkPrintf("\nEnergy conservation test failed for maximum allowed variation of %E units.\nSIMULATION UNSUCCESSFULL\n",ENERGY_VAR);  
+  if(endCount == 1) {
+    if(testFailed) {
+      CkPrintf("\nEnergy conservation test failed for maximum allowed variation of %E units.\nSIMULATION UNSUCCESSFULL\n",ENERGY_VAR);  
+    } else {
+      CkPrintf("\nEnergy conservation test passed for maximum allowed variation of %E units.\nSIMULATION SUCCESSFULL \n",ENERGY_VAR);
+    }
+    CkExit();
   } else {
-    CkPrintf("\nEnergy conservation test passed for maximum allowed variation of %E units.\nSIMULATION SUCCESSFULL \n",ENERGY_VAR);
+    endCount++;
   }
-  CkExit();
 }
 
 //after every phase of initial set up, we come here and decide what to do next
@@ -160,14 +165,16 @@ void Main::energySum(double energyIn) {
   } else {
     //otherwise add to the value obtained earlier and check for correctness
     energy += energyIn;
-    if(prevEnergy == 0) 
+    if(prevEnergy == 0) {
       prevEnergy = energy;
-    if(abs(energy-prevEnergy)>ENERGY_VAR) {
-      CkPrintf("Energy value has varied significantly from %E to %E\n",prevEnergy,energy);
-      testFailed = 1;
+      energy = 0;
+    } else {
+      if(abs(energy-prevEnergy)>ENERGY_VAR) {
+        CkPrintf("Energy value has varied significantly from %E to %E\n",prevEnergy,energy);
+        testFailed = 1;
+      }
+      thisProxy.allDone();
     }
-    prevEnergy = energy;
-    energy = 0;
   }
 }
 

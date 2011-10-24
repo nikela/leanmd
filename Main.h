@@ -7,6 +7,7 @@ class Main : public CBase_Main {
     int phase;    //variable to keep track of phase in initial set up
     double energy, prevEnergy;  //store initial and final energy
     int testFailed;    //flag to indicate if simulation conserve energy
+    int endCount;   //to make sure verification happens
 
   public:
     Main(CkArgMsg* msg);
