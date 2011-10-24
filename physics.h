@@ -3,9 +3,6 @@
 
 #include "ckmulticast.h"
 
-extern /* readonly */ CProxy_Main mainProxy;
-extern /* readonly */ CProxy_Patch patchArray;
-extern /* readonly */ CProxy_Compute computeArray;
 extern /* readonly */ CkGroupID mCastGrpID;
 
 extern /* readonly */ int patchArrayDimX;	// Number of Chare Rows
@@ -16,7 +13,7 @@ extern /* readonly */ int finalStepCount;
 #define BLOCK_SIZE	512
 
 //function to calculate forces among 2 lists of atoms
-inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, CkSectionInfo* cookie1, CkSectionInfo* cookie2, int stepCount) {
+inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, CkSectionInfo* mcast1, CkSectionInfo* mcast2, int stepCount) {
   int i, j, jpart, ptpCutOffSqd, diff;
   int firstLen = first->lengthAll;
   int secondLen = second->lengthAll;
@@ -80,10 +77,10 @@ inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, Ck
       }
 
   CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
-  CkGetSectionInfo(*cookie1, first);
-  mCastGrp->contribute(sizeof(vec3)*firstLen, firstmsg, CkReduction::sum_double, *cookie1);
-  CkGetSectionInfo(*cookie2, second);
-  mCastGrp->contribute(sizeof(vec3)*secondLen, secondmsg, CkReduction::sum_double, *cookie2);
+  CkGetSectionInfo(*mcast1, first);
+  mCastGrp->contribute(sizeof(vec3)*firstLen, firstmsg, CkReduction::sum_double, *mcast1);
+  CkGetSectionInfo(*mcast2, second);
+  mCastGrp->contribute(sizeof(vec3)*secondLen, secondmsg, CkReduction::sum_double, *mcast2);
 
   delete [] firstmsg;
   delete [] secondmsg;
@@ -93,7 +90,7 @@ inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, Ck
 }
 
 //function to calculate forces among atoms in a single list
-inline double calcInternalForces(ParticleDataMsg* first, CkSectionInfo *cookie1, int stepCount) {
+inline double calcInternalForces(ParticleDataMsg* first, CkSectionInfo *mcast1, int stepCount) {
   int i, j, ptpCutOffSqd;
   int firstLen = first->lengthAll;
   double powTwenty, powTen, firstx, firsty, firstz, rx, ry, rz, r, rsqd, fx, fy, fz, f, fr;
@@ -131,7 +128,7 @@ inline double calcInternalForces(ParticleDataMsg* first, CkSectionInfo *cookie1,
     }
   }
   CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
-  mCastGrp->contribute(sizeof(vec3)*firstLen, firstmsg, CkReduction::sum_double, *cookie1);
+  mCastGrp->contribute(sizeof(vec3)*firstLen, firstmsg, CkReduction::sum_double, *mcast1);
   delete [] firstmsg;
   delete first;
   return energy;

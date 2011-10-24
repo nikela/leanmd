@@ -18,7 +18,6 @@
 /* readonly */ int finalStepCount; 
 /* readonly */ int firstLdbStep; 
 /* readonly */ int ldbPeriod; 
-/* readonly */ int ftPeriod; 
 
 // Entry point of Charm++ application
 Main::Main(CkArgMsg* m) {
@@ -31,12 +30,12 @@ Main::Main(CkArgMsg* m) {
   finalStepCount = DEFAULT_FINALSTEPCOUNT;
   firstLdbStep = DEFAULT_FIRST_LDB;
   ldbPeriod = DEFAULT_LDB_PERIOD;
-  ftPeriod = DEFAULT_FT_PERIOD;
 
   mainProxy = thisProxy;
   phase = 0;
   energy = prevEnergy = 0;
   testFailed = 0;
+  endCount = 0;
 
   //branch factor for spanning tree of multicast
   int bFactor = 4;
@@ -76,12 +75,6 @@ Main::Main(CkArgMsg* m) {
     CkPrintf("LB Period:%d\n",ldbPeriod);
   }
 
-  //periodicity of fault tolerance
-  if (m->argc > cur_arg) {
-    ftPeriod=atoi(m->argv[cur_arg++]);
-    CkPrintf("FT Period:%d\n",ldbPeriod);
-  }
-
   //initializing the 3D patch array
   patchArray = CProxy_Patch::ckNew();
   for (int x=0; x<patchArrayDimX; x++)
@@ -114,22 +107,21 @@ void Main::pup(PUP::er &p) {
   p|energy;
   p|prevEnergy;
   p|testFailed;
-}
-
-//backup current state to files and resume in patchArray
-void Main::ftBarrier() {
-  CkCallback cb(CkIndex_Patch::ftresume(), patchArray);
-  CkStartMemCheckpoint(cb);
+  p|endCount;
 }
 
 //simulation is done, test if it was successfull and report
 void Main::allDone() {
-  if(testFailed) {
-    CkPrintf("\nEnergy conservation test failed for maximum allowed variation of %E units.\nSIMULATION UNSUCCESSFULL\n",ENERGY_VAR);  
+  if(endCount == 1) {
+    if(testFailed) {
+      CkPrintf("\nEnergy conservation test failed for maximum allowed variation of %E units.\nSIMULATION UNSUCCESSFULL\n",ENERGY_VAR);  
+    } else {
+      CkPrintf("\nEnergy conservation test passed for maximum allowed variation of %E units.\nSIMULATION SUCCESSFULL \n",ENERGY_VAR);
+    }
+    CkExit();
   } else {
-    CkPrintf("\nEnergy conservation test passed for maximum allowed variation of %E units.\nSIMULATION SUCCESSFULL \n",ENERGY_VAR);
+    endCount++;
   }
-  CkExit();
 }
 
 //after every phase of initial set up, we come here and decide what to do next
@@ -161,14 +153,16 @@ void Main::energySum(double energyIn) {
   } else {
     //otherwise add to the value obtained earlier and check for correctness
     energy += energyIn;
-    if(prevEnergy == 0) 
+    if(prevEnergy == 0){
       prevEnergy = energy;
-    if(abs(energy-prevEnergy)>ENERGY_VAR) {
-      CkPrintf("Energy value has varied significantly from %E to %E\n",prevEnergy,energy);
-      testFailed = 1;
+      energy = 0;
+    } else {
+      if(abs(energy-prevEnergy)>ENERGY_VAR) {
+        CkPrintf("Energy value has varied significantly from %E to %E\n",prevEnergy,energy);
+        testFailed = 1;
+      }
+      thisProxy.allDone();
     }
-    prevEnergy = energy;
-    energy = 0;
   }
 }
 

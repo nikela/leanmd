@@ -214,13 +214,6 @@ void Patch::ResumeFromSync(){
   patchArray(thisIndex.x,thisIndex.y,thisIndex.z).resumeAfterLB(1);
 }
 
-//call nextStep if fault tolerance backup is done
-void Patch::ftresume(){
-  if (thisIndex.x==0 && thisIndex.y==0 && thisIndex.z ==0)
-    CkPrintf("patch 0 calling ftresume at %f\n",CmiWallTimer());
-  //patchArray(thisIndex.x,thisIndex.y,thisIndex.z).resumeAfterFT(1);
-}
-
 // Function to update properties (i.e. acceleration, velocity and position) in particles
 void Patch::updateProperties(vec3 *forces, int lengthUp) {
   int i;

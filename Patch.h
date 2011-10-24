@@ -47,7 +47,6 @@ class Patch : public CBase_Patch {
     void createComputes();  //add my computes
     void createSection();   //created multicast section of computes
     void localCreateSection();
-    void ftresume();
     void migrateParticles();
     void sendPositions();
     void ResumeFromSync();

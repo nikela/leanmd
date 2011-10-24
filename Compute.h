@@ -12,8 +12,8 @@ class Compute : public CBase_Compute {
     int stepCount;  //current step number
     ParticleDataMsg *bufferedMsg; //copy of first message received for interaction
     //handles to differentiate the two multicast sections I am part of
-    CkSectionInfo cookie1;     
-    CkSectionInfo cookie2;
+    CkSectionInfo mcast1;     
+    CkSectionInfo mcast2;
 
   public:
     Compute();
