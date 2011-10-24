@@ -3,9 +3,6 @@
 
 #include "ckmulticast.h"
 
-extern /* readonly */ CProxy_Main mainProxy;
-extern /* readonly */ CProxy_Patch patchArray;
-extern /* readonly */ CProxy_Compute computeArray;
 extern /* readonly */ CkGroupID mCastGrpID;
 
 extern /* readonly */ int patchArrayDimX;	// Number of Chare Rows

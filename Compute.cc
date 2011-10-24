@@ -8,12 +8,9 @@
 using std::swap;
 
 extern /* readonly */ CProxy_Main mainProxy;
-extern /* readonly */ CProxy_Patch patchArray;
-extern /* readonly */ CProxy_Compute computeArray;
-extern /* readonly */ CkGroupID mCastGrpID;
 
-extern /* readonly */ int patchArrayDimX;	// Number of Chare Rows
-extern /* readonly */ int patchArrayDimY;	// Number of Chare Columns
+extern /* readonly */ int patchArrayDimX;
+extern /* readonly */ int patchArrayDimY;
 extern /* readonly */ int patchArrayDimZ;
 extern /* readonly */ int finalStepCount; 
 
