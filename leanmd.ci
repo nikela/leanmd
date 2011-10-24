@@ -15,9 +15,49 @@ mainmodule leanmd {
   //central controller chare
   mainchare [migratable] Main {
     entry Main(CkArgMsg* msg);
-    entry void allDone();     //called when simulation is done
-    entry void startUpDone(); //called when initial set up is done
-    entry [reductiontarget] void energySum(double energyIn);  //reduction of potential energy
+    entry [reductiontarget] void allDone(int done);     //called when simulation is done
+    entry [reductiontarget] void computesCreated(int proceed); //called when initial set up is done
+    entry [reductiontarget] void sectionsCreated(int proceed); //called when initial set up is done
+    entry [reductiontarget] void energySumP(double energyIn);  //reduction of potential energy
+    entry [reductiontarget] void energySumK(double energyIn);  //reduction of potential energy
+
+    //this get called after the main constructor has called patch array constructor
+    entry void run() {
+      //compute array created, call for section creation
+      when computesCreated(int proceed) atomic {
+        computeArray.doneInserting();
+        CkPrintf("Computes: %d .... created\n", (NUM_NEIGHBORS/2+1)*patchArrayDimX*patchArrayDimY*patchArrayDimZ);
+        patchArray.createSection();
+      }
+      //setup done, start program
+      when sectionsCreated(int proceed) atomic {
+        CkPrintf("Multicast sections .... created\n");
+        CkPrintf("Starting simulation .... \n\n");
+        patchArray.run();
+        computeArray.run();
+      }
+      //receive initial energy
+      when energySumP(double energyP), energySumK(double energyK) atomic {
+        prevEnergy = energyP + energyK;
+      }
+      //receive final energy and compare
+      when energySumP(double energyP), energySumK(double energyK) atomic {
+        energy = energyP + energyK;
+        if(abs(energy-prevEnergy)>ENERGY_VAR) {
+          CkPrintf("Energy value has varied significantly from %E to %E\n",prevEnergy,energy);
+          testFailed = 1;
+        }
+      }
+      //done with everything exit.
+      when allDone(int done) atomic {
+        if(testFailed) {
+          CkPrintf("\nEnergy conservation test failed for maximum allowed variation of %E units.\nSIMULATION UNSUCCESSFULL\n",ENERGY_VAR);  
+        } else {
+          CkPrintf("\nEnergy conservation test passed for maximum allowed variation of %E units.\nSIMULATION SUCCESSFULL \n",ENERGY_VAR);
+        }
+        CkExit();
+      }
+    };
   };
 
   //message used to convey particle to computes
@@ -81,7 +121,9 @@ mainmodule leanmd {
       }
       //everything is done, call end
       atomic {
-        contribute(CkCallback(CkIndex_Main::allDone(), mainProxy));
+        int num;
+        contribute(sizeof(int),&num,CkReduction::max_int,CkCallback(CkReductionTarget(Main,allDone),mainProxy));
+        //contribute(CkCallback(CkIndex_Main::allDone(), mainProxy));
       }
     };
   };

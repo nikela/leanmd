@@ -39,7 +39,7 @@ void Compute::interact(ParticleDataMsg *msg){
     CkGetSectionInfo(mcast1,msg);
     energy = calcInternalForces(msg, &mcast1, stepCount);
     if(stepCount == 0 || stepCount == (finalStepCount-1))
-      contribute(sizeof(double),&energy,CkReduction::sum_double,CkCallback(CkReductionTarget(Main,energySum),mainProxy));
+      contribute(sizeof(double),&energy,CkReduction::sum_double,CkCallback(CkReductionTarget(Main,energySumK),mainProxy));
   } else {
     //check if this is the first message or second
     if (cellCount == 0) {
@@ -65,7 +65,7 @@ void Compute::interact(ParticleDataMsg *msg){
 
     //energy reduction only in begining and end
     if(stepCount == 0 || stepCount == (finalStepCount-1))
-      contribute(sizeof(double),&energy,CkReduction::sum_double,CkCallback(CkReductionTarget(Main, energySum),mainProxy));
+      contribute(sizeof(double),&energy,CkReduction::sum_double,CkCallback(CkReductionTarget(Main, energySumK),mainProxy));
     bufferedMsg = NULL;
   }
 }

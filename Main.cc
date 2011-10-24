@@ -21,6 +21,7 @@
 
 // Entry point of Charm++ application
 Main::Main(CkArgMsg* m) {
+   __sdag_init();
   CkPrintf("\nLENNARD JONES MOLECULAR DYNAMICS START UP ...\n");
 
   //set variable values to a default set
@@ -32,10 +33,8 @@ Main::Main(CkArgMsg* m) {
   ldbPeriod = DEFAULT_LDB_PERIOD;
 
   mainProxy = thisProxy;
-  phase = 0;
   energy = prevEnergy = 0;
   testFailed = 0;
-  endCount = 0;
 
   //branch factor for spanning tree of multicast
   int bFactor = 4;
@@ -94,76 +93,22 @@ Main::Main(CkArgMsg* m) {
       for (int z=0; z<patchArrayDimZ; z++)
         patchArray(x, y, z).createComputes();
 
+  thisProxy.run();
   delete m;
 }
 
 //constructor for chare object migration
-Main::Main(CkMigrateMessage* msg): CBase_Main(msg) { }
+Main::Main(CkMigrateMessage* msg): CBase_Main(msg) { 
+  __sdag_init();  
+}
 
 //pup routine incase the main chare moves, pack important information
 void Main::pup(PUP::er &p) {
   CBase_Main::pup(p);
-  p|phase;
+   __sdag_pup(p);
   p|energy;
   p|prevEnergy;
   p|testFailed;
-  p|endCount;
-}
-
-//simulation is done, test if it was successfull and report
-void Main::allDone() {
-  if(endCount == 1) {
-    if(testFailed) {
-      CkPrintf("\nEnergy conservation test failed for maximum allowed variation of %E units.\nSIMULATION UNSUCCESSFULL\n",ENERGY_VAR);  
-    } else {
-      CkPrintf("\nEnergy conservation test passed for maximum allowed variation of %E units.\nSIMULATION SUCCESSFULL \n",ENERGY_VAR);
-    }
-    CkExit();
-  } else {
-    endCount++;
-  }
-}
-
-//after every phase of initial set up, we come here and decide what to do next
-void Main::startUpDone() {
-  switch(phase) {
-    //compute array has been created, create multicast sections now
-    case 0:
-      computeArray.doneInserting();
-      CkPrintf("Computes: %d .... created\n", (NUM_NEIGHBORS/2+1) * patchArrayDimX * patchArrayDimY * patchArrayDimZ);
-      phase++;
-      patchArray.createSection();
-      break;
-      //multicast sections have been created, start simulation
-    case 1:
-      CkPrintf("Multicast sections .... created\n");
-
-      CkPrintf("Starting simulation .... \n\n");
-      patchArray.run();
-      computeArray.run();
-      break;
-  }
-}
-
-//receive reduction value for energy
-void Main::energySum(double energyIn) {
-  //check if this energy value is received first (can be kinetic or potential)
-  if(energy == 0) {
-    energy = energyIn;
-  } else {
-    //otherwise add to the value obtained earlier and check for correctness
-    energy += energyIn;
-    if(prevEnergy == 0){
-      prevEnergy = energy;
-      energy = 0;
-    } else {
-      if(abs(energy-prevEnergy)>ENERGY_VAR) {
-        CkPrintf("Energy value has varied significantly from %E to %E\n",prevEnergy,energy);
-        testFailed = 1;
-      }
-      thisProxy.allDone();
-    }
-  }
 }
 
 #include "leanmd.def.h"

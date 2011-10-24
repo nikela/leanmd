@@ -116,13 +116,14 @@ void Patch::createComputes() {
       computesList[num][3] = px1; computesList[num][4] = py1; computesList[num][5] = pz1;
     }
   } // end of for loop
-  contribute(CkCallback(CkIndex_Main::startUpDone(), mainProxy));
+  contribute(sizeof(int),&num,CkReduction::max_int,CkCallback(CkReductionTarget(Main,computesCreated),mainProxy));
 }
 
 //call multicast section creation
 void Patch::createSection() {
+  int num;
   localCreateSection();
-  contribute(CkCallback(CkIndex_Main::startUpDone(), mainProxy));
+  contribute(sizeof(int),&num,CkReduction::max_int,CkCallback(CkReductionTarget(Main,sectionsCreated),mainProxy));
 }
 
 //function to create the multicast section of computes
@@ -238,7 +239,7 @@ void Patch::updateProperties(vec3 *forces, int lengthUp) {
   }
   //reduction on energy only in begining and end
   if(stepCount == 0 || stepCount == (finalStepCount - 1)) 
-    contribute(sizeof(double),&energy,CkReduction::sum_double,CkCallback(CkReductionTarget(Main,energySum),mainProxy));
+    contribute(sizeof(double),&energy,CkReduction::sum_double,CkCallback(CkReductionTarget(Main,energySumP),mainProxy));
 }
 
 void Patch::limitVelocity(Particle &p) {
