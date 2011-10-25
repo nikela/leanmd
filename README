@@ -5,6 +5,7 @@ TO RUN-
 Either provide no arguments or provide all
 ./charmrun +p<Procs> ./leanmd <dimX,dimY,dimZ,steps,firstLBstep,LBPeriod>
 Example - ./charmrun +p8 ./leanmd 2 2 2 1001 20 20 
+Example - ./charmrun +p8 ./leanmd 2 2 2 1001 20 20 +balancer RefineLB 
 
 READ ORDER
 leanmd.ci - contains the most important aspects of the program, look for run() 
