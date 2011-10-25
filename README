@@ -1,5 +1,4 @@
 TO COMPILE-
-Modify Makefile to point to a suitable charm build
 Do a make in this folder
 
 TO RUN-
