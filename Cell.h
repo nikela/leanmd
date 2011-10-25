@@ -1,8 +1,8 @@
-#ifndef __PATCH_H__
-#define __PATCH_H__
+#ifndef __CELL_H__
+#define __CELL_H__
 
 extern /* readonly */ CProxy_Main mainProxy;
-extern /* readonly */ CProxy_Patch patchArray;
+extern /* readonly */ CProxy_Cell cellArray;
 extern /* readonly */ CkGroupID mCastGrpID;
 extern /* readonly */ int firstLdbStep;
 extern /* readonly */ int ldbPeriod;
@@ -14,16 +14,16 @@ extern /* readonly */ int finalStepCount;
 struct ParticleDataMsg : public CkMcastBaseMsg, public CMessage_ParticleDataMsg {
   vec3* part; //list of atoms
   int lengthAll;  //length of list
-  int x;    //x coordinate of patch sending this message
+  int x;    //x coordinate of cell sending this message
   int y;    //y coordinate
   int z;    //z coordinate
 
 };
 
 //chare used to represent a cell
-class Patch : public CBase_Patch {
+class Cell : public CBase_Cell {
   private:
-    Patch_SDAG_CODE   //SDAG code
+    Cell_SDAG_CODE   //SDAG code
       CkVec<Particle> particles;  //list of atoms
     int **computesList;   //my compute locations
     int stepCount;		// to count the number of steps, and decide when to stop
@@ -32,16 +32,16 @@ class Patch : public CBase_Patch {
     int updateCount;
     double stepTime;  //time taken to do iterations
 
-    void migrateToPatch(Particle p, int &px, int &py, int &pz);
+    void migrateToCell(Particle p, int &px, int &py, int &pz);
     void updateProperties(vec3 *forces, int lengthUp);	//updates properties after receiving forces from computes
     void limitVelocity(Particle &p); //limit velcities to an upper limit
     Particle& wrapAround(Particle &p); //particles going out of right enters from left
     CProxySection_Compute mCastSecProxy; //handle to section proxy of computes
 
   public:
-    Patch();
-    Patch(CkMigrateMessage *msg);
-    ~Patch();
+    Cell();
+    Cell(CkMigrateMessage *msg);
+    ~Cell();
     void pup(PUP::er &p);
 
     void createComputes();  //add my computes

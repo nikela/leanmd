@@ -1,13 +1,13 @@
 mainmodule leanmd {
 
   readonly CProxy_Main mainProxy;       //central controller
-  readonly CProxy_Patch patchArray;     //array that houses atoms
+  readonly CProxy_Cell cellArray;     //array that houses atoms
   readonly CProxy_Compute computeArray; //computational kernels
   readonly CkGroupID mCastGrpID;      //multicast group handle
 
-  readonly int patchArrayDimX;		// X dimension of the Patch array
-  readonly int patchArrayDimY;		// Y dimension of the Patch array
-  readonly int patchArrayDimZ;		// Y dimension of the Patch array
+  readonly int cellArrayDimX;		// X dimension of the Cell array
+  readonly int cellArrayDimY;		// Y dimension of the Cell array
+  readonly int cellArrayDimZ;		// Y dimension of the Cell array
   readonly int finalStepCount;		// number of steps in the simulaion
   readonly int firstLdbStep;		// begin load balancing after this many steps
   readonly int ldbPeriod;		// do load balancing every period
@@ -21,19 +21,19 @@ mainmodule leanmd {
     entry [reductiontarget] void energySumP(double energyIn);  //reduction of potential energy
     entry [reductiontarget] void energySumK(double energyIn);  //reduction of potential energy
 
-    //this get called after the main constructor has called patch array constructor
+    //this get called after the main constructor has called cell array constructor
     entry void run() {
       //compute array created, call for section creation
       when computesCreated(int proceed) atomic {
         computeArray.doneInserting();
-        CkPrintf("Computes: %d .... created\n", (NUM_NEIGHBORS/2+1)*patchArrayDimX*patchArrayDimY*patchArrayDimZ);
-        patchArray.createSection();
+        CkPrintf("Computes: %d .... created\n", (NUM_NEIGHBORS/2+1)*cellArrayDimX*cellArrayDimY*cellArrayDimZ);
+        cellArray.createSection();
       }
       //setup done, start program
       when sectionsCreated(int proceed) atomic {
         CkPrintf("Multicast sections .... created\n");
         CkPrintf("Starting simulation .... \n\n");
-        patchArray.run();
+        cellArray.run();
         computeArray.run();
       }
       //receive initial energy
@@ -66,11 +66,11 @@ mainmodule leanmd {
   };
 
   //chares to house atoms
-  array [3D] Patch {
-    entry Patch();  
+  array [3D] Cell {
+    entry Cell();  
     entry void createComputes();    //call to insert computes that I need  
     entry void createSection();     //creation multicast section of computes
-    entry void receiveParticles(CkVec<Particle> updates);   //receive atoms that have migrated to neighboring patches to me
+    entry void receiveParticles(CkVec<Particle> updates);   //receive atoms that have migrated to neighboring celles to me
     entry void ResumeFromSync();    //resume from here after load balancing
     entry void resumeAfterLB(int resume);    //resume from here after load balancing
     entry [reductiontarget] void reduceForces(vec3 forces[n], int n);   //receives forces from my computes on my atoms
@@ -97,7 +97,7 @@ mainmodule leanmd {
           for(updateCount = 0; updateCount < inbrs; updateCount++) {
             when receiveParticles(CkVec<Particle> &updates) atomic {
               for(int i=0; i < updates.length(); i++) {
-                particles.push_back(updates[i]);    //add particles that have moved from neighboring patches to my cell
+                particles.push_back(updates[i]);    //add particles that have moved from neighboring celles to my cell
               }
             }
           }
@@ -128,7 +128,7 @@ mainmodule leanmd {
     };
   };
 
-  //chares that does the force computations for pair of patches
+  //chares that does the force computations for pair of celles
   array [6D] Compute {
     entry Compute();
     entry void ResumeFromSync();

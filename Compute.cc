@@ -1,6 +1,6 @@
 #include "defs.h"
 #include "leanmd.decl.h"
-#include "Patch.h"
+#include "Cell.h"
 #include "Compute.h"
 #include "physics.h"
 #include "ckmulticast.h"
@@ -10,9 +10,9 @@ using std::swap;
 extern /* readonly */ CProxy_Main mainProxy;
 extern /* readonly */ CkGroupID mCastGrpID;
 
-extern /* readonly */ int patchArrayDimX;
-extern /* readonly */ int patchArrayDimY;
-extern /* readonly */ int patchArrayDimZ;
+extern /* readonly */ int cellArrayDimX;
+extern /* readonly */ int cellArrayDimY;
+extern /* readonly */ int cellArrayDimZ;
 extern /* readonly */ int finalStepCount; 
 
 //compute - Default constructor
@@ -53,7 +53,7 @@ void Compute::interact(ParticleDataMsg *msg){
 
     ParticleDataMsg *msgA = msg, *msgB = bufferedMsg;
     CkSectionInfo *handleA = &mcast1, *handleB = &mcast2;
-    if (bufferedMsg->x*patchArrayDimY*patchArrayDimZ + bufferedMsg->y*patchArrayDimZ + bufferedMsg->z < msg->x*patchArrayDimY*patchArrayDimZ + msg->y*patchArrayDimZ + msg->z){ 
+    if (bufferedMsg->x*cellArrayDimY*cellArrayDimZ + bufferedMsg->y*cellArrayDimZ + bufferedMsg->z < msg->x*cellArrayDimY*cellArrayDimZ + msg->y*cellArrayDimZ + msg->z){ 
       swap(handleA, handleB);
     }
     if (bufferedMsg->lengthAll <= msg->lengthAll) {

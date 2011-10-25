@@ -4,15 +4,15 @@ OPTS            = -O3
 
 all: leanmd
 
-leanmd: Main.o Patch.o Compute.o leanmd.decl.h
+leanmd: Main.o Cell.o Compute.o leanmd.decl.h
 	$(CHARMC) $(OPTS) -module CkMulticast -module CommonLBs \
-	-module HybridLB -language charm++ -o leanmd Main.o Patch.o Compute.o
+	-module HybridLB -language charm++ -o leanmd Main.o Cell.o Compute.o
 
 Main.o: Main.cc Main.h leanmd.decl.h defs.h
 	$(CHARMC) $(OPTS) -o Main.o Main.cc
 
-Patch.o: Patch.cc Patch.h leanmd.decl.h defs.h
-	$(CHARMC) $(OPTS) -o Patch.o Patch.cc
+Cell.o: Cell.cc Cell.h leanmd.decl.h defs.h
+	$(CHARMC) $(OPTS) -o Cell.o Cell.cc
 
 leanmd.decl.h:	leanmd.ci
 	$(CHARMC) leanmd.ci

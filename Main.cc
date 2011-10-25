@@ -4,17 +4,17 @@
 #include "defs.h"
 #include "leanmd.decl.h"
 #include "Main.h"
-#include "Patch.h"
+#include "Cell.h"
 #include "Compute.h"
 
 /* readonly */ CProxy_Main mainProxy;
-/* readonly */ CProxy_Patch patchArray;
+/* readonly */ CProxy_Cell cellArray;
 /* readonly */ CProxy_Compute computeArray;
 /* readonly */ CkGroupID mCastGrpID;
 
-/* readonly */ int patchArrayDimX;
-/* readonly */ int patchArrayDimY;
-/* readonly */ int patchArrayDimZ;
+/* readonly */ int cellArrayDimX;
+/* readonly */ int cellArrayDimY;
+/* readonly */ int cellArrayDimZ;
 /* readonly */ int finalStepCount; 
 /* readonly */ int firstLdbStep; 
 /* readonly */ int ldbPeriod; 
@@ -25,9 +25,9 @@ Main::Main(CkArgMsg* m) {
   CkPrintf("\nLENNARD JONES MOLECULAR DYNAMICS START UP ...\n");
 
   //set variable values to a default set
-  patchArrayDimX = PATCHARRAY_DIM_X;
-  patchArrayDimY = PATCHARRAY_DIM_Y;
-  patchArrayDimZ = PATCHARRAY_DIM_Z;
+  cellArrayDimX = CELLARRAY_DIM_X;
+  cellArrayDimY = CELLARRAY_DIM_Y;
+  cellArrayDimZ = CELLARRAY_DIM_Z;
   finalStepCount = DEFAULT_FINALSTEPCOUNT;
   firstLdbStep = DEFAULT_FIRST_LDB;
   ldbPeriod = DEFAULT_LDB_PERIOD;
@@ -48,12 +48,12 @@ Main::Main(CkArgMsg* m) {
   CkPrintf("\nInput Parameters...\n");
 
   //read user parameters
-  //number of patches/cells in each dimension
+  //number of celles/cells in each dimension
   if (m->argc > cur_arg) {
-    patchArrayDimX=atoi(m->argv[cur_arg++]);
-    patchArrayDimY=atoi(m->argv[cur_arg++]);
-    patchArrayDimZ=atoi(m->argv[cur_arg++]);
-    CkPrintf("Patch Array Dimension X:%d Y:%d Z:%d\n",patchArrayDimX,patchArrayDimY,patchArrayDimZ);
+    cellArrayDimX=atoi(m->argv[cur_arg++]);
+    cellArrayDimY=atoi(m->argv[cur_arg++]);
+    cellArrayDimZ=atoi(m->argv[cur_arg++]);
+    CkPrintf("Cell Array Dimension X:%d Y:%d Z:%d\n",cellArrayDimX,cellArrayDimY,cellArrayDimZ);
   }
 
   //number of steps in simulation
@@ -74,24 +74,24 @@ Main::Main(CkArgMsg* m) {
     CkPrintf("LB Period:%d\n",ldbPeriod);
   }
 
-  //initializing the 3D patch array
-  patchArray = CProxy_Patch::ckNew();
-  for (int x=0; x<patchArrayDimX; x++)
-    for (int y=0; y<patchArrayDimY; y++)
-      for (int z=0; z<patchArrayDimZ; z++) {
+  //initializing the 3D cell array
+  cellArray = CProxy_Cell::ckNew();
+  for (int x=0; x<cellArrayDimX; x++)
+    for (int y=0; y<cellArrayDimY; y++)
+      for (int z=0; z<cellArrayDimZ; z++) {
         pe = (++currPe) % numPes;
-        patchArray(x, y, z).insert(pe);
+        cellArray(x, y, z).insert(pe);
       }
-  patchArray.doneInserting();
+  cellArray.doneInserting();
 
-  CkPrintf("\nPatches: %d X %d X %d .... created\n", patchArrayDimX, patchArrayDimY, patchArrayDimZ);
+  CkPrintf("\nCells: %d X %d X %d .... created\n", cellArrayDimX, cellArrayDimY, cellArrayDimZ);
 
   //initializing the 6D compute array
   computeArray = CProxy_Compute::ckNew();
-  for (int x=0; x<patchArrayDimX; x++)
-    for (int y=0; y<patchArrayDimY; y++)
-      for (int z=0; z<patchArrayDimZ; z++)
-        patchArray(x, y, z).createComputes();
+  for (int x=0; x<cellArrayDimX; x++)
+    for (int y=0; y<cellArrayDimY; y++)
+      for (int z=0; z<cellArrayDimZ; z++)
+        cellArray(x, y, z).createComputes();
 
   thisProxy.run();
   delete m;

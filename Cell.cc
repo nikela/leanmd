@@ -1,30 +1,30 @@
 #include "time.h"
 #include "defs.h"
 #include "leanmd.decl.h"
-#include "Patch.h"
+#include "Cell.h"
 #include "ckmulticast.h"
 
 extern /* readonly */ CProxy_Main mainProxy;
-extern /* readonly */ CProxy_Patch patchArray;
+extern /* readonly */ CProxy_Cell cellArray;
 extern /* readonly */ CProxy_Compute computeArray;
 extern /* readonly */ CkGroupID mCastGrpID;
 
-extern /* readonly */ int patchArrayDimX;
-extern /* readonly */ int patchArrayDimY;
-extern /* readonly */ int patchArrayDimZ;
+extern /* readonly */ int cellArrayDimX;
+extern /* readonly */ int cellArrayDimY;
+extern /* readonly */ int cellArrayDimZ;
 extern /* readonly */ int finalStepCount; 
 
 //default constructor
-Patch::Patch() {
+Cell::Cell() {
   __sdag_init();
   int i;
   inbrs = NUM_NEIGHBORS;
   //total number of atoms in the system
-  int numParts = PARTICLES_PER_PATCH * patchArrayDimX * patchArrayDimY * patchArrayDimZ;
+  int numParts = PARTICLES_PER_CELL * cellArrayDimX * cellArrayDimY * cellArrayDimZ;
   //load balancing to be called when AtSync is called
   usesAtSync = CmiTrue;
 
-  myNumParts = PARTICLES_PER_PATCH;
+  myNumParts = PARTICLES_PER_CELL;
   // starting random generator
   srand48(25763);
 
@@ -34,9 +34,9 @@ Patch::Patch() {
     particles[i].mass = HYDROGEN_MASS;
 
     //give random values for position and velocity
-    particles[i].pos.x = drand48() * PATCH_SIZE_X + thisIndex.x * PATCH_SIZE_X;
-    particles[i].pos.y = drand48() * PATCH_SIZE_Y + thisIndex.y * PATCH_SIZE_Y;
-    particles[i].pos.z = drand48() * PATCH_SIZE_Z + thisIndex.z * PATCH_SIZE_Z;
+    particles[i].pos.x = drand48() * CELL_SIZE_X + thisIndex.x * CELL_SIZE_X;
+    particles[i].pos.y = drand48() * CELL_SIZE_Y + thisIndex.y * CELL_SIZE_Y;
+    particles[i].pos.z = drand48() * CELL_SIZE_Z + thisIndex.z * CELL_SIZE_Z;
     particles[i].vel.x = (drand48() - 0.5) * .2 * MAX_VELOCITY;
     particles[i].vel.y = (drand48() - 0.5) * .2 * MAX_VELOCITY;
     particles[i].vel.z = (drand48() - 0.5) * .2 * MAX_VELOCITY;
@@ -48,16 +48,16 @@ Patch::Patch() {
 }
 
 //constructor for chare object migration
-Patch::Patch(CkMigrateMessage *msg): CBase_Patch(msg) {
+Cell::Cell(CkMigrateMessage *msg): CBase_Cell(msg) {
   __sdag_init();
   usesAtSync = CmiTrue;
   delete msg;
 }  
 
-Patch::~Patch() {}
+Cell::~Cell() {}
 
 //function to create my computes
-void Patch::createComputes() {
+void Cell::createComputes() {
   int num;  
 
   int x = thisIndex.x;
@@ -74,7 +74,7 @@ void Patch::createComputes() {
     computesList[i] = new int[6];
   }
 
-  /*  The computes X are inserted by a given patch:
+  /*  The computes X are inserted by a given cell:
    *
    *	^  X  X  X
    *	|  0  X  X
@@ -99,7 +99,7 @@ void Patch::createComputes() {
       computesList[num][3] = px2; computesList[num][4] = py2; computesList[num][5] = pz2;
     }
     else {
-      // these computes will be created by pairing patches
+      // these computes will be created by pairing celles
       px2 = WRAP_X(x+dx);
       py2 = WRAP_Y(y+dy);
       pz2 = WRAP_Z(z+dz);
@@ -120,14 +120,14 @@ void Patch::createComputes() {
 }
 
 //call multicast section creation
-void Patch::createSection() {
+void Cell::createSection() {
   int num;
   localCreateSection();
   contribute(sizeof(int),&num,CkReduction::max_int,CkCallback(CkReductionTarget(Main,sectionsCreated),mainProxy));
 }
 
 //function to create the multicast section of computes
-void Patch::localCreateSection() {
+void Cell::localCreateSection() {
   CkVec<CkArrayIndex6D> elems;
   //create a vector list of my computes
   for (int num=0; num<inbrs; num++)
@@ -140,11 +140,11 @@ void Patch::localCreateSection() {
   //delegate the communication responsibility for this section to multicast library
   CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
   mCastSecProxy.ckSectionDelegate(mCastGrp);
-  mCastGrp->setReductionClient(mCastSecProxy, new CkCallback(CkReductionTarget(Patch,reduceForces), thisProxy(thisIndex.x, thisIndex.y, thisIndex.z)));
+  mCastGrp->setReductionClient(mCastSecProxy, new CkCallback(CkReductionTarget(Cell,reduceForces), thisProxy(thisIndex.x, thisIndex.y, thisIndex.z)));
 }
 
 // Function to start interaction among particles in neighboring cells as well as its own particles
-void Patch::sendPositions() {
+void Cell::sendPositions() {
   int len = particles.length();
 
   //create the particle and control message to be sent to computes
@@ -161,7 +161,7 @@ void Patch::sendPositions() {
 }
 
 //send the atoms that have moved beyond my cell to neighbors
-void Patch::migrateParticles(){
+void Cell::migrateParticles(){
   int i, x, y, z, x1, y1, z1;
   CkVec<Particle> *outgoing = new CkVec<Particle>[inbrs];
 
@@ -171,7 +171,7 @@ void Patch::migrateParticles(){
   z = thisIndex.z;
 
   for(i=0; i<particles.length(); i++) {
-    migrateToPatch(particles[i], x1, y1, z1);
+    migrateToCell(particles[i], x1, y1, z1);
     if(x1 !=0 || y1!=0 || z1 !=0) {
       outgoing[(x1+1)*NBRS_Y*NBRS_Z + (y1+1)*NBRS_Z + (z1+1)].push_back(wrapAround(particles[i]));
       particles.remove(i);
@@ -183,40 +183,40 @@ void Patch::migrateParticles(){
     y1 = (num % (NBRS_Y * NBRS_Z)) / NBRS_Z - NBRS_Y/2;
     z1 = num % NBRS_Z                       - NBRS_Z/2;
 
-    patchArray(WRAP_X(x+x1), WRAP_Y(y+y1), WRAP_Z(z+z1)).receiveParticles(outgoing[num]);
+    cellArray(WRAP_X(x+x1), WRAP_Y(y+y1), WRAP_Z(z+z1)).receiveParticles(outgoing[num]);
   }
 
   delete [] outgoing;
 }
 
 //check if the particle is to be moved
-void Patch::migrateToPatch(Particle p, int &px, int &py, int &pz) {
+void Cell::migrateToCell(Particle p, int &px, int &py, int &pz) {
   // currently this is assuming that particles are
   // migrating only to the immediate neighbors
-  int x = thisIndex.x * PATCH_SIZE_X + PATCH_ORIGIN_X;
-  int y = thisIndex.y * PATCH_SIZE_Y + PATCH_ORIGIN_Y;
-  int z = thisIndex.z * PATCH_SIZE_Z + PATCH_ORIGIN_Z;
+  int x = thisIndex.x * CELL_SIZE_X + CELL_ORIGIN_X;
+  int y = thisIndex.y * CELL_SIZE_Y + CELL_ORIGIN_Y;
+  int z = thisIndex.z * CELL_SIZE_Z + CELL_ORIGIN_Z;
 
   if (p.pos.x < x) px = -1;
-  else if (p.pos.x > x+PATCH_SIZE_X) px = 1;
+  else if (p.pos.x > x+CELL_SIZE_X) px = 1;
   else px = 0;
 
   if (p.pos.y < y) py = -1;
-  else if (p.pos.y > y+PATCH_SIZE_Y) py = 1;
+  else if (p.pos.y > y+CELL_SIZE_Y) py = 1;
   else py = 0;
 
   if (p.pos.z < z) pz = -1;
-  else if (p.pos.z > z+PATCH_SIZE_Z) pz = 1;
+  else if (p.pos.z > z+CELL_SIZE_Z) pz = 1;
   else pz = 0;
 }
 
 //call nextStep if load balancing is done
-void Patch::ResumeFromSync(){
-  patchArray(thisIndex.x,thisIndex.y,thisIndex.z).resumeAfterLB(1);
+void Cell::ResumeFromSync(){
+  cellArray(thisIndex.x,thisIndex.y,thisIndex.z).resumeAfterLB(1);
 }
 
 // Function to update properties (i.e. acceleration, velocity and position) in particles
-void Patch::updateProperties(vec3 *forces, int lengthUp) {
+void Cell::updateProperties(vec3 *forces, int lengthUp) {
   int i;
   double energy = 0;
   double powTen, powFteen, realTimeDelta, invMassParticle;
@@ -242,7 +242,7 @@ void Patch::updateProperties(vec3 *forces, int lengthUp) {
     contribute(sizeof(double),&energy,CkReduction::sum_double,CkCallback(CkReductionTarget(Main,energySumP),mainProxy));
 }
 
-void Patch::limitVelocity(Particle &p) {
+void Cell::limitVelocity(Particle &p) {
   if( fabs( p.vel.x ) > MAX_VELOCITY ) {
     if( p.vel.x < 0.0 )
       p.vel.x = -MAX_VELOCITY;
@@ -265,20 +265,20 @@ void Patch::limitVelocity(Particle &p) {
   }
 }
 
-Particle& Patch::wrapAround(Particle &p) {
-  if(p.pos.x < PATCH_ORIGIN_X) p.pos.x += PATCH_SIZE_X*patchArrayDimX;
-  if(p.pos.y < PATCH_ORIGIN_Y) p.pos.y += PATCH_SIZE_Y*patchArrayDimY;
-  if(p.pos.z < PATCH_ORIGIN_Z) p.pos.z += PATCH_SIZE_Z*patchArrayDimZ;
-  if(p.pos.x > PATCH_ORIGIN_X + PATCH_SIZE_X*patchArrayDimX) p.pos.x -= PATCH_SIZE_X*patchArrayDimX;
-  if(p.pos.y > PATCH_ORIGIN_Y + PATCH_SIZE_Y*patchArrayDimY) p.pos.y -= PATCH_SIZE_Y*patchArrayDimY;
-  if(p.pos.z > PATCH_ORIGIN_Z + PATCH_SIZE_Z*patchArrayDimZ) p.pos.z -= PATCH_SIZE_Z*patchArrayDimZ;
+Particle& Cell::wrapAround(Particle &p) {
+  if(p.pos.x < CELL_ORIGIN_X) p.pos.x += CELL_SIZE_X*cellArrayDimX;
+  if(p.pos.y < CELL_ORIGIN_Y) p.pos.y += CELL_SIZE_Y*cellArrayDimY;
+  if(p.pos.z < CELL_ORIGIN_Z) p.pos.z += CELL_SIZE_Z*cellArrayDimZ;
+  if(p.pos.x > CELL_ORIGIN_X + CELL_SIZE_X*cellArrayDimX) p.pos.x -= CELL_SIZE_X*cellArrayDimX;
+  if(p.pos.y > CELL_ORIGIN_Y + CELL_SIZE_Y*cellArrayDimY) p.pos.y -= CELL_SIZE_Y*cellArrayDimY;
+  if(p.pos.z > CELL_ORIGIN_Z + CELL_SIZE_Z*cellArrayDimZ) p.pos.z -= CELL_SIZE_Z*cellArrayDimZ;
 
   return p;
 }
 
 //pack important data when I move
-void Patch::pup(PUP::er &p) {
-  CBase_Patch::pup(p);
+void Cell::pup(PUP::er &p) {
+  CBase_Cell::pup(p);
   __sdag_pup(p);
   p | particles;
   p | stepCount;
@@ -303,6 +303,6 @@ void Patch::pup(PUP::er &p) {
   if (p.isUnpacking()){
     CkMulticastMgr *mg = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
     mg->resetSection(mCastSecProxy);
-    mg->setReductionClient(mCastSecProxy, new CkCallback(CkReductionTarget(Patch,reduceForces), thisProxy(thisIndex.x, thisIndex.y, thisIndex.z)));
+    mg->setReductionClient(mCastSecProxy, new CkCallback(CkReductionTarget(Cell,reduceForces), thisProxy(thisIndex.x, thisIndex.y, thisIndex.z)));
   }
 }

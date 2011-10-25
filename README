@@ -11,15 +11,15 @@ leanmd.ci - contains the most important aspects of the program, look for run()
 function for each chare which is called right after constructor call for each
 chare. It contains most of the parallel flow and control flow information.
 
-Patch.* - contains the implementation of important functions attached with
-Patch; focus on sendPositions() and updateProperties()
+Cell.* - contains the implementation of important functions attached with
+Cell; focus on sendPositions() and updateProperties()
 
 Compute.* - contains the implementation for Compute; the interact() function
 is important as it does the force computation.
 
 Main.* - contains the constructor for Main chare; also the starting point 
 of the application; main chare passes control to run() of Main chare and
-constructors of Patch.
+constructors of Cell.
 
 physics.h - contains physics equation implementation for force computation; also
 contains the contribute for reduction of forces.

@@ -5,9 +5,9 @@
 
 extern /* readonly */ CkGroupID mCastGrpID;
 
-extern /* readonly */ int patchArrayDimX;	// Number of Chare Rows
-extern /* readonly */ int patchArrayDimY;	// Number of Chare Columns
-extern /* readonly */ int patchArrayDimZ;
+extern /* readonly */ int cellArrayDimX;	// Number of Chare Rows
+extern /* readonly */ int cellArrayDimY;	// Number of Chare Columns
+extern /* readonly */ int cellArrayDimZ;
 extern /* readonly */ int finalStepCount; 
 
 #define BLOCK_SIZE	512
@@ -29,21 +29,21 @@ inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, Ck
   vec3 *secondmsg = new vec3[secondLen];
   //check for wrap around and adjust locations accordingly
   if (abs(first->x - second->x) > 1){
-    diff = PATCH_SIZE_X * patchArrayDimX;
+    diff = CELL_SIZE_X * cellArrayDimX;
     if (second->x < first->x)
       diff = -1 * diff; 
     for (i = 0; i < firstLen; i++)
       first->part[i].x += diff;
   }
   if (abs(first->y - second->y) > 1){
-    diff = PATCH_SIZE_Y * patchArrayDimY;
+    diff = CELL_SIZE_Y * cellArrayDimY;
     if (second->y < first->y)
       diff = -1 * diff; 
     for (i = 0; i < firstLen; i++)
       first->part[i].y += diff;
   }
   if (abs(first->z - second->z) > 1){
-    diff = PATCH_SIZE_Z * patchArrayDimZ;
+    diff = CELL_SIZE_Z * cellArrayDimZ;
     if (second->z < first->z)
       diff = -1 * diff; 
     for (i = 0; i < firstLen; i++)
