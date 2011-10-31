@@ -45,6 +45,8 @@ Cell::Cell() {
   stepCount = 0;
   updateCount = 0;
   stepTime = 0;
+
+  numReadyCheckpoint = 0;
 }
 
 //constructor for chare object migration
@@ -52,6 +54,7 @@ Cell::Cell(CkMigrateMessage *msg): CBase_Cell(msg) {
   __sdag_init();
   usesAtSync = CmiTrue;
   delete msg;
+  numReadyCheckpoint = 0;
 }  
 
 Cell::~Cell() {}
@@ -301,8 +304,34 @@ void Cell::pup(PUP::er &p) {
   p | mCastSecProxy;
   //adjust the multicast tree to give best performance after moving
   if (p.isUnpacking()){
-    CkMulticastMgr *mg = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
-    mg->resetSection(mCastSecProxy);
-    mg->setReductionClient(mCastSecProxy, new CkCallback(CkReductionTarget(Cell,reduceForces), thisProxy(thisIndex.x, thisIndex.y, thisIndex.z)));
+    if (CkInRestarting()) {
+      localCreateSection();
+    }
+    else {
+      CkMulticastMgr *mg = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
+      mg->resetSection(mCastSecProxy);
+      mg->setReductionClient(mCastSecProxy, new CkCallback(CkReductionTarget(Cell,reduceForces), thisProxy(thisIndex.x, thisIndex.y, thisIndex.z)));
+    }
   }
 }
+
+// make sure all cells reach to the barrier
+// and energy reduction is done
+void Cell::startCheckpoint(int numCell)
+{
+  static int ncell = 0;
+  numReadyCheckpoint ++;
+  if (numCell) ncell = numCell;
+  else ncell = cellArrayDimX * cellArrayDimY * cellArrayDimZ;
+  if (ncell && numReadyCheckpoint == ncell) {
+        CkCallback cb(CkIndex_Cell::recvCheckPointDone(), thisProxy);
+#if CMK_MEM_CHECKPOINT
+        CkPrintf("[%d] Activating Checkpoint ... \n", CkMyPe());
+        CkStartMemCheckpoint(cb);
+#else
+        cb->send();
+#endif
+        numReadyCheckpoint = 0;
+  }
+}
+

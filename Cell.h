@@ -7,6 +7,7 @@ extern /* readonly */ CkGroupID mCastGrpID;
 extern /* readonly */ int firstLdbStep;
 extern /* readonly */ int ldbPeriod;
 extern /* readonly */ int finalStepCount;
+extern /* readonly */ int checkptFreq;
 
 #include "ckmulticast.h"
 
@@ -32,6 +33,8 @@ class Cell : public CBase_Cell {
     int updateCount;
     double stepTime;  //time taken to do iterations
 
+    int numReadyCheckpoint;
+
     void migrateToCell(Particle p, int &px, int &py, int &pz);
     void updateProperties(vec3 *forces, int lengthUp);	//updates properties after receiving forces from computes
     void limitVelocity(Particle &p); //limit velcities to an upper limit
@@ -50,6 +53,8 @@ class Cell : public CBase_Cell {
     void migrateParticles();
     void sendPositions();
     void ResumeFromSync();
+
+    void startCheckpoint(int);
 };
 
 #endif

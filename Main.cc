@@ -18,6 +18,7 @@
 /* readonly */ int finalStepCount; 
 /* readonly */ int firstLdbStep; 
 /* readonly */ int ldbPeriod; 
+/* readonly */ int checkptFreq; 
 
 // Entry point of Charm++ application
 Main::Main(CkArgMsg* m) {
@@ -31,6 +32,7 @@ Main::Main(CkArgMsg* m) {
   finalStepCount = DEFAULT_FINALSTEPCOUNT;
   firstLdbStep = DEFAULT_FIRST_LDB;
   ldbPeriod = DEFAULT_LDB_PERIOD;
+  checkptFreq = DEFAULT_FT_PERIOD;
 
   mainProxy = thisProxy;
   energy = prevEnergy = 0;
@@ -72,6 +74,12 @@ Main::Main(CkArgMsg* m) {
   if (m->argc > cur_arg) {
     ldbPeriod=atoi(m->argv[cur_arg++]);
     CkPrintf("LB Period:%d\n",ldbPeriod);
+  }
+
+  //periodicity of checkpointing
+  if (m->argc > cur_arg) {
+    checkptFreq=atoi(m->argv[cur_arg++]);
+    CkPrintf("FT Period:%d\n",checkptFreq);
   }
 
   //initializing the 3D cell array
