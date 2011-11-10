@@ -53,7 +53,7 @@ Main::Main(CkArgMsg* m) {
     cellArrayDimX=atoi(m->argv[cur_arg++]);
     cellArrayDimY=atoi(m->argv[cur_arg++]);
     cellArrayDimZ=atoi(m->argv[cur_arg++]);
-    CkPrintf("Cell Array Dimension X:%d Y:%d Z:%d\n",cellArrayDimX,cellArrayDimY,cellArrayDimZ);
+    CkPrintf("Cell Array Dimension X:%d Y:%d Z:%d of size %d %d %d\n",cellArrayDimX,cellArrayDimY,cellArrayDimZ,CELL_SIZE_X,CELL_SIZE_Y,CELL_SIZE_Z);
   }
 
   //number of steps in simulation
@@ -93,6 +93,7 @@ Main::Main(CkArgMsg* m) {
       for (int z=0; z<cellArrayDimZ; z++)
         cellArray(x, y, z).createComputes();
 
+  printf("reaches here\n");
   thisProxy.run();
   delete m;
 }
