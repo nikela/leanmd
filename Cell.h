@@ -18,6 +18,15 @@ struct ParticleDataMsg : public CkMcastBaseMsg, public CMessage_ParticleDataMsg 
   int y;    //y coordinate
   int z;    //z coordinate
 
+  void pup(PUP::er &p){
+    CMessage_ParticleDataMsg::pup(p);
+    p | lengthAll;
+    p | x; p | y; p | z;
+    if (p.isUnpacking()){
+      part = new vec3[lengthAll];
+    }
+    PUParray(p, part, lengthAll);
+  } 
 };
 
 //chare used to represent a cell

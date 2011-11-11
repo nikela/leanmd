@@ -36,6 +36,7 @@ void Compute::interact(ParticleDataMsg *msg){
 
   //self interaction check
   if (thisIndex.x1 ==thisIndex.x2 && thisIndex.y1 ==thisIndex.y2 && thisIndex.z1 ==thisIndex.z2) {
+    bmsgLenAll = -1;
     CkGetSectionInfo(mcast1,msg);
     energy = calcInternalForces(msg, &mcast1, stepCount);
     if(stepCount == 0 || stepCount == (finalStepCount-1))
@@ -44,13 +45,14 @@ void Compute::interact(ParticleDataMsg *msg){
     //check if this is the first message or second
     if (cellCount == 0) {
       bufferedMsg = msg;
+      bmsgLenAll = bufferedMsg->lengthAll;
       cellCount++;
       return;
     }
 
     // Both particle sets have been received, so compute interaction
     cellCount = 0;
-
+    bmsgLenAll = -1;
     ParticleDataMsg *msgA = msg, *msgB = bufferedMsg;
     CkSectionInfo *handleA = &mcast1, *handleB = &mcast2;
     if (bufferedMsg->x*cellArrayDimY*cellArrayDimZ + bufferedMsg->y*cellArrayDimZ + bufferedMsg->z < msg->x*cellArrayDimY*cellArrayDimZ + msg->y*cellArrayDimZ + msg->z){ 
@@ -83,5 +85,12 @@ void Compute::pup(PUP::er &p) {
       mcast2.get_redNo() = 0;
   }
   p | cellCount;
-  bufferedMsg = NULL;
+  p | bmsgLenAll;
+  if (bmsgLenAll >= 0){
+    if (p.isUnpacking())
+      bufferedMsg = new (bmsgLenAll) ParticleDataMsg;
+    p | *bufferedMsg;
+  }
+  else
+    bufferedMsg = NULL;
 }
