@@ -1,4 +1,6 @@
-include ../config.mk
+# to be set appropiately
+CHARMBASE      = 
+CHARMC         = $(CHARMBASE)/bin/charmc
 
 OPTS            = -O3 
 
