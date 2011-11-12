@@ -5,9 +5,9 @@
 
 extern /* readonly */ CkGroupID mCastGrpID;
 
-extern /* readonly */ int patchArrayDimX;	// Number of Chare Rows
-extern /* readonly */ int patchArrayDimY;	// Number of Chare Columns
-extern /* readonly */ int patchArrayDimZ;
+extern /* readonly */ int cellArrayDimX;	// Number of Chare Rows
+extern /* readonly */ int cellArrayDimY;	// Number of Chare Columns
+extern /* readonly */ int cellArrayDimZ;
 extern /* readonly */ int finalStepCount; 
 
 #define BLOCK_SIZE	512
@@ -22,28 +22,28 @@ inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, Ck
   double rSix, rTwelve;
   double energy = 0;
   int doEnergy = 0;
-  if(stepCount == 1 || stepCount == finalStepCount)
+  if(stepCount == 0 || stepCount == (finalStepCount-1))
     doEnergy = 1;
 
   vec3 *firstmsg = new vec3[firstLen];
   vec3 *secondmsg = new vec3[secondLen];
   //check for wrap around and adjust locations accordingly
   if (abs(first->x - second->x) > 1){
-    diff = PATCH_SIZE_X * patchArrayDimX;
+    diff = CELL_SIZE_X * cellArrayDimX;
     if (second->x < first->x)
       diff = -1 * diff; 
     for (i = 0; i < firstLen; i++)
       first->part[i].x += diff;
   }
   if (abs(first->y - second->y) > 1){
-    diff = PATCH_SIZE_Y * patchArrayDimY;
+    diff = CELL_SIZE_Y * cellArrayDimY;
     if (second->y < first->y)
       diff = -1 * diff; 
     for (i = 0; i < firstLen; i++)
       first->part[i].y += diff;
   }
   if (abs(first->z - second->z) > 1){
-    diff = PATCH_SIZE_Z * patchArrayDimZ;
+    diff = CELL_SIZE_Z * cellArrayDimZ;
     if (second->z < first->z)
       diff = -1 * diff; 
     for (i = 0; i < firstLen; i++)
@@ -67,11 +67,11 @@ inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, Ck
             rTwelve = rSix * rSix;
             f = (double)(VDW_A / rTwelve - VDW_B / rSix);
             if(doEnergy)
-	      energy += (double)( VDW_A / (12*rTwelve) - VDW_B / (6*rSix));
+              energy += (double)( VDW_A / (12*rTwelve) - VDW_B / (6*rSix));
             fr = f /r;
-	    force = separation * (fr * powTen);
-	    firstmsg[i] += force;
-	    secondmsg[jpart] -= force;
+            force = separation * (fr * powTen);
+            firstmsg[i] += force;
+            secondmsg[jpart] -= force;
           }
         }
       }
@@ -98,7 +98,7 @@ inline double calcInternalForces(ParticleDataMsg* first, CkSectionInfo *mcast1, 
   double rSix, rTwelve;
   double energy = 0;
   int doEnergy = 0;
-  if(stepCount == 1 || stepCount == finalStepCount)
+  if(stepCount == 0 || stepCount == (finalStepCount-1))
     doEnergy = 1;
   vec3 *firstmsg = new vec3[firstLen];
 
@@ -118,7 +118,7 @@ inline double calcInternalForces(ParticleDataMsg* first, CkSectionInfo *mcast1, 
         rTwelve = rSix * rSix;
         f = (double)(VDW_A / rTwelve - VDW_B / rSix);
         if(doEnergy)
-	  energy += (double)( VDW_A / (12*rTwelve) - VDW_B / (6*rSix));
+          energy += (double)( VDW_A / (12*rTwelve) - VDW_B / (6*rSix));
 
         fr = f /r;
         force = separation * (fr * powTen);

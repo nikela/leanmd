@@ -1,13 +1,20 @@
 #ifndef __MAIN_H__
 #define __MAIN_H__
 
+extern /* readonly */ CProxy_Cell cellArray;
+extern /* readonly */ CProxy_Compute computeArray;
+
+extern /* readonly */ int cellArrayDimX;
+extern /* readonly */ int cellArrayDimY;
+extern /* readonly */ int cellArrayDimZ;
+
 //central controller chare
 class Main : public CBase_Main {
   private:
-    int phase;    //variable to keep track of phase in initial set up
+    Main_SDAG_CODE
     double energy, prevEnergy;  //store initial and final energy
     int testFailed;    //flag to indicate if simulation conserve energy
-    int endCount;   //to make sure verification happens
+    int endCount;
 
   public:
     Main(CkArgMsg* msg);
@@ -15,9 +22,7 @@ class Main : public CBase_Main {
     void pup(PUP::er &p);
 
     //member functions
-    void allDone();
-    void ftBarrier();
-    void startUpDone();
-    void energySum(double energyIn);
+    //void allDone();
+    //void energySum(double energyIn);
 };
 #endif

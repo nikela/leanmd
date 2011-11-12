@@ -9,7 +9,7 @@
 #define VDW_B			      (1.031093844 * pow(10.0, -77))
 
 #define ENERGY_VAR  		(1.0 * pow(10.0,-5))
-#define PARTICLES_PER_PATCH   	150	
+#define PARTICLES_PER_CELL   	600
 
 #define DEFAULT_DELTA		1	// in femtoseconds
 
@@ -17,33 +17,33 @@
 #define DEFAULT_LDB_PERIOD	20
 #define DEFAULT_FT_PERIOD	100000
 
-#define PATCHARRAY_DIM_X	3
-#define PATCHARRAY_DIM_Y	3
-#define PATCHARRAY_DIM_Z	3
-#define PTP_CUT_OFF		12	//  cut off for atom to atom interactions
-#define PATCH_MARGIN		4 	// constant difference between cut off and patch size
-#define PATCH_SIZE_X		(PTP_CUT_OFF + PATCH_MARGIN)
-#define PATCH_SIZE_Y		(PTP_CUT_OFF + PATCH_MARGIN)
-#define PATCH_SIZE_Z		(PTP_CUT_OFF + PATCH_MARGIN)
-#define PATCH_ORIGIN_X		0
-#define PATCH_ORIGIN_Y		0
-#define PATCH_ORIGIN_Z		0
-
-#define MIGRATE_STEPCOUNT	20
-#define DEFAULT_FINALSTEPCOUNT	1001
-#define MAX_VELOCITY		30.0
-
-#define KAWAY_X			2
-#define KAWAY_Y			2
+#define KAWAY_X			1
+#define KAWAY_Y			1
 #define KAWAY_Z			1
 #define NBRS_X			(2*KAWAY_X+1)
 #define NBRS_Y			(2*KAWAY_Y+1)
 #define NBRS_Z			(2*KAWAY_Z+1)
 #define NUM_NEIGHBORS		(NBRS_X * NBRS_Y * NBRS_Z)
 
-#define WRAP_X(a)		(((a)+patchArrayDimX)%patchArrayDimX)
-#define WRAP_Y(a)		(((a)+patchArrayDimY)%patchArrayDimY)
-#define WRAP_Z(a)		(((a)+patchArrayDimZ)%patchArrayDimZ)
+#define CELLARRAY_DIM_X	3
+#define CELLARRAY_DIM_Y	3
+#define CELLARRAY_DIM_Z	3
+#define PTP_CUT_OFF		12 // cut off for atom to atom interactions
+#define CELL_MARGIN		4  // constant diff between cutoff and cell size
+#define CELL_SIZE_X		(PTP_CUT_OFF + CELL_MARGIN)/KAWAY_X
+#define CELL_SIZE_Y		(PTP_CUT_OFF + CELL_MARGIN)/KAWAY_Y
+#define CELL_SIZE_Z		(PTP_CUT_OFF + CELL_MARGIN)/KAWAY_Z
+#define CELL_ORIGIN_X		0
+#define CELL_ORIGIN_Y		0
+#define CELL_ORIGIN_Z		0
+
+#define MIGRATE_STEPCOUNT	20
+#define DEFAULT_FINALSTEPCOUNT	1001
+#define MAX_VELOCITY		30.0
+
+#define WRAP_X(a)		(((a)+cellArrayDimX)%cellArrayDimX)
+#define WRAP_Y(a)		(((a)+cellArrayDimY)%cellArrayDimY)
+#define WRAP_Z(a)		(((a)+cellArrayDimZ)%cellArrayDimZ)
 
 struct vec3 {
   double x, y, z;
@@ -70,19 +70,19 @@ inline double dot(const vec3& a, const vec3& b) {
 }
 PUPbytes(vec3)
 
-//class for keeping track of the properties for a particle
-struct Particle {
-//  int id;
-  double mass;
-  //   Position, acceleration, velocity
-  vec3 pos,      acc,          vel;
+  //class for keeping track of the properties for a particle
+  struct Particle {
+    //  int id;
+    double mass;
+    //   Position, acceleration, velocity
+    vec3 pos,      acc,          vel;
 
-  // Function for pupping properties
-  void pup(PUP::er &p) {
-    p | mass;
-    p | pos;
-    p | acc;
-    p | vel;
-  }
-};
+    // Function for pupping properties
+    void pup(PUP::er &p) {
+      p | mass;
+      p | pos;
+      p | acc;
+      p | vel;
+    }
+  };
 #endif
