@@ -121,9 +121,7 @@ mainmodule leanmd {
       }
       //everything is done, call end
       atomic {
-        int num;
         contribute(0,NULL,CkReduction::nop,CkCallback(CkReductionTarget(Main,allDone),mainProxy));
-        //contribute(CkCallback(CkIndex_Main::allDone(), mainProxy));
       }
     };
   };
