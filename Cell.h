@@ -33,7 +33,7 @@ struct ParticleDataMsg : public CkMcastBaseMsg, public CMessage_ParticleDataMsg 
 class Cell : public CBase_Cell {
   private:
     Cell_SDAG_CODE   //SDAG code
-      CkVec<Particle> particles;  //list of atoms
+    CkVec<Particle> particles;  //list of atoms
     int **computesList;   //my compute locations
     int stepCount;		// to count the number of steps, and decide when to stop
     int myNumParts;   //number of atoms in my cell

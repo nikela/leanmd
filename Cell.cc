@@ -164,14 +164,12 @@ void Cell::migrateParticles(){
       particles.remove(i);
     }
   }
-
   for(int num=0; num<inbrs; num++) {
     x1 = num / (NBRS_Y * NBRS_Z)            - NBRS_X/2;
     y1 = (num % (NBRS_Y * NBRS_Z)) / NBRS_Z - NBRS_Y/2;
     z1 = num % NBRS_Z                       - NBRS_Z/2;
     cellArray(WRAP_X(thisIndex.x+x1), WRAP_Y(thisIndex.y+y1), WRAP_Z(thisIndex.z+z1)).receiveParticles(outgoing[num]);
   }
-
   delete [] outgoing;
 }
 

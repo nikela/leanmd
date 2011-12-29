@@ -31,7 +31,6 @@ Compute::Compute(CkMigrateMessage *msg): CBase_Compute(msg)  {
 
 //local method to compute forces
 void Compute::interact(ParticleDataMsg *msg){
-  int i;
   double energy = 0;
 
   //self interaction check
