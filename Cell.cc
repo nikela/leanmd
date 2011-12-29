@@ -119,13 +119,6 @@ void Cell::createComputes() {
 
 //call multicast section creation
 void Cell::createSection() {
-  int num;
-  localCreateSection();
-  contribute(0,NULL,CkReduction::nop,CkCallback(CkReductionTarget(Main,sectionsCreated),mainProxy));
-}
-
-//function to create the multicast section of computes
-void Cell::localCreateSection() {
   CkVec<CkArrayIndex6D> elems;
   //create a vector list of my computes
   for (int num=0; num<inbrs; num++)
@@ -139,6 +132,7 @@ void Cell::localCreateSection() {
   CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
   mCastSecProxy.ckSectionDelegate(mCastGrp);
   mCastGrp->setReductionClient(mCastSecProxy, new CkCallback(CkReductionTarget(Cell,reduceForces), thisProxy(thisIndex.x, thisIndex.y, thisIndex.z)));
+  contribute(0,NULL,CkReduction::nop,CkCallback(CkReductionTarget(Main,sectionsCreated),mainProxy));
 }
 
 // Function to start interaction among particles in neighboring cells as well as its own particles
@@ -160,17 +154,12 @@ void Cell::sendPositions() {
 
 //send the atoms that have moved beyond my cell to neighbors
 void Cell::migrateParticles(){
-  int i, x, y, z, x1, y1, z1;
+  int i, x1, y1, z1;
   CkVec<Particle> *outgoing = new CkVec<Particle>[inbrs];
-
-  // sending particles to neighboring cells
-  x = thisIndex.x;
-  y = thisIndex.y;
-  z = thisIndex.z;
 
   for(i=0; i<particles.length(); i++) {
     migrateToCell(particles[i], x1, y1, z1);
-    if(x1 !=0 || y1!=0 || z1 !=0) {
+    if(x1!=0 || y1!=0 || z1!=0) {
       outgoing[(x1+1)*NBRS_Y*NBRS_Z + (y1+1)*NBRS_Z + (z1+1)].push_back(wrapAround(particles[i]));
       particles.remove(i);
     }
@@ -180,8 +169,7 @@ void Cell::migrateParticles(){
     x1 = num / (NBRS_Y * NBRS_Z)            - NBRS_X/2;
     y1 = (num % (NBRS_Y * NBRS_Z)) / NBRS_Z - NBRS_Y/2;
     z1 = num % NBRS_Z                       - NBRS_Z/2;
-
-    cellArray(WRAP_X(x+x1), WRAP_Y(y+y1), WRAP_Z(z+z1)).receiveParticles(outgoing[num]);
+    cellArray(WRAP_X(thisIndex.x+x1), WRAP_Y(thisIndex.y+y1), WRAP_Z(thisIndex.z+z1)).receiveParticles(outgoing[num]);
   }
 
   delete [] outgoing;
@@ -194,18 +182,16 @@ void Cell::migrateToCell(Particle p, int &px, int &py, int &pz) {
   int x = thisIndex.x * CELL_SIZE_X + CELL_ORIGIN_X;
   int y = thisIndex.y * CELL_SIZE_Y + CELL_ORIGIN_Y;
   int z = thisIndex.z * CELL_SIZE_Z + CELL_ORIGIN_Z;
+  px = py = pz = 0;
 
   if (p.pos.x < x) px = -1;
   else if (p.pos.x > x+CELL_SIZE_X) px = 1;
-  else px = 0;
 
   if (p.pos.y < y) py = -1;
   else if (p.pos.y > y+CELL_SIZE_Y) py = 1;
-  else py = 0;
 
   if (p.pos.z < z) pz = -1;
   else if (p.pos.z > z+CELL_SIZE_Z) pz = 1;
-  else pz = 0;
 }
 
 // Function to update properties (i.e. acceleration, velocity and position) in particles
@@ -235,27 +221,21 @@ void Cell::updateProperties(vec3 *forces, int lengthUp) {
     contribute(sizeof(double),&energy,CkReduction::sum_double,CkCallback(CkReductionTarget(Main,energySumP),mainProxy));
 }
 
+inline double velocityCheck(double inVelocity) {
+  if(fabs(inVelocity) > MAX_VELOCITY) {
+    if(inVelocity < 0.0 )
+      return -MAX_VELOCITY;
+    else
+      return MAX_VELOCITY;
+  } else {
+    return inVelocity;
+  }
+}
+
 void Cell::limitVelocity(Particle &p) {
-  if( fabs( p.vel.x ) > MAX_VELOCITY ) {
-    if( p.vel.x < 0.0 )
-      p.vel.x = -MAX_VELOCITY;
-    else
-      p.vel.x = MAX_VELOCITY;
-  }
-
-  if( fabs(p.vel.y) > MAX_VELOCITY ) {
-    if( p.vel.y < 0.0 )
-      p.vel.y = -MAX_VELOCITY;
-    else
-      p.vel.y = MAX_VELOCITY;
-  }
-
-  if( fabs(p.vel.z) > MAX_VELOCITY ) {
-    if( p.vel.z < 0.0 )
-      p.vel.z = -MAX_VELOCITY;
-    else
-      p.vel.z = MAX_VELOCITY;
-  }
+  p.vel.x = velocityCheck(p.vel.x);
+  p.vel.y = velocityCheck(p.vel.y);
+  p.vel.z = velocityCheck(p.vel.z);
 }
 
 Particle& Cell::wrapAround(Particle &p) {

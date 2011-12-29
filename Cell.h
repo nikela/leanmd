@@ -54,7 +54,6 @@ class Cell : public CBase_Cell {
     void pup(PUP::er &p);
     void createComputes();  //add my computes
     void createSection();   //created multicast section of computes
-    void localCreateSection();
     void migrateParticles();
     void sendPositions();
 };

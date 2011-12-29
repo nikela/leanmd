@@ -33,7 +33,7 @@ Main::Main(CkArgMsg* m) {
   ldbPeriod = DEFAULT_LDB_PERIOD;
 
   mainProxy = thisProxy;
-  energy = prevEnergy = 0;
+  finalEnergy = initialEnergy = 0;
   testFailed = 0;
 
   //branch factor for spanning tree of multicast
@@ -106,8 +106,8 @@ Main::Main(CkMigrateMessage* msg): CBase_Main(msg) {
 void Main::pup(PUP::er &p) {
   CBase_Main::pup(p);
    __sdag_pup(p);
-  p|energy;
-  p|prevEnergy;
+  p|finalEnergy;
+  p|initialEnergy;
   p|testFailed;
 }
 

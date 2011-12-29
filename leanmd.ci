@@ -10,13 +10,13 @@ mainmodule leanmd {
   readonly int cellArrayDimZ;		// Y dimension of the Cell array
   readonly int finalStepCount;		// number of steps in the simulaion
   readonly int firstLdbStep;		// begin load balancing after this many steps
-  readonly int ldbPeriod;		// do load balancing every period
+  readonly int ldbPeriod;		// load balancing period
 
   //central controller chare
   mainchare [migratable] Main {
     entry Main(CkArgMsg* msg);
     entry [reductiontarget] void allDone();     //called when simulation is done
-    entry [reductiontarget] void computesCreated(); //called when initial set up is done
+    entry [reductiontarget] void computesCreated(); //called when computes have been created
     entry [reductiontarget] void sectionsCreated(); //called when initial set up is done
     entry [reductiontarget] void energySumP(double energyIn);  //reduction of potential energy
     entry [reductiontarget] void energySumK(double energyIn);  //reduction of kinetic energy
@@ -38,13 +38,13 @@ mainmodule leanmd {
       }
       //receive initial energy
       when energySumP(double energyP), energySumK(double energyK) atomic {
-        prevEnergy = energyP + energyK;
+        initialEnergy = energyP + energyK;
       }
       //receive final energy and compare
       when energySumP(double energyP), energySumK(double energyK) atomic {
-        energy = energyP + energyK;
-        if(abs(energy-prevEnergy)>ENERGY_VAR) {
-          CkPrintf("Energy value has varied significantly from %E to %E\n",prevEnergy,energy);
+        finalEnergy = energyP + energyK;
+        if(abs(finalEnergy-initialEnergy)>ENERGY_VAR) {
+          CkPrintf("Energy value has varied significantly from %E to %E\n",initialEnergy,finalEnergy);
           testFailed = 1;
         }
       }
@@ -74,21 +74,17 @@ mainmodule leanmd {
     entry void ResumeFromSync();    //resume from here after load balancing
     entry [reductiontarget] void reduceForces(vec3 forces[n], int n);   //receives forces from my computes on my atoms
 
-    //function to perform one iteration of LeanMD
+    //function to perform iterations for Cells
     entry void run() {
       if(thisIndex.x==0 && thisIndex.y==0 && thisIndex.z==0) atomic {
         stepTime = CkWallTimer();
       }
       for(stepCount = 0; stepCount < finalStepCount; stepCount++) {
-        atomic {
-          sendPositions();    //send current atom positions to my computes
-        }
-        when reduceForces(vec3 forces[n], int n) {
-          atomic {
+        atomic { sendPositions(); }    //send current atom positions to my computes
+        when reduceForces(vec3 forces[n], int n) atomic {
             updateProperties(forces, n);   //update properties of atoms using new force values
-          }
         }
-        if (stepCount > 0 && (stepCount %  MIGRATE_STEPCOUNT) == 0) {
+        if (stepCount && (stepCount %  MIGRATE_STEPCOUNT) == 0) {
           atomic {
             migrateParticles(); //send atoms that have moved beyond my cell to neighbors
           }
@@ -103,29 +99,24 @@ mainmodule leanmd {
         }
         //periodically print time values
         if (stepCount && thisIndex.x==0 && thisIndex.y==0 && thisIndex.z==0 && stepCount%20==0) atomic {
-          double timer = CkWallTimer();
           CkPrintf("Step %d Benchmark Time %lf ms/step\n", 
-              stepCount, ((timer - stepTime)/20)*1000);
+              stepCount, ((CkWallTimer() - stepTime)/20)*1000);
           stepTime = CkWallTimer();
         }
         //periodically call load balancer
         if (stepCount >= firstLdbStep && (stepCount - firstLdbStep) % ldbPeriod == 0) {
-          atomic {
-            AtSync();
-          }
+          atomic { AtSync(); }
           when ResumeFromSync() atomic {
             stepTime = CkWallTimer();
           }
         }
       }
-      //everything is done, call end
-      atomic {
-        contribute(0,NULL,CkReduction::nop,CkCallback(CkReductionTarget(Main,allDone),mainProxy));
-      }
+      //all iterations are done, call end
+      atomic { contribute(0,NULL,CkReduction::nop,CkCallback(CkReductionTarget(Main,allDone),mainProxy)); }
     };
   };
 
-  //chares that does the force computations for pair of celles
+  //chares that do force computations for pair of cells
   array [6D] Compute {
     entry Compute();
     entry void ResumeFromSync();
@@ -143,11 +134,8 @@ mainmodule leanmd {
         }
         //periodically call load balancer
         if (stepCount >= firstLdbStep && (stepCount - firstLdbStep) % ldbPeriod== 0) {
-          atomic {
-            AtSync();
-          }
-          when ResumeFromSync() atomic {
-          }
+          atomic { AtSync(); }
+          when ResumeFromSync() atomic { }
         }
       }
     };
