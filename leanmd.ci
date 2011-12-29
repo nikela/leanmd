@@ -16,21 +16,21 @@ mainmodule leanmd {
   mainchare [migratable] Main {
     entry Main(CkArgMsg* msg);
     entry [reductiontarget] void allDone();     //called when simulation is done
-    entry [reductiontarget] void computesCreated(int proceed); //called when initial set up is done
-    entry [reductiontarget] void sectionsCreated(int proceed); //called when initial set up is done
+    entry [reductiontarget] void computesCreated(); //called when initial set up is done
+    entry [reductiontarget] void sectionsCreated(); //called when initial set up is done
     entry [reductiontarget] void energySumP(double energyIn);  //reduction of potential energy
-    entry [reductiontarget] void energySumK(double energyIn);  //reduction of potential energy
+    entry [reductiontarget] void energySumK(double energyIn);  //reduction of kinetic energy
 
     //this get called after the main constructor has called cell array constructor
     entry void run() {
       //compute array created, call for section creation
-      when computesCreated(int proceed) atomic {
+      when computesCreated() atomic {
         computeArray.doneInserting();
         CkPrintf("Computes: %d .... created\n", (NUM_NEIGHBORS/2+1)*cellArrayDimX*cellArrayDimY*cellArrayDimZ);
         cellArray.createSection();
       }
       //setup done, start program
-      when sectionsCreated(int proceed) atomic {
+      when sectionsCreated() atomic {
         CkPrintf("Multicast sections .... created\n");
         CkPrintf("Starting simulation .... \n\n");
         cellArray.run();
@@ -72,7 +72,6 @@ mainmodule leanmd {
     entry void createSection();     //creation multicast section of computes
     entry void receiveParticles(CkVec<Particle> updates);   //receive atoms that have migrated to neighboring celles to me
     entry void ResumeFromSync();    //resume from here after load balancing
-    entry void resumeAfterLB(int resume);    //resume from here after load balancing
     entry [reductiontarget] void reduceForces(vec3 forces[n], int n);   //receives forces from my computes on my atoms
 
     //function to perform one iteration of LeanMD
@@ -114,7 +113,7 @@ mainmodule leanmd {
           atomic {
             AtSync();
           }
-          when resumeAfterLB(int resume) atomic {
+          when ResumeFromSync() atomic {
             stepTime = CkWallTimer();
           }
         }
@@ -143,8 +142,12 @@ mainmodule leanmd {
           }
         }
         //periodically call load balancer
-        if (stepCount >= firstLdbStep && (stepCount - firstLdbStep) % ldbPeriod== 0) atomic {
-          AtSync();
+        if (stepCount >= firstLdbStep && (stepCount - firstLdbStep) % ldbPeriod== 0) {
+          atomic {
+            AtSync();
+          }
+          when ResumeFromSync() atomic {
+          }
         }
       }
     };

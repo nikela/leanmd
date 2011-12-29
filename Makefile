@@ -1,5 +1,5 @@
 # to be set appropiately
-CHARMBASE      = 
+CHARMBASE      = /expand/home/nikhil/codes/charm/net-linux-x86_64
 CHARMC         = $(CHARMBASE)/bin/charmc
 
 OPTS            = -O3 
@@ -8,7 +8,7 @@ all: leanmd
 
 leanmd: Main.o Cell.o Compute.o leanmd.decl.h
 	$(CHARMC) $(OPTS) -module CkMulticast -module CommonLBs \
-	-module HybridLB -language charm++ -o leanmd Main.o Cell.o Compute.o
+	-language charm++ -o leanmd Main.o Cell.o Compute.o
 
 Main.o: Main.cc Main.h leanmd.decl.h defs.h
 	$(CHARMC) $(OPTS) -o Main.o Main.cc

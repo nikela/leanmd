@@ -9,7 +9,6 @@ class Compute : public CBase_Compute {
     Compute_SDAG_CODE
     int cellCount;  // to count the number of interact() calls
     int stepCount;  //current step number
-    int bmsgLenAll;
     ParticleDataMsg *bufferedMsg; //copy of first message received for interaction
     //handles to differentiate the two multicast sections I am part of
     CkSectionInfo mcast1;     
@@ -21,7 +20,6 @@ class Compute : public CBase_Compute {
     void pup(PUP::er &p);
 
     void interact(ParticleDataMsg *msg);
-    void ResumeFromSync() { }           
 };
 
 #endif

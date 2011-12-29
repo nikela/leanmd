@@ -52,13 +52,11 @@ class Cell : public CBase_Cell {
     Cell(CkMigrateMessage *msg);
     ~Cell();
     void pup(PUP::er &p);
-
     void createComputes();  //add my computes
     void createSection();   //created multicast section of computes
     void localCreateSection();
     void migrateParticles();
     void sendPositions();
-    void ResumeFromSync();
 };
 
 #endif

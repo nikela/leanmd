@@ -20,9 +20,5 @@ class Main : public CBase_Main {
     Main(CkArgMsg* msg);
     Main(CkMigrateMessage* msg);
     void pup(PUP::er &p);
-
-    //member functions
-    //void allDone();
-    //void energySum(double energyIn);
 };
 #endif

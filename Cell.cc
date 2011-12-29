@@ -19,14 +19,12 @@ Cell::Cell() {
   __sdag_init();
   int i;
   inbrs = NUM_NEIGHBORS;
-  //total number of atoms in the system
-  int numParts = PARTICLES_PER_CELL * cellArrayDimX * cellArrayDimY * cellArrayDimZ;
   //load balancing to be called when AtSync is called
   usesAtSync = CmiTrue;
 
   myNumParts = PARTICLES_PER_CELL;
   // starting random generator
-  srand48(25763);
+  srand48(thisIndex.x+cellArrayDimX*(thisIndex.y+thisIndex.z*cellArrayDimY));
 
   // Particle initialization
   for(i=0; i < myNumParts; i++) {
@@ -116,14 +114,14 @@ void Cell::createComputes() {
       computesList[num][3] = px1; computesList[num][4] = py1; computesList[num][5] = pz1;
     }
   } // end of for loop
-  contribute(sizeof(int),&num,CkReduction::max_int,CkCallback(CkReductionTarget(Main,computesCreated),mainProxy));
+  contribute(0,NULL,CkReduction::nop,CkCallback(CkReductionTarget(Main,computesCreated),mainProxy));
 }
 
 //call multicast section creation
 void Cell::createSection() {
   int num;
   localCreateSection();
-  contribute(sizeof(int),&num,CkReduction::max_int,CkCallback(CkReductionTarget(Main,sectionsCreated),mainProxy));
+  contribute(0,NULL,CkReduction::nop,CkCallback(CkReductionTarget(Main,sectionsCreated),mainProxy));
 }
 
 //function to create the multicast section of computes
@@ -208,11 +206,6 @@ void Cell::migrateToCell(Particle p, int &px, int &py, int &pz) {
   if (p.pos.z < z) pz = -1;
   else if (p.pos.z > z+CELL_SIZE_Z) pz = 1;
   else pz = 0;
-}
-
-//call nextStep if load balancing is done
-void Cell::ResumeFromSync(){
-  cellArray(thisIndex.x,thisIndex.y,thisIndex.z).resumeAfterLB(1);
 }
 
 // Function to update properties (i.e. acceleration, velocity and position) in particles
