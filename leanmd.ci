@@ -64,7 +64,6 @@ mainmodule leanmd {
 
     //function to perform iterations for Cells
     entry void run() {
-      if(thisIndex.x==0 && thisIndex.y==0 && thisIndex.z==0) atomic { stepTime = CkWallTimer(); }
       for(stepCount = 1; stepCount <= finalStepCount; stepCount++) {
         //send current atom positions to my computes 
         atomic { sendPositions(); } 
@@ -85,18 +84,10 @@ mainmodule leanmd {
             }
           }
         }
-        //periodically print time values
-        if (thisIndex.x==0 && thisIndex.y==0 && thisIndex.z==0 && stepCount%20==0) atomic {
-          CkPrintf("Step %d Benchmark Time %lf ms/step\n", 
-              stepCount, ((CkWallTimer() - stepTime)/20)*1000);
-          stepTime = CkWallTimer();
-        }
         //periodically call load balancer
         if (stepCount >= firstLdbStep && (stepCount - firstLdbStep) % ldbPeriod == 0) {
           atomic { AtSync(); }
-          when ResumeFromSync() atomic {
-            stepTime = CkWallTimer();
-          }
+          when ResumeFromSync() atomic { }
         }
       }
       //everything done, reduction on kinetic energy
