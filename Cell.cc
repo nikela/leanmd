@@ -42,7 +42,6 @@ Cell::Cell() {
 
   stepCount = 1;
   updateCount = 0;
-  stepTime = 0;
   energy[0] = energy[1] = 0;
 }
 
@@ -255,7 +254,6 @@ void Cell::pup(PUP::er &p) {
   p | myNumParts;
   p | updateCount;
   p | inbrs;
-  p | stepTime;
   PUParray(p, energy, 2);
 
   if (p.isUnpacking()){

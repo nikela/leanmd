@@ -39,7 +39,6 @@ class Cell : public CBase_Cell {
     int myNumParts;   //number of atoms in my cell
     int inbrs;        //number of interacting neighbors
     int updateCount;
-    double stepTime;  //time taken to do iterations
     double energy[2]; //store kinetic energy - initial and final
 
     void migrateToCell(Particle p, int &px, int &py, int &pz);
