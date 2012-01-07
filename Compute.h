@@ -9,6 +9,7 @@ class Compute : public CBase_Compute {
     Compute_SDAG_CODE
     int cellCount;  // to count the number of interact() calls
     int stepCount;  //current step number
+    double energy[2]; //store potential energy
     ParticleDataMsg *bufferedMsg; //copy of first message received for interaction
     //handles to differentiate the two multicast sections I am part of
     CkSectionInfo mcast1;     

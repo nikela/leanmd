@@ -15,11 +15,10 @@ mainmodule leanmd {
   //central controller chare
   mainchare [migratable] Main {
     entry Main(CkArgMsg* msg);
-    entry [reductiontarget] void allDone();     //called when simulation is done
     entry [reductiontarget] void computesCreated(); //called when computes have been created
     entry [reductiontarget] void sectionsCreated(); //called when initial set up is done
-    entry [reductiontarget] void energySumP(double energyIn);  //reduction of potential energy
-    entry [reductiontarget] void energySumK(double energyIn);  //reduction of kinetic energy
+    entry [reductiontarget] void energySumP(double iP, double fP);  //reduction of potential energy
+    entry [reductiontarget] void energySumK(double iK, double fK);  //reduction of kinetic energy
 
     //this get called after the main constructor has called cell array constructor
     entry void run() {
@@ -36,21 +35,10 @@ mainmodule leanmd {
         cellArray.run();
         computeArray.run();
       }
-      //receive initial energy
-      when energySumP(double energyP), energySumK(double energyK) atomic {
-        initialEnergy = energyP + energyK;
-      }
-      //receive final energy and compare
-      when energySumP(double energyP), energySumK(double energyK) atomic {
-        finalEnergy = energyP + energyK;
-        if(abs(finalEnergy-initialEnergy)>ENERGY_VAR) {
-          CkPrintf("Energy value has varied significantly from %E to %E\n",initialEnergy,finalEnergy);
-          testFailed = 1;
-        }
-      }
-      //done with everything exit.
-      when allDone() atomic {
-        if(testFailed) {
+      //receive intial and final energies and compare
+      when energySumP(double fP, double iP), energySumK(double fK, double iK) atomic {
+        if(abs(fP + fK - iP - iK)>ENERGY_VAR) {
+          CkPrintf("Energy value has varied significantly from %E to %E\n",iP+iK,fP+fK);
           CkPrintf("\nEnergy conservation test failed for maximum allowed variation of %E units.\nSIMULATION UNSUCCESSFULL\n",ENERGY_VAR);  
         } else {
           CkPrintf("\nEnergy conservation test passed for maximum allowed variation of %E units.\nSIMULATION SUCCESSFULL \n",ENERGY_VAR);
@@ -76,18 +64,18 @@ mainmodule leanmd {
 
     //function to perform iterations for Cells
     entry void run() {
-      if(thisIndex.x==0 && thisIndex.y==0 && thisIndex.z==0) atomic {
-        stepTime = CkWallTimer();
-      }
-      for(stepCount = 0; stepCount < finalStepCount; stepCount++) {
-        atomic { sendPositions(); }    //send current atom positions to my computes
-        when reduceForces(vec3 forces[n], int n) atomic {
-            updateProperties(forces, n);   //update properties of atoms using new force values
-        }
-        if (stepCount && (stepCount %  MIGRATE_STEPCOUNT) == 0) {
-          atomic {
-            migrateParticles(); //send atoms that have moved beyond my cell to neighbors
-          }
+      if(thisIndex.x==0 && thisIndex.y==0 && thisIndex.z==0) atomic { stepTime = CkWallTimer(); }
+      for(stepCount = 1; stepCount <= finalStepCount; stepCount++) {
+        //send current atom positions to my computes 
+        atomic { sendPositions(); } 
+
+        //update properties of atoms using new force values 
+        when reduceForces(vec3 forces[n], int n) atomic { updateProperties(forces, n); }
+
+        if ((stepCount %  MIGRATE_STEPCOUNT) == 0) {
+          //send atoms that have moved beyond my cell to neighbors
+          atomic { migrateParticles(); } 
+    
           //receive particles from my neighbors
           for(updateCount = 0; updateCount < inbrs; updateCount++) {
             when receiveParticles(CkVec<Particle> &updates) atomic {
@@ -98,7 +86,7 @@ mainmodule leanmd {
           }
         }
         //periodically print time values
-        if (stepCount && thisIndex.x==0 && thisIndex.y==0 && thisIndex.z==0 && stepCount%20==0) atomic {
+        if (thisIndex.x==0 && thisIndex.y==0 && thisIndex.z==0 && stepCount%20==0) atomic {
           CkPrintf("Step %d Benchmark Time %lf ms/step\n", 
               stepCount, ((CkWallTimer() - stepTime)/20)*1000);
           stepTime = CkWallTimer();
@@ -111,8 +99,8 @@ mainmodule leanmd {
           }
         }
       }
-      //all iterations are done, call end
-      atomic { contribute(0,NULL,CkReduction::nop,CkCallback(CkReductionTarget(Main,allDone),mainProxy)); }
+      //everything done, reduction on kinetic energy
+      atomic { contribute(2*sizeof(double),energy,CkReduction::sum_double,CkCallback(CkReductionTarget(Main,energySumK),mainProxy)); }
     };
   };
 
@@ -123,14 +111,14 @@ mainmodule leanmd {
     entry void calculateForces(ParticleDataMsg *msg);
 
     entry void run() {
-      for(stepCount = 0; stepCount < finalStepCount; stepCount++) {
-        when calculateForces(ParticleDataMsg *msg) atomic {
-          interact(msg);
-        }
-        if(thisIndex.x1!=thisIndex.x2 || thisIndex.y1!=thisIndex.y2 || thisIndex.z1!=thisIndex.z2) {
-          when calculateForces(ParticleDataMsg *msg) atomic {
-            interact(msg);
-          }
+      for(stepCount = 1; stepCount <= finalStepCount; stepCount++) {
+        //self interaction check
+        if(thisIndex.x1==thisIndex.x2 && thisIndex.y1==thisIndex.y2 && thisIndex.z1==thisIndex.z2) {
+          when calculateForces(ParticleDataMsg *msg) atomic { interact(msg); }
+        } else {
+          //receive positions from two cells
+          when calculateForces(ParticleDataMsg *msg) atomic { interact(msg); }
+          when calculateForces(ParticleDataMsg *msg) atomic { interact(msg); }
         }
         //periodically call load balancer
         if (stepCount >= firstLdbStep && (stepCount - firstLdbStep) % ldbPeriod== 0) {
@@ -138,6 +126,8 @@ mainmodule leanmd {
           when ResumeFromSync() atomic { }
         }
       }
+      //everything done, reduction on potential energy
+      atomic { contribute(2*sizeof(double),energy,CkReduction::sum_double,CkCallback(CkReductionTarget(Main,energySumP),mainProxy)); }
     };
   };
 };

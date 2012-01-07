@@ -19,7 +19,8 @@ extern /* readonly */ int finalStepCount;
 Compute::Compute() {
   __sdag_init();
   cellCount = 0;
-  stepCount = 0;
+  stepCount = 1;
+  energy[0] = energy[1] = 0;
   usesAtSync = CmiTrue;
 }
 
@@ -31,14 +32,12 @@ Compute::Compute(CkMigrateMessage *msg): CBase_Compute(msg)  {
 
 //local method to compute forces
 void Compute::interact(ParticleDataMsg *msg){
-  double energy = 0;
+  double energyP = 0;
 
   //self interaction check
   if (thisIndex.x1 ==thisIndex.x2 && thisIndex.y1 ==thisIndex.y2 && thisIndex.z1 ==thisIndex.z2) {
     CkGetSectionInfo(mcast1,msg);
-    energy = calcInternalForces(msg, &mcast1, stepCount);
-    if(stepCount == 0 || stepCount == (finalStepCount-1))
-      contribute(sizeof(double),&energy,CkReduction::sum_double,CkCallback(CkReductionTarget(Main,energySumK),mainProxy));
+    energyP = calcInternalForces(msg, &mcast1, stepCount);
   } else {
     //check if this is the first message or second
     if (cellCount == 0) {
@@ -46,7 +45,6 @@ void Compute::interact(ParticleDataMsg *msg){
       cellCount++;
       return;
     }
-
     // Both particle sets have been received, so compute interaction
     cellCount = 0;
     ParticleDataMsg *msgA = msg, *msgB = bufferedMsg;
@@ -59,12 +57,14 @@ void Compute::interact(ParticleDataMsg *msg){
       swap(handleA, handleB);
     }
 
-    energy = calcPairForces(msgA, msgB, handleA, handleB, stepCount);
-
-    //energy reduction only in begining and end
-    if(stepCount == 0 || stepCount == (finalStepCount-1))
-      contribute(sizeof(double),&energy,CkReduction::sum_double,CkCallback(CkReductionTarget(Main, energySumK),mainProxy));
+    energyP = calcPairForces(msgA, msgB, handleA, handleB, stepCount);
     bufferedMsg = NULL;
+  }
+  //energy assignment only in begining and end
+  if(stepCount == 1) {
+    energy[0] = energyP;
+  } else if(stepCount == finalStepCount) {
+    energy[1] = energyP;
   }
 }
 
@@ -75,6 +75,7 @@ void Compute::pup(PUP::er &p) {
   p | stepCount;
   p | mcast1;
   p | mcast2;
+  PUParray(p, energy, 2);
   if (p.isUnpacking() && CkInRestarting()) {
     mcast1.get_redNo() = 0;
     if (!(thisIndex.x1 ==thisIndex.x2 && thisIndex.y1 ==thisIndex.y2 && thisIndex.z1 ==thisIndex.z2))

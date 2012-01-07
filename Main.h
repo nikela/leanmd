@@ -12,8 +12,6 @@ extern /* readonly */ int cellArrayDimZ;
 class Main : public CBase_Main {
   private:
     Main_SDAG_CODE
-    double finalEnergy, initialEnergy;  //store initial and final energy
-    int testFailed;    //flag to indicate if the simulation conserves energy
 
   public:
     Main(CkArgMsg* msg);

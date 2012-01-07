@@ -2,7 +2,7 @@
 CHARMBASE      = /expand/home/nikhil/codes/charm/net-linux-x86_64
 CHARMC         = $(CHARMBASE)/bin/charmc
 
-OPTS            = -O3 
+OPTS            = -g 
 
 all: leanmd
 

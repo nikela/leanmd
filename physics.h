@@ -22,7 +22,7 @@ inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, Ck
   double rSix, rTwelve;
   double energy = 0;
   int doEnergy = 0;
-  if(stepCount == 0 || stepCount == (finalStepCount-1))
+  if(stepCount == 1 || stepCount == finalStepCount)
     doEnergy = 1;
 
   vec3 *firstmsg = new vec3[firstLen];
@@ -98,7 +98,7 @@ inline double calcInternalForces(ParticleDataMsg* first, CkSectionInfo *mcast1, 
   double rSix, rTwelve;
   double energy = 0;
   int doEnergy = 0;
-  if(stepCount == 0 || stepCount == (finalStepCount-1))
+  if(stepCount == 1 || stepCount == finalStepCount)
     doEnergy = 1;
   vec3 *firstmsg = new vec3[firstLen];
 

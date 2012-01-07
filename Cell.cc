@@ -40,9 +40,10 @@ Cell::Cell() {
     particles[i].vel.z = (drand48() - 0.5) * .2 * MAX_VELOCITY;
   }
 
-  stepCount = 0;
+  stepCount = 1;
   updateCount = 0;
   stepTime = 0;
+  energy[0] = energy[1] = 0;
 }
 
 //constructor for chare object migration
@@ -195,16 +196,17 @@ void Cell::migrateToCell(Particle p, int &px, int &py, int &pz) {
 // Function to update properties (i.e. acceleration, velocity and position) in particles
 void Cell::updateProperties(vec3 *forces, int lengthUp) {
   int i;
-  double energy = 0;
   double powTen, powFteen, realTimeDelta, invMassParticle;
   powTen = pow(10.0, -10);
   powFteen = pow(10.0, -15);
   realTimeDelta = DEFAULT_DELTA * powFteen;
   for(i = 0; i < particles.length(); i++) {
     //calculate energy only in begining and end
-    if(stepCount == 0 || stepCount == (finalStepCount - 1)) 
-      energy += (0.5 * particles[i].mass * dot(particles[i].vel, particles[i].vel));
-
+    if(stepCount == 1) {
+      energy[0] += (0.5 * particles[i].mass * dot(particles[i].vel, particles[i].vel));
+    } else if(stepCount == finalStepCount) { 
+      energy[1] += (0.5 * particles[i].mass * dot(particles[i].vel, particles[i].vel));
+    }
     // applying kinetic equations
     invMassParticle = 1 / particles[i].mass;
     particles[i].acc = forces[i] * invMassParticle;
@@ -214,9 +216,6 @@ void Cell::updateProperties(vec3 *forces, int lengthUp) {
 
     particles[i].pos += particles[i].vel * realTimeDelta;
   }
-  //reduction on energy only in begining and end
-  if(stepCount == 0 || stepCount == (finalStepCount - 1)) 
-    contribute(sizeof(double),&energy,CkReduction::sum_double,CkCallback(CkReductionTarget(Main,energySumP),mainProxy));
 }
 
 inline double velocityCheck(double inVelocity) {
@@ -257,6 +256,7 @@ void Cell::pup(PUP::er &p) {
   p | updateCount;
   p | inbrs;
   p | stepTime;
+  PUParray(p, energy, 2);
 
   if (p.isUnpacking()){
     computesList = new int*[inbrs];

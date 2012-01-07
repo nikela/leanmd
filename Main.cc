@@ -33,8 +33,6 @@ Main::Main(CkArgMsg* m) {
   ldbPeriod = DEFAULT_LDB_PERIOD;
 
   mainProxy = thisProxy;
-  finalEnergy = initialEnergy = 0;
-  testFailed = 0;
 
   //branch factor for spanning tree of multicast
   int bFactor = 4;
@@ -106,9 +104,6 @@ Main::Main(CkMigrateMessage* msg): CBase_Main(msg) {
 void Main::pup(PUP::er &p) {
   CBase_Main::pup(p);
    __sdag_pup(p);
-  p|finalEnergy;
-  p|initialEnergy;
-  p|testFailed;
 }
 
 #include "leanmd.def.h"
