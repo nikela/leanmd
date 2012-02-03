@@ -38,6 +38,7 @@ class Cell : public CBase_Cell {
     int stepCount;		// to count the number of steps, and decide when to stop
     int myNumParts;   //number of atoms in my cell
     int inbrs;        //number of interacting neighbors
+    int stepTime;
     int updateCount;
     double energy[2]; //store kinetic energy - initial and final
 

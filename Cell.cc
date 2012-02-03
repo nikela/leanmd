@@ -1,4 +1,4 @@
-#include "time.h"
+
 #include "defs.h"
 #include "leanmd.decl.h"
 #include "Cell.h"
@@ -42,6 +42,7 @@ Cell::Cell() {
 
   stepCount = 1;
   updateCount = 0;
+  stepTime = 0; 
   energy[0] = energy[1] = 0;
 }
 
@@ -253,6 +254,7 @@ void Cell::pup(PUP::er &p) {
   p | stepCount;
   p | myNumParts;
   p | updateCount;
+  p | stepTime;
   p | inbrs;
   PUParray(p, energy, 2);
 

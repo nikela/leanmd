@@ -1,5 +1,5 @@
 # to be set appropiately
-CHARMBASE      = /expand/home/nikhil/codes/charm/net-linux-x86_64
+CHARMBASE      = /expand/home/nikhil/charms/charm/net-linux-x86_64
 CHARMC         = $(CHARMBASE)/bin/charmc
 
 OPTS            = -g 
