@@ -133,7 +133,6 @@ void Cell::createSection() {
   CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
   mCastSecProxy.ckSectionDelegate(mCastGrp);
   mCastGrp->setReductionClient(mCastSecProxy, new CkCallback(CkReductionTarget(Cell,reduceForces), thisProxy(thisIndex.x, thisIndex.y, thisIndex.z)));
-  contribute(0,NULL,CkReduction::nop,CkCallback(CkReductionTarget(Main,sectionsCreated),mainProxy));
 }
 
 // Function to start interaction among particles in neighboring cells as well as its own particles

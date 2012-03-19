@@ -7,7 +7,6 @@
 class Compute : public CBase_Compute {
   private:
     Compute_SDAG_CODE
-    int cellCount;  // to count the number of interact() calls
     int stepCount;  //current step number
     double energy[2]; //store potential energy
     ParticleDataMsg *bufferedMsg; //copy of first message received for interaction
@@ -20,6 +19,7 @@ class Compute : public CBase_Compute {
     Compute(CkMigrateMessage *msg);
     void pup(PUP::er &p);
 
+    void selfInteract(ParticleDataMsg *msg);
     void interact(ParticleDataMsg *msg);
 };
 
