@@ -33,7 +33,6 @@ Compute::Compute(CkMigrateMessage *msg): CBase_Compute(msg)  {
 void Compute::selfInteract(ParticleDataMsg *msg){
   double energyP = 0;
 
-  CkGetSectionInfo(mcast1,msg);
   energyP = calcInternalForces(msg, &mcast1, stepCount);
 
   //energy assignment only in begining and end
@@ -45,20 +44,15 @@ void Compute::selfInteract(ParticleDataMsg *msg){
 }
 
 //interaction between two cells
+//mcast1 attached to message from lower id cell
 void Compute::interact(ParticleDataMsg *msg){
   double energyP = 0;
 
-  ParticleDataMsg *msgA = msg, *msgB = bufferedMsg;
   CkSectionInfo *handleA = &mcast1, *handleB = &mcast2;
   if (bufferedMsg->x*cellArrayDimY*cellArrayDimZ + bufferedMsg->y*cellArrayDimZ + bufferedMsg->z < msg->x*cellArrayDimY*cellArrayDimZ + msg->y*cellArrayDimZ + msg->z){ 
     swap(handleA, handleB);
   }
-  if (bufferedMsg->lengthAll <= msg->lengthAll) {
-    swap(msgA, msgB);
-    swap(handleA, handleB);
-  }
-  energyP = calcPairForces(msgA, msgB, handleA, handleB, stepCount);
-  bufferedMsg = NULL;
+  energyP = calcPairForces(msg, bufferedMsg, handleA, handleB, stepCount);
 
   //energy assignment only in begining and end
   if(stepCount == 1) {
@@ -78,8 +72,6 @@ void Compute::pup(PUP::er &p) {
   PUParray(p, energy, 2);
   if (p.isUnpacking() && CkInRestarting()) {
     mcast1.get_redNo() = 0;
-    if (!(thisIndex.x1 ==thisIndex.x2 && thisIndex.y1 ==thisIndex.y2 && thisIndex.z1 ==thisIndex.z2))
-      mcast2.get_redNo() = 0;
+    mcast2.get_redNo() = 0;
   }
-  bufferedMsg = NULL;
 }
