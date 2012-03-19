@@ -1,8 +1,8 @@
 # to be set appropiately
-CHARMBASE      = /expand/home/nikhil/codes/charm/net-linux-x86_64
+CHARMBASE      = /expand/home/nikhil/charms/charm/net-linux-x86_64
 CHARMC         = $(CHARMBASE)/bin/charmc
 
-OPTS            = -g 
+OPTS            = -O3
 
 all: leanmd
 
@@ -22,7 +22,7 @@ leanmd.decl.h:	leanmd.ci
 Compute.o: Compute.cc Compute.h leanmd.decl.h defs.h physics.h
 	$(CHARMC) $(OPTS) -o Compute.o Compute.cc
 
-test:
+test: leanmd
 	./charmrun +p4 ./leanmd 4 4 4 101 20 20
 
 clean:

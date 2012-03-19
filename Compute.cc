@@ -18,7 +18,6 @@ extern /* readonly */ int finalStepCount;
 //compute - Default constructor
 Compute::Compute() {
   __sdag_init();
-  cellCount = 0;
   stepCount = 1;
   energy[0] = energy[1] = 0;
   usesAtSync = CmiTrue;
@@ -30,36 +29,37 @@ Compute::Compute(CkMigrateMessage *msg): CBase_Compute(msg)  {
   delete msg;
 }
 
-//local method to compute forces
+//interaction within a cell
+void Compute::selfInteract(ParticleDataMsg *msg){
+  double energyP = 0;
+
+  CkGetSectionInfo(mcast1,msg);
+  energyP = calcInternalForces(msg, &mcast1, stepCount);
+
+  //energy assignment only in begining and end
+  if(stepCount == 1) {
+    energy[0] = energyP;
+  } else if(stepCount == finalStepCount) {
+    energy[1] = energyP;
+  }
+}
+
+//interaction between two cells
 void Compute::interact(ParticleDataMsg *msg){
   double energyP = 0;
 
-  //self interaction check
-  if (thisIndex.x1 ==thisIndex.x2 && thisIndex.y1 ==thisIndex.y2 && thisIndex.z1 ==thisIndex.z2) {
-    CkGetSectionInfo(mcast1,msg);
-    energyP = calcInternalForces(msg, &mcast1, stepCount);
-  } else {
-    //check if this is the first message or second
-    if (cellCount == 0) {
-      bufferedMsg = msg;
-      cellCount++;
-      return;
-    }
-    // Both particle sets have been received, so compute interaction
-    cellCount = 0;
-    ParticleDataMsg *msgA = msg, *msgB = bufferedMsg;
-    CkSectionInfo *handleA = &mcast1, *handleB = &mcast2;
-    if (bufferedMsg->x*cellArrayDimY*cellArrayDimZ + bufferedMsg->y*cellArrayDimZ + bufferedMsg->z < msg->x*cellArrayDimY*cellArrayDimZ + msg->y*cellArrayDimZ + msg->z){ 
-      swap(handleA, handleB);
-    }
-    if (bufferedMsg->lengthAll <= msg->lengthAll) {
-      swap(msgA, msgB);
-      swap(handleA, handleB);
-    }
-
-    energyP = calcPairForces(msgA, msgB, handleA, handleB, stepCount);
-    bufferedMsg = NULL;
+  ParticleDataMsg *msgA = msg, *msgB = bufferedMsg;
+  CkSectionInfo *handleA = &mcast1, *handleB = &mcast2;
+  if (bufferedMsg->x*cellArrayDimY*cellArrayDimZ + bufferedMsg->y*cellArrayDimZ + bufferedMsg->z < msg->x*cellArrayDimY*cellArrayDimZ + msg->y*cellArrayDimZ + msg->z){ 
+    swap(handleA, handleB);
   }
+  if (bufferedMsg->lengthAll <= msg->lengthAll) {
+    swap(msgA, msgB);
+    swap(handleA, handleB);
+  }
+  energyP = calcPairForces(msgA, msgB, handleA, handleB, stepCount);
+  bufferedMsg = NULL;
+
   //energy assignment only in begining and end
   if(stepCount == 1) {
     energy[0] = energyP;
@@ -81,6 +81,5 @@ void Compute::pup(PUP::er &p) {
     if (!(thisIndex.x1 ==thisIndex.x2 && thisIndex.y1 ==thisIndex.y2 && thisIndex.z1 ==thisIndex.z2))
       mcast2.get_redNo() = 0;
   }
-  p | cellCount;
   bufferedMsg = NULL;
 }
