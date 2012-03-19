@@ -128,6 +128,7 @@ inline double calcInternalForces(ParticleDataMsg* first, CkSectionInfo *mcast1, 
     }
   }
   CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
+  CkGetSectionInfo(*mcast1, first);
   mCastGrp->contribute(sizeof(vec3)*firstLen, firstmsg, CkReduction::sum_double, *mcast1);
   delete [] firstmsg;
   delete first;
