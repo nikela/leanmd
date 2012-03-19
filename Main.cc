@@ -73,15 +73,7 @@ Main::Main(CkArgMsg* m) {
   }
 
   //initializing the 3D cell array
-  cellArray = CProxy_Cell::ckNew();
-  for (int x=0; x<cellArrayDimX; x++)
-    for (int y=0; y<cellArrayDimY; y++)
-      for (int z=0; z<cellArrayDimZ; z++) {
-        pe = (++currPe) % numPes;
-        cellArray(x, y, z).insert(pe);
-      }
-  cellArray.doneInserting();
-
+  cellArray = CProxy_Cell::ckNew(cellArrayDimX,cellArrayDimY,cellArrayDimZ);
   CkPrintf("\nCells: %d X %d X %d .... created\n", cellArrayDimX, cellArrayDimY, cellArrayDimZ);
 
   //initializing the 6D compute array
