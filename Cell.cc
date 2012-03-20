@@ -7,6 +7,7 @@
 extern /* readonly */ CProxy_Main mainProxy;
 extern /* readonly */ CProxy_Cell cellArray;
 extern /* readonly */ CProxy_Compute computeArray;
+extern /* readonly */ CProxy_ComputePME computePMEArray;
 extern /* readonly */ CkGroupID mCastGrpID;
 
 extern /* readonly */ int cellArrayDimX;
@@ -134,16 +135,23 @@ void Cell::sendPositions() {
   int len = particles.length();
 
   //create the particle and control message to be sent to computes
-  ParticleDataMsg* msg = new (len) ParticleDataMsg;
+  ParticleDataMsg* msg = new (len) ParticleDataMsg, *msg2 = new (len) ParticleDataMsg;
   msg->x = thisIndex.x;
   msg->y = thisIndex.y;
   msg->z = thisIndex.z;
   msg->lengthAll = len;
+  msg2->x = thisIndex.x;
+  msg2->y = thisIndex.y;
+  msg2->z = thisIndex.z;
+  msg2->lengthAll = len;
 
-  for (int i = 0; i < len; i++)
+  for (int i = 0; i < len; i++) {
     msg->part[i] = particles[i].pos;
+    msg2->part[i] = particles[i].pos;
+  }
 
   mCastSecProxy.calculateForces(msg);
+  computePMEArray[thisIndex].calculateForces(msg2);
 }
 
 //send the atoms that have moved beyond my cell to neighbors

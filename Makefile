@@ -7,13 +7,14 @@ CXX = $(CHARMC)
 
 all: leanmd
 
-leanmd: Main.o Cell.o Compute.o
+leanmd: Main.o Cell.o Compute.o ComputePME.o
 	$(CHARMC) $(OPTS) -module CkMulticast -module CommonLBs \
 	-language charm++ -o leanmd $^
 
 Main.o: Main.cc Main.h leanmd.decl.h defs.h
 Cell.o: Cell.cc Cell.h leanmd.decl.h defs.h
 Compute.o: Compute.cc Compute.h leanmd.decl.h defs.h physics.h
+ComputePME.o: ComputePME.cc ComputePME.h leanmd.decl.h defs.h Cell.h
 
 leanmd.decl.h:	leanmd.ci
 	$(CHARMC) leanmd.ci

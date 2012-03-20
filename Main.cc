@@ -5,10 +5,12 @@
 #include "Main.h"
 #include "Cell.h"
 #include "Compute.h"
+#include "ComputePME.h"
 
 /* readonly */ CProxy_Main mainProxy;
 /* readonly */ CProxy_Cell cellArray;
 /* readonly */ CProxy_Compute computeArray;
+/* readonly */ CProxy_ComputePME computePMEArray;
 /* readonly */ CkGroupID mCastGrpID;
 
 /* readonly */ int cellArrayDimX;
@@ -74,6 +76,7 @@ Main::Main(CkArgMsg* m) {
   //initializing the 3D cell array
   cellArray = CProxy_Cell::ckNew(cellArrayDimX,cellArrayDimY,cellArrayDimZ);
   CkPrintf("\nCells: %d X %d X %d .... created\n", cellArrayDimX, cellArrayDimY, cellArrayDimZ);
+  computePMEArray = CProxy_ComputePME::ckNew(cellArrayDimX,cellArrayDimY,cellArrayDimZ);
 
   //initializing the 6D compute array
   computeArray = CProxy_Compute::ckNew();

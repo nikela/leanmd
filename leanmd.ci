@@ -3,6 +3,7 @@ mainmodule leanmd {
   readonly CProxy_Main mainProxy;       //central controller
   readonly CProxy_Cell cellArray;     //array that houses atoms
   readonly CProxy_Compute computeArray; //computational kernels
+  readonly CProxy_ComputePME computePMEArray; //computational kernels
   readonly CkGroupID mCastGrpID;      //multicast group handle
 
   readonly int cellArrayDimX;		// X dimension of the Cell array
@@ -28,6 +29,7 @@ mainmodule leanmd {
         CkPrintf("Starting simulation .... \n\n");
         cellArray.run();
         computeArray.run();
+        computePMEArray.run();
       }
       //receive intial and final energies and compare
       when energySumP(double fP, double iP), energySumK(double fK, double iK) atomic {
@@ -54,6 +56,7 @@ mainmodule leanmd {
     entry void receiveParticles(CkVec<Particle> updates);   //receive atoms that have migrated to neighboring cells to me
     entry void ResumeFromSync();    //resume from here after load balancing
     entry [reductiontarget] void reduceForces(vec3 forces[n], int n);   //receives forces from my computes on my atoms
+    entry void receivePMEForces(vec3 forces[m], int m);   //receives long-range forces from my PME compute on my atoms
 
     //function to perform iterations for Cells
     entry void run() {
@@ -67,7 +70,13 @@ mainmodule leanmd {
         atomic { sendPositions(); } 
 
         //update properties of atoms using new force values 
-        when reduceForces(vec3 forces[n], int n) atomic { updateProperties(forces, n); }
+        when reduceForces(vec3 forces[n], int n),
+          receivePMEForces(vec3 pmeForces[m], int m) atomic {
+          CkAssert(m == n);
+          for (int i = 0; i < n; ++i)
+            forces[i] += pmeForces[i];
+          updateProperties(forces, n);
+        }
 
         if ((stepCount %  MIGRATE_STEPCOUNT) == 0) {
           //send atoms that have moved beyond my cell to neighbors
@@ -125,6 +134,21 @@ mainmodule leanmd {
       }
       //everything done, reduction on potential energy
       atomic { contribute(2*sizeof(double),energy,CkReduction::sum_double,CkCallback(CkReductionTarget(Main,energySumP),mainProxy)); }
+    };
+  };
+
+  array [3D] ComputePME {
+    entry ComputePME();
+    entry void calculateForces(ParticleDataMsg *msg);
+
+    entry void run() {
+      for(stepCount = 1; stepCount <= finalStepCount; stepCount++) {
+        when calculateForces(ParticleDataMsg *msg) atomic { interact(msg); }
+      }
+      //everything done, reduction on potential energy
+      atomic {
+        contribute(2*sizeof(double), energy, CkReduction::sum_double, CkCallback(CkReductionTarget(Main,energySumP),mainProxy));
+      }
     };
   };
 };

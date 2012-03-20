@@ -5,6 +5,7 @@
 
 extern /* readonly */ CProxy_Cell cellArray;
 extern /* readonly */ CProxy_Compute computeArray;
+extern /* readonly */ CProxy_ComputePME computePMEArray;
 
 extern /* readonly */ int cellArrayDimX;
 extern /* readonly */ int cellArrayDimY;
