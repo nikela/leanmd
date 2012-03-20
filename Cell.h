@@ -26,7 +26,7 @@ struct ParticleDataMsg : public CkMcastBaseMsg, public CMessage_ParticleDataMsg 
       part = new vec3[lengthAll];
     }
     PUParray(p, part, lengthAll);
-  } 
+  }
 };
 
 //chare used to represent a cell
