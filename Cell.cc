@@ -98,7 +98,7 @@ void Cell::createComputes() {
       computesList[num][3] = px2; computesList[num][4] = py2; computesList[num][5] = pz2;
     }
     else {
-      // these computes will be created by pairing celles
+      // these computes will be created by pairing cells
       px1 = WRAP_X(x+dx)+2 ;
       py1 = WRAP_Y(y+dy)+2;
       pz1 = WRAP_Z(z+dz)+2;

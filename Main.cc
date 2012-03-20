@@ -46,7 +46,7 @@ Main::Main(CkArgMsg* m) {
   CkPrintf("\nInput Parameters...\n");
 
   //read user parameters
-  //number of celles/cells in each dimension
+  //number of cells in each dimension
   if (m->argc > cur_arg) {
     cellArrayDimX=atoi(m->argv[cur_arg++]);
     cellArrayDimY=atoi(m->argv[cur_arg++]);
