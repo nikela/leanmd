@@ -10,6 +10,8 @@ extern /* readonly */ int cellArrayDimZ;
 
 //central controller chare
 class Main : public CBase_Main {
+  double startTime;
+
   private:
     Main_SDAG_CODE
 

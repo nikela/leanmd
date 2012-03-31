@@ -26,16 +26,22 @@ mainmodule leanmd {
         computeArray.doneInserting();
         CkPrintf("Computes: %d .... created\n", (NUM_NEIGHBORS/2+1)*cellArrayDimX*cellArrayDimY*cellArrayDimZ);
         CkPrintf("Starting simulation .... \n\n");
+	fflush(stdout);
+	startTime = CkWallTimer();
         cellArray.run();
         computeArray.run();
       }
       //receive intial and final energies and compare
       when energySumP(double fP, double iP), energySumK(double fK, double iK) atomic {
+	double endTime = CkWallTimer() - startTime;
+	CkPrintf("total time = %f\n", endTime - startTime);
         if(abs(fP + fK - iP - iK)>ENERGY_VAR) {
           CkPrintf("Energy value has varied significantly from %E to %E\n",iP+iK,fP+fK);
           CkPrintf("\nEnergy conservation test failed for maximum allowed variation of %E units.\nSIMULATION UNSUCCESSFULL\n",ENERGY_VAR);  
+	  fflush(stdout);
         } else {
           CkPrintf("\nEnergy conservation test passed for maximum allowed variation of %E units.\nSIMULATION SUCCESSFULL \n",ENERGY_VAR);
+	  fflush(stdout);
         }
         CkExit();
       }
@@ -51,7 +57,6 @@ mainmodule leanmd {
   array [3D] Cell {
     entry Cell();  
     entry void createComputes();    //call to insert computes that I need  
-    entry void receiveParticles(CkVec<Particle> updates);   //receive atoms that have migrated to neighboring cells to me
     entry void ResumeFromSync();    //resume from here after load balancing
     entry [reductiontarget] void reduceForces(vec3 forces[n], int n);   //receives forces from my computes on my atoms
 
@@ -69,23 +74,11 @@ mainmodule leanmd {
         //update properties of atoms using new force values 
         when reduceForces(vec3 forces[n], int n) atomic { updateProperties(forces, n); }
 
-        if ((stepCount %  MIGRATE_STEPCOUNT) == 0) {
-          //send atoms that have moved beyond my cell to neighbors
-          atomic { migrateParticles(); } 
-    
-          //receive particles from my neighbors
-          for(updateCount = 0; updateCount < inbrs; updateCount++) {
-            when receiveParticles(CkVec<Particle> &updates) atomic {
-              for(int i=0; i < updates.length(); i++) {
-                particles.push_back(updates[i]);    //add particles that have moved from neighboring cells to my cell
-              }
-            }
-          }
-        }
         if (thisIndex.x==0 && thisIndex.y==0 && thisIndex.z==0 && 
           stepCount%20==0) atomic {
           CkPrintf("Step %d Benchmark Time %lf ms/step\n", 
           stepCount, ((CkWallTimer() - stepTime)/20)*1000);
+	  fflush(stdout);
           stepTime = CkWallTimer();
         }
         //periodically call load balancer
