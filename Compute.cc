@@ -31,6 +31,7 @@ Compute::Compute(CkMigrateMessage *msg): CBase_Compute(msg)  {
 
 //interaction within a cell
 void Compute::selfInteract(ParticleDataMsg *msg){
+  computeTime = CkWallTimer();
   double energyP = 0;
 
   energyP = calcInternalForces(msg, &mcast1, stepCount);
@@ -41,11 +42,13 @@ void Compute::selfInteract(ParticleDataMsg *msg){
   } else if(stepCount == finalStepCount) {
     energy[1] = energyP;
   }
+  computeTime = CkWallTimer() - computeTime;
 }
 
 //interaction between two cells
 //mcast1 attached to message from lower id cell
 void Compute::interact(ParticleDataMsg *msg){
+  computeTime = CkWallTimer();
   double energyP = 0;
 
   CkSectionInfo *handleA = &mcast1, *handleB = &mcast2;
@@ -60,6 +63,7 @@ void Compute::interact(ParticleDataMsg *msg){
   } else if(stepCount == finalStepCount) {
     energy[1] = energyP;
   }
+  computeTime = CkWallTimer() - computeTime;
 }
 
 //pack important information if I am moving

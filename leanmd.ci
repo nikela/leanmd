@@ -69,10 +69,24 @@ mainmodule leanmd {
 
       for(stepCount = 1; stepCount <= finalStepCount; stepCount++) {
         //send current atom positions to my computes 
-        atomic { sendPositions(); } 
+        atomic { 
+	  double sendTime = CkWallTimer();
+	  sendPositions();
+	  sendTime = CkWallTimer() - sendTime;
+	  if (stepCount == 1) {
+	    CkPrintf("cell send %d %d %d %f\n", thisIndex.x,thisIndex.y,thisIndex.z, sendTime * 1000);
+	  }
+	}
 
         //update properties of atoms using new force values 
-        when reduceForces(vec3 forces[n], int n) atomic { updateProperties(forces, n); }
+        when reduceForces(vec3 forces[n], int n) atomic {
+	  double updateTime = CkWallTimer();
+	  updateProperties(forces, n);
+	  updateTime = CkWallTimer() - updateTime;
+	  if (stepCount == 1) {
+	    CkPrintf("cell update %d %d %d %f\n", thisIndex.x,thisIndex.y,thisIndex.z, updateTime * 1000);
+	  }
+	}
 
         if (thisIndex.x==0 && thisIndex.y==0 && thisIndex.z==0 && 
           stepCount%20==0) atomic {
@@ -110,6 +124,9 @@ mainmodule leanmd {
           when calculateForces(ParticleDataMsg *msg) atomic { bufferedMsg = msg; }
           when calculateForces(ParticleDataMsg *msg) atomic { interact(msg); }
         }
+	if (stepCount == 1) atomic {
+	    CkPrintf("compute interact %d %d %d %d %d %d %f\n", thisIndex.x1,thisIndex.x2,thisIndex.y1,thisIndex.y2,thisIndex.z1,thisIndex.z2, computeTime * 1000);
+	}
         //periodically call load balancer
         if (stepCount >= firstLdbStep && (stepCount - firstLdbStep) % ldbPeriod== 0) {
           atomic { AtSync(); }

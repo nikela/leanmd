@@ -116,8 +116,16 @@ void Cell::createComputes() {
 void Cell::createSection() {
   CkVec<CkArrayIndex6D> elems;
   //create a vector list of my computes
-  for (int num=0; num<inbrs; num++)
+  for (int num=0; num<inbrs; num++) {
     elems.push_back(CkArrayIndex6D(computesList[num][0], computesList[num][1], computesList[num][2], computesList[num][3], computesList[num][4], computesList[num][5]));
+    CkPrintf("edge cell %d %d %d to compute %d %d %d %d %d %d\n",
+	     thisIndex.x, thisIndex.y, thisIndex.x,
+	     computesList[num][0], computesList[num][1], computesList[num][2], computesList[num][3], computesList[num][4], computesList[num][5]);
+    CkPrintf("edge compute %d %d %d %d %d %d cell %d %d %d\n",
+	     computesList[num][0], computesList[num][1], computesList[num][2], computesList[num][3], computesList[num][4], computesList[num][5],
+	     thisIndex.x, thisIndex.y, thisIndex.x);
+    fflush(stdout);
+  }
 
   CkArrayID computeArrayID = computeArray.ckGetArrayID();
   //knit the computes into a section
@@ -148,6 +156,7 @@ void Cell::sendPositions() {
 
 //send the atoms that have moved beyond my cell to neighbors
 void Cell::migrateParticles(){
+  CkAssert(0);
   int i, x1, y1, z1;
   CkVec<Particle> *outgoing = new CkVec<Particle>[inbrs];
 
@@ -162,7 +171,7 @@ void Cell::migrateParticles(){
     x1 = num / (NBRS_Y * NBRS_Z)            - NBRS_X/2;
     y1 = (num % (NBRS_Y * NBRS_Z)) / NBRS_Z - NBRS_Y/2;
     z1 = num % NBRS_Z                       - NBRS_Z/2;
-    cellArray(WRAP_X(thisIndex.x+x1), WRAP_Y(thisIndex.y+y1), WRAP_Z(thisIndex.z+z1)).receiveParticles(outgoing[num]);
+    //cellArray(WRAP_X(thisIndex.x+x1), WRAP_Y(thisIndex.y+y1), WRAP_Z(thisIndex.z+z1)).receiveParticles(outgoing[num]);
   }
   delete [] outgoing;
 }

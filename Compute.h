@@ -13,6 +13,7 @@ class Compute : public CBase_Compute {
     //handles to differentiate the two multicast sections I am part of
     CkSectionInfo mcast1;     
     CkSectionInfo mcast2;
+    double computeTime;
 
   public:
     Compute();
