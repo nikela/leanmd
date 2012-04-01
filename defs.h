@@ -9,7 +9,7 @@
 #define VDW_B			            (1.031093844 * pow(10.0, -77))
 
 #define ENERGY_VAR  		      (1.0 * pow(10.0,-5))
-#define PARTICLES_PER_CELL   	300
+#define PARTICLES_PER_CELL   	30
 
 #define DEFAULT_DELTA         1	// in femtoseconds
 

@@ -11,6 +11,7 @@
 /* readonly */ CProxy_Cell cellArray;
 /* readonly */ CProxy_Compute computeArray;
 /* readonly */ CkGroupID mCastGrpID;
+/* readonly */ CkGroupID commID;
 
 /* readonly */ int cellArrayDimX;
 /* readonly */ int cellArrayDimY;
@@ -82,6 +83,9 @@ Main::Main(CkArgMsg* m) {
     for (int y=0; y<cellArrayDimY; y++)
       for (int z=0; z<cellArrayDimZ; z++)
         cellArray(x, y, z).createComputes();
+
+  //make commGroup for Dag Scheduling
+  commID = CProxy_Comm::ckNew();
 
   thisProxy.run();
   delete m;

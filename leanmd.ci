@@ -4,6 +4,7 @@ mainmodule leanmd {
   readonly CProxy_Cell cellArray;     //array that houses atoms
   readonly CProxy_Compute computeArray; //computational kernels
   readonly CkGroupID mCastGrpID;      //multicast group handle
+  readonly CkGroupID commID;
 
   readonly int cellArrayDimX;		// X dimension of the Cell array
   readonly int cellArrayDimY;		// Y dimension of the Cell array
@@ -11,6 +12,10 @@ mainmodule leanmd {
   readonly int finalStepCount;		// number of steps in the simulaion
   readonly int firstLdbStep;		// begin load balancing after this many steps
   readonly int ldbPeriod;		// load balancing period
+
+  group Comm {
+    entry Comm();
+  };
 
   //central controller chare
   mainchare [migratable] Main {
