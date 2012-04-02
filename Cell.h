@@ -7,6 +7,9 @@ extern /* readonly */ CkGroupID mCastGrpID;
 extern /* readonly */ int firstLdbStep;
 extern /* readonly */ int ldbPeriod;
 extern /* readonly */ int finalStepCount;
+#ifdef __FAULT__
+extern /* readonly */ int checkptFreq;
+#endif
 
 #include "ckmulticast.h"
 
@@ -41,6 +44,7 @@ class Cell : public CBase_Cell {
     int stepTime;
     int updateCount;
     double energy[2]; //store kinetic energy - initial and final
+	int numReadyCheckpoint;
 
     void migrateToCell(Particle p, int &px, int &py, int &pz);
     void updateProperties(vec3 *forces, int lengthUp);	//updates properties after receiving forces from computes
@@ -57,6 +61,7 @@ class Cell : public CBase_Cell {
     void createSection();   //created multicast section of computes
     void migrateParticles();
     void sendPositions();
+	void startCheckpoint(int);
 };
 
 #endif

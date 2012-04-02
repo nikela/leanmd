@@ -11,6 +11,7 @@ mainmodule leanmd {
   readonly int finalStepCount;		// number of steps in the simulaion
   readonly int firstLdbStep;		// begin load balancing after this many steps
   readonly int ldbPeriod;		// load balancing period
+  readonly int checkptFreq;     // do FT every period
 
   //central controller chare
   mainchare [migratable] Main {
@@ -53,6 +54,8 @@ mainmodule leanmd {
     entry void createComputes();    //call to insert computes that I need  
     entry void receiveParticles(CkVec<Particle> updates);   //receive atoms that have migrated to neighboring cells to me
     entry void ResumeFromSync();    //resume from here after load balancing
+    entry void startCheckpoint(int ncells);
+    entry void recvCheckPointDone();
     entry [reductiontarget] void reduceForces(vec3 forces[n], int n);   //receives forces from my computes on my atoms
 
     //function to perform iterations for Cells
@@ -81,6 +84,15 @@ mainmodule leanmd {
               }
             }
           }
+        }
+		if (stepCount % checkptFreq == 0) {
+          atomic {
+            if (thisIndex.x==0 && thisIndex.y==0 && thisIndex.z==0) {
+              CmiPrintf("[%d] CHECKPOINT at step %d\n", CkMyPe(), stepCount);
+            }
+            thisProxy[CkArrayIndex3D(0,0,0)].startCheckpoint(0);
+          }
+          when recvCheckPointDone() {}
         }
         if (thisIndex.x==0 && thisIndex.y==0 && thisIndex.z==0 && 
           stepCount%20==0) atomic {
