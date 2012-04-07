@@ -99,14 +99,18 @@ class Comm : public CBase_Comm {
       tryDeliver(forces, n);
     }
 
-    void sendParticles(ParticleDataMsg *m, CkIndex3D cellIndx) {
+    void calculateForces(ParticleDataMsg *m) {
+      CkIndex3D cellIndx;
+      cellIndx.x = m->x;
+      cellIndx.y = m->y;
+      cellIndx.z = m->z;
       //secGrp[cellIndx][stepCount].ckLocal()->getSection().tryDeliver(m);
     }
 
     void checkMsgs(CkIndex3D indx) {
       int num = indx.z*X*Y+indx.y*X+indx.x;
       for(std::list< std::pair<vec3*,int> >::iterator iter =
-            vecmsgs[num].begin(); iter != vecmsgs[num].end(); ++iter) {
+          vecmsgs[num].begin(); iter != vecmsgs[num].end(); ++iter) {
         deliver((*iter).first, (*iter).second, indx);
       }
       vecmsgs[num].clear();

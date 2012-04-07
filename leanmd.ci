@@ -13,11 +13,6 @@ mainmodule leanmd {
   readonly int firstLdbStep;		// begin load balancing after this many steps
   readonly int ldbPeriod;		// load balancing period
 
-  group Comm {
-    entry Comm();
-    entry [reductiontarget] void reduceForces(vec3 forces[n], int n);
-  };
-
   //central controller chare
   mainchare [migratable] Main {
     entry Main(CkArgMsg* msg);
@@ -142,5 +137,11 @@ mainmodule leanmd {
       //everything done, reduction on potential energy
       atomic { contribute(2*sizeof(double),energy,CkReduction::sum_double,CkCallback(CkReductionTarget(Main,energySumP),mainProxy)); }
     };
+  };
+
+  group Comm {
+    entry Comm();
+    entry void calculateForces(ParticleDataMsg *msg);
+    entry [reductiontarget] void reduceForces(vec3 forces[n], int n);
   };
 };
