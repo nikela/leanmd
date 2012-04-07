@@ -6,6 +6,7 @@
 #include "Main.h"
 #include "Cell.h"
 #include "Compute.h"
+#include "Comm.h"
 
 /* readonly */ CProxy_Main mainProxy;
 /* readonly */ CProxy_Cell cellArray;
