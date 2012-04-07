@@ -86,12 +86,13 @@ class Comm : public CBase_Comm {
     }
 
     void deliver(vec3* forces, int n, CkIndex3D indx) {
-      cellArray[indx].ckLocal()->reduceForces(forces, n);
+      //Remember that this sends n-1 because the nth element is
+      //storing the Cell index!
+      cellArray[indx].ckLocal()->reduceForces(forces, n-1);
     }
 
     void deliver(ParticleDataMsg* m, CkIndex6D indx) {
-      computeArray[indx].ckLocal()->interact(m);
-      //TODO: When to do a "selfinteract"?
+      computeArray[indx].ckLocal()->calculateForces(m);
     }
 
     void reduceForces(vec3* forces, int n) {
