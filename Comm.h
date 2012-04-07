@@ -1,10 +1,15 @@
 #ifndef __COMM_H__
 #define __COMM_H__
 
+#include "defs.h"
+#include "leanmd.decl.h"
+#include "Compute.h"
 #include <map>
 #include <set>
 #include <list>
 #include <cassert>
+
+extern /* readonly */ CProxy_Compute computeArray;
 
 class Comm : public CBase_Comm {
   private:

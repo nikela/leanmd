@@ -2,12 +2,14 @@
 #include "defs.h"
 #include "leanmd.decl.h"
 #include "Cell.h"
+#include "Comm.h"
 #include "ckmulticast.h"
 
 extern /* readonly */ CProxy_Main mainProxy;
 extern /* readonly */ CProxy_Cell cellArray;
 extern /* readonly */ CProxy_Compute computeArray;
 extern /* readonly */ CkGroupID mCastGrpID;
+extern /* readonly */ CProxy_Comm commArray;
 
 extern /* readonly */ int cellArrayDimX;
 extern /* readonly */ int cellArrayDimY;
