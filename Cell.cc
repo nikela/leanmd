@@ -134,7 +134,7 @@ void Cell::createSection() {
   //delegate the communication responsibility for this section to multicast library
   CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
   mCastSecProxy.ckSectionDelegate(mCastGrp);
-  mCastGrp->setReductionClient(mCastSecProxy, new CkCallback(CkReductionTarget(Cell,reduceForces), thisProxy(thisIndex.x, thisIndex.y, thisIndex.z)));
+  mCastGrp->setReductionClient(mCastSecProxy, new CkCallback(CkReductionTarget(Comm,reduceForces), thisProxy(thisIndex.x, thisIndex.y, thisIndex.z)));
 }
 
 // Function to start interaction among particles in neighboring cells as well as its own particles
@@ -276,6 +276,6 @@ void Cell::pup(PUP::er &p) {
   if (p.isUnpacking()){
     CkMulticastMgr *mg = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
     mg->resetSection(mCastSecProxy);
-    mg->setReductionClient(mCastSecProxy, new CkCallback(CkReductionTarget(Cell,reduceForces), thisProxy(thisIndex.x, thisIndex.y, thisIndex.z)));
+    mg->setReductionClient(mCastSecProxy, new CkCallback(CkReductionTarget(Comm,reduceForces), thisProxy(thisIndex.x, thisIndex.y, thisIndex.z)));
   }
 }

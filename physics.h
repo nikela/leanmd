@@ -25,8 +25,8 @@ inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, Ck
   if(stepCount == 1 || stepCount == finalStepCount)
     doEnergy = 1;
 
-  vec3 *firstmsg = new vec3[firstLen];
-  vec3 *secondmsg = new vec3[secondLen];
+  vec3 *firstmsg = new vec3[firstLen+1];
+  vec3 *secondmsg = new vec3[secondLen+1];
   //check for wrap around and adjust locations accordingly
   if (abs(first->x - second->x) > 1){
     diff = CELL_SIZE_X * cellArrayDimX;
@@ -76,11 +76,21 @@ inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, Ck
         }
       }
 
+  int X = cellArrayDimX;
+  int Y = cellArrayDimY;
+  int Z = cellArrayDimZ;
+  firstmsg[firstLen].x = first->z*Y*X+first->y*X+first->x;
+  firstmsg[firstLen].y = 1;
+  firstmsg[firstLen].z = 0;
+  secondmsg[secondLen].x = second->z*Y*X+second->y*X+second->x;
+  secondmsg[secondLen].y = 1;
+  secondmsg[secondLen].z = 0;
+
   CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
   CkGetSectionInfo(*mcast1, first);
-  mCastGrp->contribute(sizeof(vec3)*firstLen, firstmsg, CkReduction::sum_double, *mcast1);
+  mCastGrp->contribute(sizeof(vec3)*(firstLen+1), firstmsg, CkReduction::sum_double, *mcast1);
   CkGetSectionInfo(*mcast2, second);
-  mCastGrp->contribute(sizeof(vec3)*secondLen, secondmsg, CkReduction::sum_double, *mcast2);
+  mCastGrp->contribute(sizeof(vec3)*(secondLen+1), secondmsg, CkReduction::sum_double, *mcast2);
 
   delete [] firstmsg;
   delete [] secondmsg;

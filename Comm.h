@@ -8,6 +8,9 @@ class Comm : public CBase_Comm {
     std::set<int> myCells;
     std::set<int> myComputes;
     std::map< int, std::list< ParticleDataMsg* > > msgs;
+    std::map< int, std::list< vec3* > > vecmsgs;
+    std::map< int, std::list< int > > vecsizes;
+
     int X, Y, Z, X2, Y2, Z2;
     int linearize6D(CkIndex6D indx) {
       int num = indx.z1*Z2*X*X2*Y*Y2;
@@ -51,17 +54,30 @@ class Comm : public CBase_Comm {
       myComputes.erase(num);
     }
 
+    void tryDeliver(vec3* forces, int n) {
+      int num = forces[n-1].x;
+      if(myCells.find(num) != myCells.end()) {
+        //deliver(forces, n);
+      }
+      else {
+        vecmsgs[num].push_back(forces);
+        vecsizes[num].push_back(n);
+      }
+    }
+
     void tryDeliver(ParticleDataMsg* m) {
       CkIndex3D cellIndx;
       cellIndx.x = m->x;
       cellIndx.y = m->y;
       cellIndx.z = m->z;
-      CkIndex6D indx;//= secGrp[cellIndx][stepCount].ckLocal()->getID();
-      int num = linearize6D(indx);
-      if(myComputes.find(num) != myComputes.end())
-        deliver(m,indx);
-      else
+      std::list<CkIndex6D> indxs;//= secGrp[cellIndx][stepCount].ckLocal()->getID();
+      int num = linearize6D(indxs.front());
+      if(myComputes.find(num) != myComputes.end()) {
+        //deliver(m,indx);
+      }
+      else {
         msgs[num].push_back(m);
+      }
     }
 
     void deliver(ParticleDataMsg* m, CkIndex6D indx) {
@@ -69,7 +85,11 @@ class Comm : public CBase_Comm {
       //TODO: When to do a "selfinteract"?
     }
 
-    void sendMsg(ParticleDataMsg *m, CkIndex3D cellIndx) {
+    void reduceForces(vec3* forces, int n) {
+      tryDeliver(forces, n);
+    }
+
+    void sendParticles(ParticleDataMsg *m, CkIndex3D cellIndx) {
       //secGrp[cellIndx][stepCount].ckLocal()->getSection().tryDeliver(m);
     }
 

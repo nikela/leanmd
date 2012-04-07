@@ -15,6 +15,7 @@ mainmodule leanmd {
 
   group Comm {
     entry Comm();
+    entry [reductiontarget] void reduceForces(vec3 forces[n], int n);
   };
 
   //central controller chare
