@@ -31,6 +31,8 @@ class Comm : public CBase_Comm {
       Z2 = Z;
     }
 
+    Comm(CkMigrateMessage* msg) {}
+
     void registerCell(CkIndex3D indx) {
       myCells.insert(indx.z*X*Y+indx.y*X+indx.x);
       checkMsgs(indx);

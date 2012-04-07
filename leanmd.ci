@@ -4,7 +4,7 @@ mainmodule leanmd {
   readonly CProxy_Cell cellArray;     //array that houses atoms
   readonly CProxy_Compute computeArray; //computational kernels
   readonly CkGroupID mCastGrpID;      //multicast group handle
-  readonly CkGroupID commID;
+  readonly CProxy_Comm commArray;
 
   readonly int cellArrayDimX;		// X dimension of the Cell array
   readonly int cellArrayDimY;		// Y dimension of the Cell array
@@ -139,7 +139,7 @@ mainmodule leanmd {
     };
   };
 
-  group Comm {
+  array [1D] Comm {
     entry Comm();
     entry void calculateForces(ParticleDataMsg *msg);
     entry [reductiontarget] void reduceForces(vec3 forces[n], int n);
