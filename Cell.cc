@@ -151,7 +151,9 @@ void Cell::sendPositions() {
   for (int i = 0; i < len; i++)
     msg->part[i] = particles[i].pos;
 
-  mCastSecProxy.calculateForces(msg);
+  //PREMPTING WITH DAG SCHEDULING
+  //mCastSecProxy.calculateForces(msg);
+  commArray[CkMyPe()].ckLocal()->calculateForces(msg);
 }
 
 //send the atoms that have moved beyond my cell to neighbors

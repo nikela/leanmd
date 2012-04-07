@@ -8,10 +8,6 @@ extern /* readonly */ int cellArrayDimX;
 extern /* readonly */ int cellArrayDimY;
 extern /* readonly */ int cellArrayDimZ;
 
-#include <map>
-#include <set>
-#include <list>
-
 //central controller chare
 class Main : public CBase_Main {
   double startTime;
