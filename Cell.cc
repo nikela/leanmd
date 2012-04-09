@@ -118,12 +118,6 @@ void Cell::createSection() {
   //create a vector list of my computes
   for (int num=0; num<inbrs; num++) {
     elems.push_back(CkArrayIndex6D(computesList[num][0], computesList[num][1], computesList[num][2], computesList[num][3], computesList[num][4], computesList[num][5]));
-    CkPrintf("edge cell %d %d %d to compute %d %d %d %d %d %d\n",
-	     thisIndex.x, thisIndex.y, thisIndex.x,
-	     computesList[num][0], computesList[num][1], computesList[num][2], computesList[num][3], computesList[num][4], computesList[num][5]);
-    CkPrintf("edge compute %d %d %d %d %d %d cell %d %d %d\n",
-	     computesList[num][0], computesList[num][1], computesList[num][2], computesList[num][3], computesList[num][4], computesList[num][5],
-	     thisIndex.x, thisIndex.y, thisIndex.x);
     fflush(stdout);
   }
 

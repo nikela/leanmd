@@ -8,11 +8,12 @@
 #include "Compute.h"
 #include "Comm.h"
 
+/*readonly*/ CProxy_Comm commProxy;
+
 /* readonly */ CProxy_Main mainProxy;
 /* readonly */ CProxy_Cell cellArray;
 /* readonly */ CProxy_Compute computeArray;
 /* readonly */ CkGroupID mCastGrpID;
-/* readonly */ CkGroupID commID;
 
 /* readonly */ int cellArrayDimX;
 /* readonly */ int cellArrayDimY;
@@ -78,6 +79,10 @@ Main::Main(CkArgMsg* m) {
   cellArray = CProxy_Cell::ckNew(cellArrayDimX,cellArrayDimY,cellArrayDimZ);
   CkPrintf("\nCells: %d X %d X %d .... created\n", cellArrayDimX, cellArrayDimY, cellArrayDimZ);
 
+  CkArrayOptions opts1(CkNumPes());
+  opts1.setMap(CProxy_ComputeMap::ckNew());
+  opts1.setAnytimeMigration(true);
+
   //initializing the 6D compute array
   computeArray = CProxy_Compute::ckNew();
   for (int x=0; x<cellArrayDimX; x++)
@@ -85,11 +90,24 @@ Main::Main(CkArgMsg* m) {
       for (int z=0; z<cellArrayDimZ; z++)
         cellArray(x, y, z).createComputes();
 
-  //make commGroup for Dag Scheduling
-  commID = CProxy_Comm::ckNew();
+  CkArrayOptions opts(CkNumPes());
+  opts.setMap(CProxy_OnePerPE::ckNew());
+  opts.setAnytimeMigration(false);
 
-  thisProxy.run();
+  //make commGroup for Dag Scheduling
+  commProxy = CProxy_Comm::ckNew(opts);
+
+  CProxy_StaticSchedule stat = CProxy_StaticSchedule::ckNew();
+
+  CkStartQD(CkCallback(CkIndex_Main::setupFinished(), mainProxy));
+  
   delete m;
+}
+
+void
+Main::setupFinished() {
+  printf("setup finished\n");
+  thisProxy.run();
 }
 
 //constructor for chare object migration
