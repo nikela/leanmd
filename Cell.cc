@@ -2,6 +2,7 @@
 #include "defs.h"
 #include "leanmd.decl.h"
 #include "Cell.h"
+#include "Comm.h"
 #include "ckmulticast.h"
 
 extern /* readonly */ CProxy_Main mainProxy;
@@ -145,7 +146,9 @@ void Cell::sendPositions() {
   for (int i = 0; i < len; i++)
     msg->part[i] = particles[i].pos;
 
-  mCastSecProxy.calculateForces(msg);
+  //PREMPTING WITH DAG SCHEDULING
+  //mCastSecProxy.calculateForces(msg);
+  commProxy[CkMyPe()].ckLocal()->calculateForces(msg);
 }
 
 //send the atoms that have moved beyond my cell to neighbors

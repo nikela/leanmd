@@ -2,16 +2,26 @@
 #define __COMM_H__
 
 extern /*readonly*/ CProxy_Comm commProxy;
+extern /* readonly */ int cellArrayDimX;
+extern /* readonly */ int cellArrayDimY;
+extern /* readonly */ int cellArrayDimZ;
 
+#include "defs.h"
+#include "leanmd.decl.h"
+#include "Compute.h"
+#include <map>
+#include <set>
+#include <list>
 #include <cassert>
+
+extern /* readonly */ CProxy_Compute computeArray;
 
 class Comm : public CBase_Comm {
   private:
     std::set<int> myCells;
     std::set<int> myComputes;
     std::map< int, std::list< ParticleDataMsg* > > msgs;
-    std::map< int, std::list< vec3* > > vecmsgs;
-    std::map< int, std::list< int > > vecsizes;
+    std::map< int, std::list< std::pair< vec3*, int> > > vecmsgs;
 
   public:
     int X, Y, Z, X2, Y2, Z2;
@@ -39,7 +49,7 @@ class Comm : public CBase_Comm {
 
     void registerCell(CkIndex3D indx) {
       myCells.insert(indx.z*X*Y+indx.y*X+indx.x);
-      //checkMsgs(indx);
+      checkMsgs(indx);
     }
 
     void registerCompute(CkIndex6D indx) {
@@ -61,12 +71,15 @@ class Comm : public CBase_Comm {
 
     void tryDeliver(vec3* forces, int n) {
       int num = forces[n-1].x;
+      CkIndex3D indx;
+      indx.z = num % (X*Y);
+      indx.y = (num - indx.z*X*Y) % X;
+      indx.x = num - indx.z - indx.y;
       if(myCells.find(num) != myCells.end()) {
-        //deliver(forces, n);
+        deliver(forces, n, indx);
       }
       else {
-        vecmsgs[num].push_back(forces);
-        vecsizes[num].push_back(n);
+        vecmsgs[num].push_back(*(new std::pair<vec3*,int> (forces,n)));
       }
     }
 
@@ -76,26 +89,47 @@ class Comm : public CBase_Comm {
       cellIndx.y = m->y;
       cellIndx.z = m->z;
       std::list<CkIndex6D> indxs;//= secGrp[cellIndx][stepCount].ckLocal()->getID();
-      int num = linearize6D(indxs.front());
-      if(myComputes.find(num) != myComputes.end()) {
-        //deliver(m,indx);
-      }
-      else {
-        msgs[num].push_back(m);
+
+      for (std::list<CkIndex6D>::iterator iter = indxs.begin(); iter != indxs.end(); ++iter) {
+        int num = linearize6D(*iter);
+        if(myComputes.find(num) != myComputes.end()) {
+          deliver(m,*iter);
+        }
+        else {
+          msgs[num].push_back(m);
+        }
       }
     }
 
+    void deliver(vec3* forces, int n, CkIndex3D indx) {
+      //Remember that this sends n-1 because the nth element is
+      //storing the Cell index!
+      cellArray[indx].ckLocal()->reduceForces(forces, n-1);
+    }
+
     void deliver(ParticleDataMsg* m, CkIndex6D indx) {
-      computeArray[indx].ckLocal()->interact(m);
-      //TODO: When to do a "selfinteract"?
+      computeArray[indx].ckLocal()->calculateForces(m);
     }
 
     void reduceForces(vec3* forces, int n) {
       tryDeliver(forces, n);
     }
 
-    void sendParticles(ParticleDataMsg *m, CkIndex3D cellIndx) {
+    void calculateForces(ParticleDataMsg *m) {
+      CkIndex3D cellIndx;
+      cellIndx.x = m->x;
+      cellIndx.y = m->y;
+      cellIndx.z = m->z;
       //secGrp[cellIndx][stepCount].ckLocal()->getSection().tryDeliver(m);
+    }
+
+    void checkMsgs(CkIndex3D indx) {
+      int num = indx.z*X*Y+indx.y*X+indx.x;
+      for(std::list< std::pair<vec3*,int> >::iterator iter =
+          vecmsgs[num].begin(); iter != vecmsgs[num].end(); ++iter) {
+        deliver((*iter).first, (*iter).second, indx);
+      }
+      vecmsgs[num].clear();
     }
 
     void checkMsgs(CkIndex6D indx) {
