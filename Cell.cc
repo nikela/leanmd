@@ -255,6 +255,10 @@ void Cell::pup(PUP::er &p) {
   p | updateCount;
   p | stepTime;
   p | inbrs;
+  p | currentState;
+  p | stateCount;
+  p | thisCell;
+  p | current;
   PUParray(p, energy, 2);
 
   if (p.isUnpacking()){

@@ -12,139 +12,46 @@ extern /* readonly */ int cellArrayDimZ;
 #include <map>
 #include <set>
 #include <list>
+#include <vector>
 #include <cassert>
 
 extern /* readonly */ CProxy_Compute computeArray;
 
-class Comm : public CBase_Comm {
-  private:
-    std::set<int> myCells;
-    std::set<int> myComputes;
-    std::map< int, std::list< ParticleDataMsg* > > msgs;
-    std::map< int, std::list< std::pair< vec3*, int> > > vecmsgs;
+inline int linearize3D(CkIndex3D idx) {
+  return idx.x * (cellArrayDimY + 1) * (cellArrayDimZ + 1) +
+         idx.y * (cellArrayDimZ + 1) +
+         idx.z;
+}
 
-  public:
-    int X, Y, Z, X2, Y2, Z2;
-    int linearize6D(CkIndex6D indx) {
-      int
-      num  = indx.z1 * Z2 * X  * X2 * Y  * Y2;
-      num += indx.z2 * X  * X2 * Y  * Y2;
-      num += indx.x1 * X2 * Y  * Y2;
-      num += indx.x2 * Y  * Y2;
-      num += indx.y1 * Y2;
-      num += indx.y2;
-      return num;
-    }
+// override for 6D and just pull necessary elements
+inline int linearizeFake6D(CkIndex6D idx) {
+  // just pull out values, repack and call the right method
+  CkIndex3D nidx;
+  nidx.x = idx.x1;
+  nidx.y = idx.y1;
+  nidx.z = idx.z1;
+  return linearize3D(nidx);
+}
 
-    Comm() {
-      X = CELLARRAY_DIM_X;
-      Y = CELLARRAY_DIM_Y;
-      Z = CELLARRAY_DIM_Z;
-      X2 = X;
-      Y2 = Y;
-      Z2 = Z;
-    }
+inline CkIndex3D unlinearize3D(int cellid) {
+  CkIndex3D indx;
+  indx.x = cellid % (cellArrayDimZ + 1);
+  indx.y = (cellid / (cellArrayDimZ + 1)) % (cellArrayDimY + 1);
+  indx.z = (cellid / (cellArrayDimZ + 1) / (cellArrayDimY + 1)) % (cellArrayDimX + 1);
+  return indx;
+}
 
-    Comm(CkMigrateMessage*) { }
-
-    void registerCell(CkIndex3D indx) {
-      myCells.insert(indx.z*X*Y+indx.y*X+indx.x);
-      checkMsgs(indx);
-    }
-
-    void registerCompute(CkIndex6D indx) {
-      int num = linearize6D(indx);
-      myComputes.insert(num);
-      checkMsgs(indx);
-    }
-
-    void unregister(CkIndex3D indx) {
-      assert(myCells.find(indx.z*X*Y+indx.y*X+indx.x) != myCells.end());
-      myCells.erase(indx.z*X*Y+indx.y*X+indx.x);
-    }
-
-    void unregister(CkIndex6D indx) {
-      int num = linearize6D(indx);
-      assert(myComputes.find(num) != myComputes.end());
-      myComputes.erase(num);
-    }
-
-    void tryDeliver(vec3* forces, int n) {
-      int num = forces[n-1].x;
-      CkIndex3D indx;
-      indx.z = num % (X*Y);
-      indx.y = (num - indx.z*X*Y) % X;
-      indx.x = num - indx.z - indx.y;
-      if(myCells.find(num) != myCells.end()) {
-        deliver(forces, n, indx);
-      }
-      else {
-        vecmsgs[num].push_back(*(new std::pair<vec3*,int> (forces,n)));
-      }
-    }
-
-    void tryDeliver(ParticleDataMsg* m) {
-      CkIndex3D cellIndx;
-      cellIndx.x = m->x;
-      cellIndx.y = m->y;
-      cellIndx.z = m->z;
-      std::list<CkIndex6D> indxs;//= secGrp[cellIndx][stepCount].ckLocal()->getID();
-
-      for (std::list<CkIndex6D>::iterator iter = indxs.begin(); iter != indxs.end(); ++iter) {
-        int num = linearize6D(*iter);
-        if(myComputes.find(num) != myComputes.end()) {
-          deliver(m,*iter);
-        }
-        else {
-          msgs[num].push_back(m);
-        }
-      }
-    }
-
-    void deliver(vec3* forces, int n, CkIndex3D indx) {
-      //Remember that this sends n-1 because the nth element is
-      //storing the Cell index!
-      cellArray[indx].ckLocal()->reduceForces(forces, n-1);
-    }
-
-    void deliver(ParticleDataMsg* m, CkIndex6D indx) {
-      computeArray[indx].ckLocal()->calculateForces(m);
-    }
-
-    void reduceForces(vec3* forces, int n) {
-      tryDeliver(forces, n);
-    }
-
-    void calculateForces(ParticleDataMsg *m) {
-      CkIndex3D cellIndx;
-      cellIndx.x = m->x;
-      cellIndx.y = m->y;
-      cellIndx.z = m->z;
-      //secGrp[cellIndx][stepCount].ckLocal()->getSection().tryDeliver(m);
-    }
-
-    void checkMsgs(CkIndex3D indx) {
-      int num = indx.z*X*Y+indx.y*X+indx.x;
-      for(std::list< std::pair<vec3*,int> >::iterator iter =
-          vecmsgs[num].begin(); iter != vecmsgs[num].end(); ++iter) {
-        deliver((*iter).first, (*iter).second, indx);
-      }
-      vecmsgs[num].clear();
-    }
-
-    void checkMsgs(CkIndex6D indx) {
-      int num = linearize6D(indx);
-      for(std::list< ParticleDataMsg* >::iterator iter = msgs[num].begin();
-          iter != msgs[num].end(); ++iter) {
-        deliver(*iter, indx);
-      }
-      msgs[num].clear();
-    }
-
-  void warmup() {
-
-  }
-};
+inline int linearize6D(CkIndex6D idx) {
+  const int dim = 10;
+  const int X = dim, Y = dim, Z = dim;
+  const int X2 = dim, Y2 = dim, Z2 = dim;
+  return idx.z1 * Z2 * X  * X2 * Y  * Y2 +
+         idx.z2 * X  * X2 * Y  * Y2 +
+         idx.x1 * X2 * Y  * Y2 +
+         idx.x2 * Y  * Y2 +
+         idx.y1 * Y2 +
+         idx.y2;
+}
 
 #include <cassert>
 
@@ -157,34 +64,9 @@ class Comm : public CBase_Comm {
 //#                2 -> COMPUTE,
 //#                3 -> MIGRATE ]
 
-static int linearize3D(CkIndex3D idx) {
-  return idx.x * cellArrayDimY * cellArrayDimZ +
-         idx.y * cellArrayDimZ +
-         idx.z;
-}
-
-struct Obj {
-  int objType;
-  CkIndex6D idx;
-};
-
-struct StateNode {
-  Obj thisObject, relObject;
-  int taskid, taskType, pe, waitTask;
-};
-
-struct SendTo {
-  int pe;
-  std::list<Obj> sendTo;
-};
-struct CommInfo {
-  int iter, spe, rpe;
-  std::list<SendTo> sends;
-};
-
 struct StaticSchedule : public CBase_StaticSchedule {
-  std::map<int, std::list<StateNode> > cellTransition;
-  std::map<int, std::list<StateNode> > computeTransition;
+  std::map<int, std::vector<StateNode> > cellTransition;
+  std::map<int, std::vector<StateNode> > computeTransition;
 
   //# iter <cell-obj> (spe,rpe) -> [ (pe,[obj,iter]) ]
   std::map<int, std::map<int, CommInfo> > commMap;
@@ -230,11 +112,13 @@ struct StaticSchedule : public CBase_StaticSchedule {
           if (node.thisObject.objType == 0) {
             //printf("found cell\n");
             // cell
-            cellTransition[commProxy[CkMyPe()].ckLocal()->linearize6D(node.thisObject.idx)].push_back(node);
+            CkIndex6D idx6 = node.thisObject.idx;
+            CkIndex3D idx3; idx3.x = idx6.x1; idx3.y = idx6.y1; idx3.z = idx6.z1;
+            cellTransition[linearize3D(idx3)].push_back(node);
           } else if (node.thisObject.objType == 1) {
             //printf("found compute\n");
             // compute
-            computeTransition[commProxy[CkMyPe()].ckLocal()->linearize6D(node.thisObject.idx)].push_back(node);
+            computeTransition[linearize6D(node.thisObject.idx)].push_back(node);
           } else {
             assert(0);
           }
@@ -354,7 +238,8 @@ struct StaticSchedule : public CBase_StaticSchedule {
         CkVec<CkArrayIndex1D> elms;
         for (std::list<SendTo>::iterator iter3 = info.sends.begin();
              iter3 != info.sends.end(); ++iter3) {
-          elms.push_back(iter3->pe);
+          // @todo uncomment this once we are running on the right number of pes
+          //elms.push_back(iter3->pe);
         }
         // @todo right now everyone creates and sets these up
         sects[iteration][cellid] =
@@ -364,10 +249,180 @@ struct StaticSchedule : public CBase_StaticSchedule {
         //sects[iteration][cellid].warmup();
       }
     }
-    //commMap[info.iter][linearize3D(sender)]
   }
+};
 
-  StateNode getNextState() {
+class Comm : public CBase_Comm {
+  private:
+    std::set<int> myCells;
+    std::set<int> myComputes;
+    std::map< int, std::list< ParticleDataMsg* > > msgs;
+    std::map< int, std::list< std::pair< vec3*, int> > > vecmsgs;
+    CkIndex6D bufRelease;
+    int bufReleaseType;
+
+  public:
+    Comm()
+      : bufReleaseType(-1) { // at start there is not buffered release
+    }
+
+    Comm(CkMigrateMessage*) { }
+
+    void registerCell(CkIndex3D indx) {
+      int cellid = linearize3D(indx);
+      //CkPrintf("%d: registering cell %d\n", CkMyPe(), cellid);
+      myCells.insert(cellid);
+      checkBufferedRelease();
+      checkMsgs(indx);
+    }
+
+    void releaseNext(int type, CkIndex6D indx) {
+      if (type == 0) {
+        // it's a cell
+        int cellid = linearizeFake6D(indx);
+        if (myCells.find(cellid) != myCells.end()) {
+          CkPrintf("%d: releasing NEXT cell %d (%d,%d,%d), already on PE\n",
+                   CkMyPe(), cellid, indx.x1, indx.y1, indx.z1);
+          //CkAssert(bufReleaseType == -1 || bufRelease == indx);
+          bufReleaseType = -1;
+          // convert to 3d index
+          CkIndex3D indx3;
+          indx3.x = indx.x1;
+          indx3.y = indx.y1;
+          indx3.z = indx.z1;
+          CkAssert(cellArray[indx3].ckLocal() != 0);
+          cellArray[indx3].ckLocal()->commRelease();
+        } else {
+          CkPrintf("%d: trying to release, but cell %d not here yet\n",
+                   CkMyPe(), cellid);
+          bufferRelease(type, indx);
+        }
+      } else {
+        assert(type == 1); // it's a compute
+        int computeid = linearize6D(indx);
+        if (myComputes.find(computeid) != myComputes.end()) {
+          CkPrintf("releasing NEXT compute %d, already on PE\n", computeid);
+          //CkAssert(bufReleaseType == -1 || bufRelease == indx);
+          bufReleaseType = -1;
+          computeArray[indx].ckLocal()->commRelease();
+        } else {
+          CkPrintf("trying to release, but compute %d not here yet\n", computeid);
+          bufferRelease(type, indx);
+        }
+      }
+    }
+
+    void bufferRelease(int type, CkIndex6D indx) {
+      // @protocol save this indx and wait for incoming
+      // assert that there wasn't another one, or this is being recalled
+      // become something arrived
+      //CkAssert(bufReleaseType == -1 || indx == bufRelease);
+      bufReleaseType = type;
+      bufRelease = indx;
+    }
+
+    void checkBufferedRelease() {
+      if (bufReleaseType != -1) releaseNext(bufReleaseType, bufRelease);
+    }
+
+    void registerCompute(CkIndex6D indx) {
+      int computeid = linearize6D(indx);
+      //CkPrintf("%d: registering compute %d\n", CkMyPe(), computeid);
+      myComputes.insert(computeid);
+      checkBufferedRelease();
+      checkMsgs(indx);
+    }
+
+    void unregister(CkIndex3D indx) {
+      int cellid = linearize3D(indx);
+      assert(myCells.find(cellid) != myCells.end());
+      myCells.erase(cellid);
+    }
+
+    void unregister(CkIndex6D indx) {
+      int computeid = linearize6D(indx);
+      assert(myComputes.find(computeid) != myComputes.end());
+      myComputes.erase(computeid);
+    }
+
+    void tryDeliver(vec3* forces, int n) {
+      int num = (int)forces[n-1].x;
+      int count = (int)forces[n-1].y;
+      // it's a sum, so divide the num by the number augmentations
+      int cellid = num / count;
+      CkIndex3D indx = unlinearize3D(cellid);
+      if(myCells.find(num) != myCells.end()) {
+        deliver(forces, n, indx);
+      }
+      else {
+        vecmsgs[num].push_back(*(new std::pair<vec3*,int> (forces,n)));
+      }
+    }
+
+    void tryDeliver(ParticleDataMsg* m) {
+      CkIndex3D cellIndx;
+      cellIndx.x = m->x;
+      cellIndx.y = m->y;
+      cellIndx.z = m->z;
+      std::list<CkIndex6D> indxs;//= secGrp[cellIndx][stepCount].ckLocal()->getID();
+
+      for (std::list<CkIndex6D>::iterator iter = indxs.begin(); iter != indxs.end(); ++iter) {
+        int num = linearize6D(*iter);
+        if(myComputes.find(num) != myComputes.end()) {
+          deliver(m,*iter);
+        }
+        else {
+          msgs[num].push_back(m);
+        }
+      }
+    }
+
+    void deliver(vec3* forces, int n, CkIndex3D indx) {
+      //Remember that this sends n-1 because the nth element is
+      //storing the Cell index!
+      cellArray[indx].ckLocal()->reduceForces(forces, n-1);
+    }
+
+    void deliver(ParticleDataMsg* m, CkIndex6D indx) {
+      computeArray[indx].ckLocal()->calculateForces(m);
+    }
+
+    void reduceForces(vec3* forces, int n) {
+      tryDeliver(forces, n);
+    }
+
+    void calculateForces(ParticleDataMsg *m) {
+      CkIndex3D cellIndx;
+      cellIndx.x = m->x;
+      cellIndx.y = m->y;
+      cellIndx.z = m->z;
+      StaticSchedule& sched = *stat.ckLocalBranch();
+      int cellid = linearize3D(cellIndx);
+      CkAssert(cellArray[cellIndx].ckLocal() != 0);
+      int iter = cellArray[cellIndx].ckLocal()->stepCount;
+      //sched.sects[iter][cellid].tryDeliver(m);
+    }
+
+    void checkMsgs(CkIndex3D indx) {
+      int cellid = linearize3D(indx);
+      for(std::list< std::pair<vec3*,int> >::iterator iter =
+          vecmsgs[cellid].begin(); iter != vecmsgs[cellid].end(); ++iter) {
+        deliver((*iter).first, (*iter).second, indx);
+      }
+      vecmsgs[cellid].clear();
+    }
+
+    void checkMsgs(CkIndex6D indx) {
+      int num = linearize6D(indx);
+      for(std::list< ParticleDataMsg* >::iterator iter = msgs[num].begin();
+          iter != msgs[num].end(); ++iter) {
+        deliver(*iter, indx);
+      }
+      msgs[num].clear();
+    }
+
+  void warmup() {
+
   }
 };
 

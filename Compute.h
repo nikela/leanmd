@@ -15,6 +15,12 @@ class Compute : public CBase_Compute {
     CkSectionInfo mcast2;
     double computeTime;
 
+    // SDAG static scheduling state stuff
+    int currentState;
+    int stateCount;
+    int thisCompute;
+    StateNode current;
+
   public:
     Compute();
     Compute(CkMigrateMessage *msg);

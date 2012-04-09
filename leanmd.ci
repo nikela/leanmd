@@ -5,6 +5,7 @@ mainmodule leanmd {
   readonly CProxy_Compute computeArray; //computational kernels
   readonly CProxy_Comm commProxy; //comm
   readonly CkGroupID mCastGrpID;      //multicast group handle
+  readonly CProxy_StaticSchedule stat;
 
   readonly int cellArrayDimX;		// X dimension of the Cell array
   readonly int cellArrayDimY;		// Y dimension of the Cell array
@@ -34,8 +35,10 @@ mainmodule leanmd {
         CkPrintf("Starting simulation .... \n\n");
 	fflush(stdout);
 	startTime = CkWallTimer();
-        cellArray.run();
-        computeArray.run();
+        cellArray.coordRun();
+        computeArray.coordRun();
+        //cellArry.run();
+        //computeArray.run();
       }
       //receive intial and final energies and compare
       when energySumP(double fP, double iP),
@@ -66,6 +69,95 @@ mainmodule leanmd {
     entry void createComputes();    //call to insert computes that I need  
     entry void ResumeFromSync();    //resume from here after load balancing
     entry [reductiontarget] void reduceForces(vec3 forces[n], int n);   //receives forces from my computes on my atoms
+    entry void transition();
+    entry void commRelease();
+
+    entry void coordRun() {
+      atomic {
+        // do initial registration with the Comm
+        //CkPrintf("(%d,%d,%d): tell local comm (pe %d) this element exists\n",
+        //thisIndex.x, thisIndex.y, thisIndex.z, CkMyPe());
+        commProxy[CkMyPe()].ckLocal()->registerCell(thisIndex);
+
+        // current state is 0, haven't started yet
+        currentState = 0;
+
+        // initialize some values here
+        StaticSchedule& sched = *stat.ckLocalBranch();
+        thisCell = linearize3D(thisIndex);
+        assert(sched.cellTransition.find(thisCell) != sched.cellTransition.end());
+        stateCount = sched.cellTransition[thisCell].size();
+        //printf("cell %d: found %d states\n", thisCell, stateCount);
+      }
+      while (currentState < stateCount) {
+        atomic {
+          StaticSchedule& sched = *stat.ckLocalBranch();
+          current = sched.cellTransition[thisCell][currentState];
+          //printf("cell %d: currentState is %d, waitTask = %d\n",
+          //thisCell, currentState, current.waitTask);
+          assert(current.thisObject.idx.x1 == thisIndex.x &&
+                 current.thisObject.idx.y1 == thisIndex.y &&
+                 current.thisObject.idx.z1 == thisIndex.z);
+
+          switch (current.taskType) {
+          case 0: sendState(); break;
+          case 1: updateState(); break;
+          default:
+            CkPrintf("invalid state for a cell, id = %d\n", thisCell);
+            assert(0);
+            break;
+          }
+        }
+        when transition() { }
+        atomic {
+          currentState++;
+          // two states per iter
+          stepCount = currentState / 2;
+        }
+      }
+    };
+
+    entry void sendState() {
+      atomic {
+        // make sure it's executing on the PE the schedule expects it to
+        CkPrintf("%d: expecting to run cell send on pe %d\n", thisCell, current.pe);
+        // @todo uncomment this when really running
+        //CkAssert(CkMyPe() == current.pe);
+      }
+
+      if (current.waitTask != -5) { when commRelease() { } }
+      //atomic { CkPrintf("released\n"); }
+      atomic { sendPositions(); }
+      atomic {
+        // objType 2 means no object
+        if (current.relObject.objType != 2) {
+          Obj& obj = current.relObject;
+          commProxy[CkMyPe()].releaseNext(obj.objType, obj.idx);
+        }
+        transition();
+      }
+    };
+
+    entry void updateState() {
+      atomic {
+        // make sure it's executing on the PE the schedule expects it to
+        CkPrintf("%d: expecting to run cell update on pe %d\n", thisCell, current.pe);
+        // @todo uncomment this when really running
+        //CkAssert(CkMyPe() == current.pe);
+      }
+      if (current.waitTask != -5) { when commRelease() { } }
+      when reduceForces(vec3 forces[n], int n) atomic {
+        updateProperties(forces, n);
+      }
+      atomic {
+        // objType 2 means no object
+        if (current.relObject.objType != 2) {
+          Obj& obj = current.relObject;
+          commProxy[CkMyPe()].releaseNext(obj.objType, obj.idx);
+        }
+        transition();
+      }
+    };
 
     //function to perform iterations for Cells
     entry void run() {
@@ -104,6 +196,7 @@ mainmodule leanmd {
           }
         }
       }
+      // @todo this still needs to happen with the static scheduling code
       //everything done, reduction on kinetic energy
       atomic { contribute(2*sizeof(double),energy,CkReduction::sum_double,CkCallback(CkReductionTarget(Main,energySumK),mainProxy)); }
     };
@@ -114,6 +207,85 @@ mainmodule leanmd {
     entry Compute();
     entry void ResumeFromSync();
     entry void calculateForces(ParticleDataMsg *msg);
+    entry void transition();
+    entry void commRelease();
+
+    entry void coordRun() {
+      atomic {
+        // do initial registration with the Comm
+        // @protocol always order these x1,x2,y1,y2...
+        // CkPrintf("(%d,%d,%d,%d,%d,%d): tell local comm (pe %d) this element exists\n",
+        //          thisIndex.x1, thisIndex.x2,
+        //          thisIndex.y1, thisIndex.y2,
+        //          thisIndex.z1, thisIndex.z2, CkMyPe());
+        commProxy[CkMyPe()].ckLocal()->registerCompute(thisIndex);
+
+        // current state is 0, haven't started yet
+        currentState = 0;
+
+        // initialize some values here
+        StaticSchedule& sched = *stat.ckLocalBranch();
+        thisCompute = linearize6D(thisIndex);
+        assert(sched.computeTransition.find(thisCompute) != sched.computeTransition.end());
+        stateCount = sched.computeTransition[thisCompute].size();
+        //printf("compute %d: found %d states\n", thisCompute, stateCount);
+      }
+      while (currentState < stateCount) {
+        atomic {
+           StaticSchedule& sched = *stat.ckLocalBranch();
+           current = sched.computeTransition[thisCompute][currentState];
+          printf("compute %d: currentState is %d, waitTask = %d\n",
+                 thisCompute, currentState, current.waitTask);
+          assert(current.thisObject.idx.x1 == thisIndex.x1 &&
+                 current.thisObject.idx.y1 == thisIndex.y1 &&
+                 current.thisObject.idx.z1 == thisIndex.z1 &&
+                 current.thisObject.idx.x2 == thisIndex.x2 &&
+                 current.thisObject.idx.y2 == thisIndex.y2 &&
+                 current.thisObject.idx.z2 == thisIndex.z2);
+
+          switch (current.taskType) {
+          case 2: computeState(); break;
+          default:
+            CkPrintf("invalid state for a compute, id = %d\n", thisCompute);
+            assert(0);
+            break;
+           }
+        }
+        when transition() { }
+        atomic {
+          currentState++;
+          // one states per iter
+          stepCount = currentState;
+        }
+      }
+    };
+
+    entry void computeState() {
+      atomic {
+        // make sure it's executing on the PE the schedule expects it to
+        CkPrintf("%d: expecting to run compute on pe %d\n", thisCompute, current.pe);
+        // @todo uncomment this when really running
+        //CkAssert(CkMyPe() == current.pe);
+      }
+      if (current.waitTask != -5) { when commRelease() { } }
+      if (thisIndex.x1 == thisIndex.x2 &&
+          thisIndex.y1 == thisIndex.y2 &&
+          thisIndex.z1 == thisIndex.z2) {
+        when calculateForces(ParticleDataMsg *msg) atomic { selfInteract(msg); }
+      } else {
+        //receive positions from two cells - buffer the first one
+        when calculateForces(ParticleDataMsg *msg) atomic { bufferedMsg = msg; }
+        when calculateForces(ParticleDataMsg *msg) atomic { interact(msg); }
+      }
+      atomic {
+        // objType 2 means no object
+        if (current.relObject.objType != 2) {
+          Obj& obj = current.relObject;
+          commProxy[CkMyPe()].releaseNext(obj.objType, obj.idx);
+        }
+        transition();
+      }
+    };
 
     entry void run() {
       for(stepCount = 1; stepCount <= finalStepCount; stepCount++) {
@@ -132,6 +304,7 @@ mainmodule leanmd {
         }
       }
       //everything done, reduction on potential energy
+      // @todo this still needs to happen with the static scheduling code
       atomic { contribute(2*sizeof(double),energy,CkReduction::sum_double,CkCallback(CkReductionTarget(Main,energySumP),mainProxy)); }
     };
   };
@@ -150,6 +323,7 @@ mainmodule leanmd {
     entry Comm();
     entry [reductiontarget] void reduceForces(vec3 forces[n], int n);
     entry void warmup();
-    entry void calculateForces(ParticleDataMsg *msg);
+    entry void releaseNext(int type, CkIndex6D indx);
+    entry void tryDeliver(ParticleDataMsg* m);
   };
 };

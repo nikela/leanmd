@@ -79,10 +79,10 @@ inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, Ck
   int X = cellArrayDimX;
   int Y = cellArrayDimY;
   int Z = cellArrayDimZ;
-  firstmsg[firstLen].x = first->z*Y*X+first->y*X+first->x;
+  firstmsg[firstLen].x = first->z * Y * X + first->y * X + first->x;
   firstmsg[firstLen].y = 1;
   firstmsg[firstLen].z = 0;
-  secondmsg[secondLen].x = second->z*Y*X+second->y*X+second->x;
+  secondmsg[secondLen].x = second->z * Y * X + second->y * X + second->x;
   secondmsg[secondLen].y = 1;
   secondmsg[secondLen].z = 0;
 

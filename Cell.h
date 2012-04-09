@@ -9,6 +9,7 @@ extern /* readonly */ int ldbPeriod;
 extern /* readonly */ int finalStepCount;
 
 #include "ckmulticast.h"
+#include "Main.h"
 
 //data message to be sent to computes
 struct ParticleDataMsg : public CkMcastBaseMsg, public CMessage_ParticleDataMsg {
@@ -41,6 +42,12 @@ class Cell : public CBase_Cell {
     int stepTime;
     int updateCount;
     double energy[2]; //store kinetic energy - initial and final
+
+    // SDAG static scheduling state stuff
+    int currentState;
+    int stateCount;
+    int thisCell;
+    StateNode current;
 
     void migrateToCell(Particle p, int &px, int &py, int &pz);
     void updateProperties(vec3 *forces, int lengthUp);	//updates properties after receiving forces from computes

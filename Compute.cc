@@ -73,6 +73,10 @@ void Compute::pup(PUP::er &p) {
   p | stepCount;
   p | mcast1;
   p | mcast2;
+  p | currentState;
+  p | stateCount;
+  p | thisCompute;
+  p | current;
   PUParray(p, energy, 2);
   if (p.isUnpacking() && CkInRestarting()) {
     mcast1.get_redNo() = 0;
