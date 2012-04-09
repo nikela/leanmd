@@ -439,9 +439,7 @@ class Comm : public CBase_Comm {
       msgs[num].clear();
     }
 
-  void warmup() {
-
-  }
+    void warmup() { }
 };
 
 #endif /*__COMM_H__*/
