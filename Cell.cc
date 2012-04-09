@@ -142,6 +142,7 @@ void Cell::sendPositions() {
   msg->y = thisIndex.y;
   msg->z = thisIndex.z;
   msg->lengthAll = len;
+  msg->iter = stepCount;
 
   for (int i = 0; i < len; i++)
     msg->part[i] = particles[i].pos;

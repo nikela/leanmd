@@ -18,6 +18,7 @@ struct ParticleDataMsg : public CkMcastBaseMsg, public CMessage_ParticleDataMsg 
   int x;    //x coordinate of cell sending this message
   int y;    //y coordinate
   int z;    //z coordinate
+  int iter;
 
   void pup(PUP::er &p){
     CMessage_ParticleDataMsg::pup(p);

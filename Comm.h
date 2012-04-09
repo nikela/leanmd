@@ -360,11 +360,29 @@ class Comm : public CBase_Comm {
     }
 
     void tryDeliver(ParticleDataMsg* m) {
-      CkIndex3D cellIndx;
-      cellIndx.x = m->x;
-      cellIndx.y = m->y;
-      cellIndx.z = m->z;
-      std::list<CkIndex6D> indxs;//= secGrp[cellIndx][stepCount].ckLocal()->getID();
+      CkIndex3D cindx;
+      cindx.x = m->x;
+      cindx.y = m->y;
+      cindx.z = m->z;
+
+      int iteration = m->iter;
+      int cellid = linearize3D(cindx);
+      bool found = false;
+      std::list<CkIndex6D> indxs;
+
+      StaticSchedule& sched = *stat.ckLocalBranch();
+
+      for (std::list<SendTo>::iterator iter = sched.commMap[iteration][cellid].sends.begin();
+           iter != sched.commMap[iteration][cellid].sends.end(); ++iter) {
+        if (iter->pe == CkMyPe()) {
+          found = true;
+          for (std::list<Obj>::iterator iter2 = iter->sendTo.begin();
+               iter2 != iter->sendTo.end(); ++iter2) {
+            indxs.push_back(iter2->idx);
+          }
+        }
+      }
+      CkAssert(found);
 
       for (std::list<CkIndex6D>::iterator iter = indxs.begin(); iter != indxs.end(); ++iter) {
         int num = linearize6D(*iter);
