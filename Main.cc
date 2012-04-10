@@ -100,7 +100,6 @@ Main::Main(CkArgMsg* m) {
 
   //make commGroup for Dag Scheduling
   commProxy = CProxy_Comm::ckNew(opts);
-
   stat = CProxy_StaticSchedule::ckNew();
 
   CkStartQD(CkCallback(CkIndex_Main::setupFinished(), mainProxy));

@@ -2,9 +2,10 @@
 #include "leanmd.decl.h"
 #include "Cell.h"
 #include "Compute.h"
-#include "physics.h"
+#include "Comm.h"
 #include "ckmulticast.h"
 #include <algorithm>
+#include "physics.h"
 using std::swap;
 
 extern /* readonly */ CProxy_Main mainProxy;
@@ -34,7 +35,7 @@ void Compute::selfInteract(ParticleDataMsg *msg){
   computeTime = CkWallTimer();
   double energyP = 0;
 
-  energyP = calcInternalForces(msg, &mcast1, stepCount);
+  energyP = calcInternalForces(msg, &mcast1, stepCount, thisIndex);
 
   //energy assignment only in begining and end
   if(stepCount == 1) {
@@ -55,7 +56,7 @@ void Compute::interact(ParticleDataMsg *msg){
   if (bufferedMsg->x*cellArrayDimY*cellArrayDimZ + bufferedMsg->y*cellArrayDimZ + bufferedMsg->z < msg->x*cellArrayDimY*cellArrayDimZ + msg->y*cellArrayDimZ + msg->z){ 
     swap(handleA, handleB);
   }
-  energyP = calcPairForces(msg, bufferedMsg, handleA, handleB, stepCount);
+  energyP = calcPairForces(msg, bufferedMsg, handleA, handleB, stepCount, thisIndex);
 
   //energy assignment only in begining and end
   if(stepCount == 1) {

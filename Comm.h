@@ -53,6 +53,13 @@ inline int linearize6D(CkIndex6D idx) {
          idx.y2;
 }
 
+struct Startup : public CkMcastBaseMsg, public CMessage_Startup {
+  int globalID;
+  int iter;
+  CkIndex6D compute;
+  int reducingCell;
+};
+
 #include <cassert>
 
 //# object types [ 0 -> CELL,
@@ -220,11 +227,15 @@ struct StaticSchedule : public CBase_StaticSchedule {
     setUpSections();
   }
 
+  //commMap: iter <cell-obj> (spe,rpe) -> [ (pe,[obj,iter]) ]
+
   // sections for cell and compute multicasts/reductions
   // iter -> cell -> send batch
   std::map<int, std::map<int, CProxySection_Comm> > sects;
 
   void setUpSections() {
+    // @todo at scale this might go to hell
+    int globalID = CkMyPe() * 10000;
     printf("section set up\n");
     //std::map<int, std::map<int, CommInfo> > commMap;
     for (std::map<int, std::map<int, CommInfo> >::iterator iter = commMap.begin();
@@ -235,21 +246,52 @@ struct StaticSchedule : public CBase_StaticSchedule {
         int cellid = iter2->first;
         CommInfo& info = iter2->second;
 
-        CkVec<CkArrayIndex1D> elms;
-        for (std::list<SendTo>::iterator iter3 = info.sends.begin();
-             iter3 != info.sends.end(); ++iter3) {
-          // @todo uncomment this once we are running on the right number of pes
-          //elms.push_back(iter3->pe);
+        if (info.rpe == CkMyPe() || info.spe == CkMyPe()) {
+          CkVec<CkArrayIndex1D> elms;
+          for (std::list<SendTo>::iterator iter3 = info.sends.begin();
+               iter3 != info.sends.end(); ++iter3) {
+            // @todo uncomment this once we are running on the right number of pes 
+            //elms.push_back(iter3->pe);
+          }
+          // @todo right now everyone creates and sets these up
+          sects[iteration][cellid] =
+            CProxySection_Comm::ckNew(commProxy.ckGetArrayID(),
+                                      elms.getVec(),
+                                      elms.size());
+          CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
+          CkAssert(mCastGrp);
+          sects[iteration][cellid].ckSectionDelegate(mCastGrp);
+
+          Startup& start = *new Startup();
+          start.globalID = globalID;
+          //sects[iteration][cellid].warmup(&start);
+        
+          if (info.rpe == CkMyPe()) {
+            mCastGrp->setReductionClient(sects[iteration][cellid],
+                                         new CkCallback(CkReductionTarget(Comm,reduceForces),
+                                                        commProxy[CkMyPe()]));
+
+            for (std::list<SendTo>::iterator iter3 = info.sends.begin();
+                 iter3 != info.sends.end(); ++iter3) {
+              int pe = iter3->pe;
+              for (std::list<Obj>::iterator iter4 = iter3->sendTo.begin();
+                 iter4 != iter3->sendTo.end(); ++iter4) {
+
+                Startup& start = *new Startup();
+                start.iter = iteration;
+                start.compute = iter4->idx;
+                start.reducingCell = cellid;
+                start.globalID = globalID;
+                //commProxy[pe].warmupRed(&start);
+              }
+            }
+          }
+          globalID++;
         }
-        // @todo right now everyone creates and sets these up
-        sects[iteration][cellid] =
-          CProxySection_Comm::ckNew(commProxy.ckGetArrayID(),
-                                    elms.getVec(),
-                                    elms.size());
-        //sects[iteration][cellid].warmup();
       }
     }
   }
+
 };
 
 class Comm : public CBase_Comm {
@@ -447,7 +489,34 @@ class Comm : public CBase_Comm {
       msgs[num].clear();
     }
 
-    void warmup() { }
+    std::map<int, CkSectionInfo> tempInfo;
+
+    void warmup(Startup* s) {
+      CkSectionInfo info;
+      CkGetSectionInfo(info, s);
+      tempInfo[s->globalID] = info;
+    }
+
+    // iter -> computeid -> cellid -> section
+    std::map<int, std::map<int, std::map<int, CkSectionInfo> > > redInfo;
+
+    void warmupRed(Startup* sref) {
+      Startup& s = *sref;
+      CkAssert(tempInfo.find(s.globalID) != tempInfo.end());
+      CkSectionInfo info = tempInfo[s.globalID];
+      CkAssert(redInfo[s.iter][linearize6D(s.compute)].find(s.reducingCell) ==
+               redInfo[s.iter][linearize6D(s.compute)].end());
+      redInfo[s.iter][linearize6D(s.compute)][s.reducingCell] = info;
+      delete &s;
+    }
+
+    void depositForces(vec3* msg, int n, CkIndex6D depositor, int iter, CkIndex3D target) {
+      assert(redInfo[iter][linearize6D(depositor)].find(linearize3D(target)) !=
+             redInfo[iter][linearize6D(depositor)].end());
+      CkSectionInfo info = redInfo[iter][linearize6D(depositor)][linearize3D(target)];
+      CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
+      mCastGrp->contribute(sizeof(vec3)*n, msg, CkReduction::sum_double, info);
+    }
 };
 
 #endif /*__COMM_H__*/

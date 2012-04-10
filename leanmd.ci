@@ -352,10 +352,13 @@ mainmodule leanmd {
     entry CellMap();
   };
 
+  message Startup;
+
   array [1d] Comm {
     entry Comm();
     entry [reductiontarget] void reduceForces(vec3 forces[n], int n);
-    entry void warmup();
+    entry void warmup(Startup*);
+    entry void warmupRed(Startup*);
     entry void releaseNext(int type, CkIndex6D indx);
     entry void tryDeliver(ParticleDataMsg* m);
     entry void startMigrate(CkIndex3D, int pe);
