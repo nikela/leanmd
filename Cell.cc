@@ -281,3 +281,12 @@ void Cell::pup(PUP::er &p) {
     mg->setReductionClient(mCastSecProxy, new CkCallback(CkReductionTarget(Comm,reduceForces), thisProxy(thisIndex.x, thisIndex.y, thisIndex.z)));
   }
 }
+
+void Cell::startMigrate(int pe) {
+  migrateMe(pe);
+}
+
+void Cell::ckJustMigrated() {
+  ArrayElement::ckJustMigrated();
+  migrateDone();
+}

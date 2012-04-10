@@ -28,6 +28,8 @@ class Compute : public CBase_Compute {
 
     void selfInteract(ParticleDataMsg *msg);
     void interact(ParticleDataMsg *msg);
+    void startMigrate(int pe);
+    virtual void ckJustMigrated();
 };
 
 #endif

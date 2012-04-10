@@ -71,6 +71,8 @@ mainmodule leanmd {
     entry [reductiontarget] void reduceForces(vec3 forces[n], int n);   //receives forces from my computes on my atoms
     entry void transition();
     entry void commRelease();
+    entry void startMigrate(int pe);
+    entry void migrateDone();
 
     entry void coordRun() {
       atomic {
@@ -159,6 +161,21 @@ mainmodule leanmd {
       }
     };
 
+    entry void migrateState() {
+      atomic {
+        CkPrintf("migrating %d to %d\n", CkMyPe(), current.pe);
+        commProxy[CkMyPe()].startMigrate(thisIndex, current.pe);
+        commProxy[CkMyPe()].ckLocal()->unregister(thisIndex);
+      }
+      when migrateDone() atomic {
+        // register with Comm on this pe
+        commProxy[CkMyPe()].ckLocal()->registerCell(thisIndex);
+      }
+      atomic {
+        transition();
+      }
+    };
+
     //function to perform iterations for Cells
     entry void run() {
       if(thisIndex.x==0 && thisIndex.y==0 && thisIndex.z==0) atomic {
@@ -209,6 +226,7 @@ mainmodule leanmd {
     entry void calculateForces(ParticleDataMsg *msg);
     entry void transition();
     entry void commRelease();
+    entry void migrateDone();
 
     entry void coordRun() {
       atomic {
@@ -287,6 +305,21 @@ mainmodule leanmd {
       }
     };
 
+    entry void migrateState() {
+      atomic {
+        CkPrintf("migrating %d to %d\n", CkMyPe(), current.pe);
+        commProxy[CkMyPe()].startMigrateComp(thisIndex, current.pe);
+        commProxy[CkMyPe()].ckLocal()->unregister(thisIndex);
+      }
+      when migrateDone() atomic {
+        // register with Comm on this pe
+        commProxy[CkMyPe()].ckLocal()->registerCompute(thisIndex);
+      }
+      atomic {
+        transition();
+      }
+    };
+
     entry void run() {
       for(stepCount = 1; stepCount <= finalStepCount; stepCount++) {
         //self interaction check
@@ -325,5 +358,7 @@ mainmodule leanmd {
     entry void warmup();
     entry void releaseNext(int type, CkIndex6D indx);
     entry void tryDeliver(ParticleDataMsg* m);
+    entry void startMigrate(CkIndex3D, int pe);
+    entry void startMigrateComp(CkIndex6D, int pe);
   };
 };

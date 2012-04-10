@@ -65,6 +65,8 @@ class Cell : public CBase_Cell {
     void createSection();   //created multicast section of computes
     void migrateParticles();
     void sendPositions();
+    void startMigrate(int pe);
+    virtual void ckJustMigrated();
 };
 
 #endif

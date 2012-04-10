@@ -83,3 +83,12 @@ void Compute::pup(PUP::er &p) {
     mcast2.get_redNo() = 0;
   }
 }
+
+void Compute::startMigrate(int pe) {
+  migrateMe(pe);
+}
+
+void Compute::ckJustMigrated() {
+  ArrayElement::ckJustMigrated();
+  migrateDone();
+}

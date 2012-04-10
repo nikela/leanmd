@@ -333,6 +333,14 @@ class Comm : public CBase_Comm {
       checkMsgs(indx);
     }
 
+    void startMigrate(CkIndex3D indx, int pe) {
+      cellArray[indx].ckLocal()->startMigrate(pe);
+    }
+
+    void startMigrateComp(CkIndex6D indx, int pe) {
+      computeArray[indx].ckLocal()->startMigrate(pe);
+    }
+
     void unregister(CkIndex3D indx) {
       int cellid = linearize3D(indx);
       assert(myCells.find(cellid) != myCells.end());
