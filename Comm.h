@@ -344,7 +344,8 @@ class Comm : public CBase_Comm {
         assert(type == 1); // it's a compute
         int computeid = linearize6D(indx);
         if (myComputes.find(computeid) != myComputes.end()) {
-          CkPrintf("releasing NEXT compute %d, already on PE\n", computeid);
+          CkPrintf("%d: releasing NEXT compute %d, already on PE\n", CkMyPe(),
+		   computeid);
           //CkAssert(bufReleaseType == -1 || bufRelease == indx);
           bufReleaseType = -1;
           computeArray[indx].ckLocal()->commRelease();

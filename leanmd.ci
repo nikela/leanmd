@@ -168,7 +168,7 @@ mainmodule leanmd {
 
     entry void migrateState() {
       atomic {
-        CkPrintf("migrating %d to %d\n", CkMyPe(), current.pe);
+        CkPrintf("%d: cell migrating %d to %d\n", thisCell, CkMyPe(), current.pe);
 	fflush(stdout);
         commProxy[CkMyPe()].startMigrate(thisIndex, current.pe);
         commProxy[CkMyPe()].ckLocal()->unregister(thisIndex);
@@ -318,7 +318,7 @@ mainmodule leanmd {
 
     entry void migrateState() {
       atomic {
-        CkPrintf("migrating %d to %d\n", CkMyPe(), current.pe);
+        CkPrintf("%d: compute migrating %d to %d\n", thisCompute, CkMyPe(), current.pe);
         commProxy[CkMyPe()].startMigrateComp(thisIndex, current.pe);
         commProxy[CkMyPe()].ckLocal()->unregister(thisIndex);
       }
