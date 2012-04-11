@@ -3,7 +3,7 @@
 
 extern /* readonly */ CProxy_Cell cellArray;
 extern /* readonly */ CProxy_Compute computeArray;
-extern /* readonly */ CProxy_StaticSchedule stat;
+extern /* readonly */ CProxy_StaticSchedule staticSch;
 extern /* readonly */ int cellArrayDimX;
 extern /* readonly */ int cellArrayDimY;
 extern /* readonly */ int cellArrayDimZ;
@@ -59,12 +59,17 @@ struct OnePerPE : public CkArrayMap {
 struct ComputeMap : public CkArrayMap {
   ComputeMap() { }
   int procNum(int arrayHdl, const CkArrayIndex &idx) {
-    const int *coor = idx.data();
-    return map(coor);
+    const short *coor = idx.indexShorts; //(const short*)idx.data();
+    int proc = map(coor);
+    CkPrintf("coord = %d %d %d %d %d %d -> proc %d\n",
+	     coor[0], coor[1], coor[2], coor[3], coor[4], coor[5], proc);
+    return proc;
   }
-  int map(const int coor[6]) {
-    //#include "computeInit"
-    return 0;
+  int map(const short* coor) {
+#include "computeInit"
+    else {
+      return 0;
+    }
   }
 };
 
@@ -75,8 +80,8 @@ struct CellMap : public CkArrayMap {
     return map(coor);
   }
   int map(const int coor[3]) {
-    //#include "cellInit"
-    return 0;
+#include "cellInit"
+    else return 99999;
   }
 };
 

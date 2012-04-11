@@ -5,7 +5,7 @@ mainmodule leanmd {
   readonly CProxy_Compute computeArray; //computational kernels
   readonly CProxy_Comm commProxy; //comm
   readonly CkGroupID mCastGrpID;      //multicast group handle
-  readonly CProxy_StaticSchedule stat;
+  readonly CProxy_StaticSchedule staticSch;
 
   readonly int cellArrayDimX;		// X dimension of the Cell array
   readonly int cellArrayDimY;		// Y dimension of the Cell array
@@ -35,7 +35,7 @@ mainmodule leanmd {
         CkPrintf("Starting simulation .... \n\n");
 	fflush(stdout);
 	startTime = CkWallTimer();
-        cellArray.coordRun();
+        //cellArray.coordRun();
         computeArray.coordRun();
         //cellArry.run();
         //computeArray.run();
@@ -85,28 +85,29 @@ mainmodule leanmd {
         currentState = 0;
 
         // initialize some values here
-        StaticSchedule& sched = *stat.ckLocalBranch();
+        StaticSchedule& sched = *staticSch.ckLocalBranch();
         thisCell = linearize3D(thisIndex);
-        assert(sched.cellTransition.find(thisCell) != sched.cellTransition.end());
+        CkAssert(sched.cellTransition.find(thisCell) != sched.cellTransition.end());
         stateCount = sched.cellTransition[thisCell].size();
         //printf("cell %d: found %d states\n", thisCell, stateCount);
       }
       while (currentState < stateCount) {
         atomic {
-          StaticSchedule& sched = *stat.ckLocalBranch();
+          StaticSchedule& sched = *staticSch.ckLocalBranch();
           current = sched.cellTransition[thisCell][currentState];
           //printf("cell %d: currentState is %d, waitTask = %d\n",
           //thisCell, currentState, current.waitTask);
-          assert(current.thisObject.idx.x1 == thisIndex.x &&
-                 current.thisObject.idx.y1 == thisIndex.y &&
-                 current.thisObject.idx.z1 == thisIndex.z);
+          CkAssert(current.thisObject.idx.x1 == thisIndex.x &&
+		   current.thisObject.idx.y1 == thisIndex.y &&
+		   current.thisObject.idx.z1 == thisIndex.z);
 
           switch (current.taskType) {
           case 0: sendState(); break;
           case 1: updateState(); break;
+	  case 3: migrateState(); break;
           default:
-            CkPrintf("invalid state for a cell, id = %d\n", thisCell);
-            assert(0);
+            CkPrintf("invalid state %d for a cell, id = %d\n", current.taskType, thisCell);
+            CkAssert(0);
             break;
           }
         }
@@ -122,9 +123,9 @@ mainmodule leanmd {
     entry void sendState() {
       atomic {
         // make sure it's executing on the PE the schedule expects it to
-        CkPrintf("%d: expecting to run cell send on pe %d\n", thisCell, current.pe);
-        // @todo uncomment this when really running
-        //CkAssert(CkMyPe() == current.pe);
+        CkPrintf("%d: running cell sendState() on pe %d\n", thisCell, current.pe);
+	fflush(stdout);
+        CkAssert(CkMyPe() == current.pe);
       }
 
       if (current.waitTask != -5) { when commRelease() { } }
@@ -143,9 +144,9 @@ mainmodule leanmd {
     entry void updateState() {
       atomic {
         // make sure it's executing on the PE the schedule expects it to
-        CkPrintf("%d: expecting to run cell update on pe %d\n", thisCell, current.pe);
-        // @todo uncomment this when really running
-        //CkAssert(CkMyPe() == current.pe);
+        CkPrintf("%d: running cell updateState() on pe %d\n", thisCell, current.pe);
+	fflush(stdout);
+        CkAssert(CkMyPe() == current.pe);
       }
       if (current.waitTask != -5) { when commRelease() { } }
       when reduceForces(vec3 forces[n], int n) atomic {
@@ -164,6 +165,7 @@ mainmodule leanmd {
     entry void migrateState() {
       atomic {
         CkPrintf("migrating %d to %d\n", CkMyPe(), current.pe);
+	fflush(stdout);
         commProxy[CkMyPe()].startMigrate(thisIndex, current.pe);
         commProxy[CkMyPe()].ckLocal()->unregister(thisIndex);
       }
@@ -213,7 +215,6 @@ mainmodule leanmd {
           }
         }
       }
-      // @todo this still needs to happen with the static scheduling code
       //everything done, reduction on kinetic energy
       atomic { contribute(2*sizeof(double),energy,CkReduction::sum_double,CkCallback(CkReductionTarget(Main,energySumK),mainProxy)); }
     };
@@ -242,30 +243,35 @@ mainmodule leanmd {
         currentState = 0;
 
         // initialize some values here
-        StaticSchedule& sched = *stat.ckLocalBranch();
+        StaticSchedule& sched = *staticSch.ckLocalBranch();
         thisCompute = linearize6D(thisIndex);
-        assert(sched.computeTransition.find(thisCompute) != sched.computeTransition.end());
-        stateCount = sched.computeTransition[thisCompute].size();
-        //printf("compute %d: found %d states\n", thisCompute, stateCount);
+        //CkAssert(sched.computeTransition.find(thisCompute) != sched.computeTransition.end());
+	if (sched.computeTransition.find(thisCompute) != sched.computeTransition.end())
+	  stateCount = sched.computeTransition[thisCompute].size();
+	else
+	  stateCount = 0;
+        CkPrintf("compute %d: found %d states\n", thisCompute, stateCount);
+	fflush(stdout);
       }
       while (currentState < stateCount) {
         atomic {
-           StaticSchedule& sched = *stat.ckLocalBranch();
+           StaticSchedule& sched = *staticSch.ckLocalBranch();
            current = sched.computeTransition[thisCompute][currentState];
-          printf("compute %d: currentState is %d, waitTask = %d\n",
-                 thisCompute, currentState, current.waitTask);
-          assert(current.thisObject.idx.x1 == thisIndex.x1 &&
-                 current.thisObject.idx.y1 == thisIndex.y1 &&
-                 current.thisObject.idx.z1 == thisIndex.z1 &&
-                 current.thisObject.idx.x2 == thisIndex.x2 &&
-                 current.thisObject.idx.y2 == thisIndex.y2 &&
-                 current.thisObject.idx.z2 == thisIndex.z2);
+	   //CkPrintf("compute %d: currentState is %d, waitTask = %d\n",
+	   //thisCompute, currentState, current.waitTask);
+          CkAssert(current.thisObject.idx.x1 == thisIndex.x1 &&
+		   current.thisObject.idx.y1 == thisIndex.y1 &&
+		   current.thisObject.idx.z1 == thisIndex.z1 &&
+		   current.thisObject.idx.x2 == thisIndex.x2 &&
+		   current.thisObject.idx.y2 == thisIndex.y2 &&
+		   current.thisObject.idx.z2 == thisIndex.z2);
 
           switch (current.taskType) {
           case 2: computeState(); break;
+	  case 3: /*migrateState();*/ break;
           default:
-            CkPrintf("invalid state for a compute, id = %d\n", thisCompute);
-            assert(0);
+            CkPrintf("invalid state %d for a compute, id = %d\n", current.taskType, thisCompute);
+            CkAssert(0);
             break;
            }
         }
@@ -281,9 +287,11 @@ mainmodule leanmd {
     entry void computeState() {
       atomic {
         // make sure it's executing on the PE the schedule expects it to
-        CkPrintf("%d: expecting to run compute on pe %d\n", thisCompute, current.pe);
-        // @todo uncomment this when really running
-        //CkAssert(CkMyPe() == current.pe);
+        CkPrintf("(x1=%d,y1=%d,z1=%d,x2=%d,y2=%d,z2=%d): running on pe %d, expected %d\n",
+		 thisIndex.x1, thisIndex.y1, thisIndex.z1, thisIndex.x2, thisIndex.y2, thisIndex.z2,
+		 CkMyPe(), current.pe);
+	fflush(stdout);
+        CkAssert(CkMyPe() == current.pe);
       }
       if (current.waitTask != -5) { when commRelease() { } }
       if (thisIndex.x1 == thisIndex.x2 &&
@@ -337,7 +345,6 @@ mainmodule leanmd {
         }
       }
       //everything done, reduction on potential energy
-      // @todo this still needs to happen with the static scheduling code
       atomic { contribute(2*sizeof(double),energy,CkReduction::sum_double,CkCallback(CkReductionTarget(Main,energySumP),mainProxy)); }
     };
   };

@@ -14,7 +14,7 @@
 /* readonly */ CProxy_Cell cellArray;
 /* readonly */ CProxy_Compute computeArray;
 /* readonly */ CkGroupID mCastGrpID;
-/* readonly */ CProxy_StaticSchedule stat;
+/* readonly */ CProxy_StaticSchedule staticSch;
 
 /* readonly */ int cellArrayDimX;
 /* readonly */ int cellArrayDimY;
@@ -79,15 +79,20 @@ Main::Main(CkArgMsg* m) {
   //initializing the 3D cell array
 
   // @todo use the cell static initial map here
-  cellArray = CProxy_Cell::ckNew(cellArrayDimX,cellArrayDimY,cellArrayDimZ);
+
+  CkArrayOptions opts2(cellArrayDimX,cellArrayDimY,cellArrayDimZ);
+  opts2.setMap(CProxy_CellMap::ckNew());
+  opts2.setAnytimeMigration(true);
+
+  cellArray = CProxy_Cell::ckNew(opts2);
   CkPrintf("\nCells: %d X %d X %d .... created\n", cellArrayDimX, cellArrayDimY, cellArrayDimZ);
 
-  CkArrayOptions opts1(CkNumPes());
+  CkArrayOptions opts1;
   opts1.setMap(CProxy_ComputeMap::ckNew());
   opts1.setAnytimeMigration(true);
 
   //initializing the 6D compute array
-  computeArray = CProxy_Compute::ckNew();
+  computeArray = CProxy_Compute::ckNew(opts1);
   for (int x=0; x<cellArrayDimX; x++)
     for (int y=0; y<cellArrayDimY; y++)
       for (int z=0; z<cellArrayDimZ; z++)
@@ -100,7 +105,7 @@ Main::Main(CkArgMsg* m) {
 
   //make commGroup for Dag Scheduling
   commProxy = CProxy_Comm::ckNew(opts);
-  stat = CProxy_StaticSchedule::ckNew();
+  staticSch = CProxy_StaticSchedule::ckNew();
 
   CkStartQD(CkCallback(CkIndex_Main::setupFinished(), mainProxy));
   

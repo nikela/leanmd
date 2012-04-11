@@ -94,7 +94,7 @@ void Cell::createComputes() {
       px2 = px1+dx;
       py2 = py1+dy;
       pz2 = pz1+dz;
-      computeArray(px1, py1, pz1, px2, py2, pz2).insert((++currPe)%numPes);
+      computeArray(px1, py1, pz1, px2, py2, pz2).insert();
       computesList[num][0] = px1; computesList[num][1] = py1; computesList[num][2] = pz1; 
       computesList[num][3] = px2; computesList[num][4] = py2; computesList[num][5] = pz2;
     }
@@ -271,14 +271,6 @@ void Cell::pup(PUP::er &p) {
 
   for (int i = 0; i < inbrs; i++){
     PUParray(p, computesList[i], 6);
-  }
-
-  p | mCastSecProxy;
-  //adjust the multicast tree to give best performance after moving
-  if (p.isUnpacking()){
-    CkMulticastMgr *mg = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
-    mg->resetSection(mCastSecProxy);
-    mg->setReductionClient(mCastSecProxy, new CkCallback(CkReductionTarget(Comm,reduceForces), thisProxy(thisIndex.x, thisIndex.y, thisIndex.z)));
   }
 }
 

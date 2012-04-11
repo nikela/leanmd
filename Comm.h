@@ -45,12 +45,13 @@ inline int linearize6D(CkIndex6D idx) {
   const int dim = 10;
   const int X = dim, Y = dim, Z = dim;
   const int X2 = dim, Y2 = dim, Z2 = dim;
-  return idx.z1 * Z2 * X  * X2 * Y  * Y2 +
-         idx.z2 * X  * X2 * Y  * Y2 +
-         idx.x1 * X2 * Y  * Y2 +
-         idx.x2 * Y  * Y2 +
-         idx.y1 * Y2 +
-         idx.y2;
+  // @todo ??? fix this serialization
+  return idx.x1 * Z2 * X  * X2 * Y  * Y2 +
+         idx.x2 * X  * X2 * Y  * Y2 +
+         idx.y1 * X2 * Y  * Y2 +
+         idx.y2 * Y  * Y2 +
+         idx.z1 * Y2 +
+         idx.z2;
 }
 
 struct Startup : public CkMcastBaseMsg, public CMessage_Startup {
@@ -100,20 +101,20 @@ struct StaticSchedule : public CBase_StaticSchedule {
 	case 1: node.taskid = x; break;
 	case 2: node.thisObject.objType = x; break;
         case 3: node.thisObject.idx.x1 = x; break;
-        case 4: node.thisObject.idx.x2 = x; break;
-        case 5: node.thisObject.idx.y1 = x; break;
-        case 6: node.thisObject.idx.y2 = x; break;
-        case 7: node.thisObject.idx.z1 = x; break;
+        case 4: node.thisObject.idx.y1 = x; break;
+        case 5: node.thisObject.idx.z1 = x; break;
+        case 6: node.thisObject.idx.x2 = x; break;
+        case 7: node.thisObject.idx.y2 = x; break;
         case 8: node.thisObject.idx.z2 = x; break;
         case 9: node.taskType = x; break;
         case 10: node.pe = x; break;
         case 11: node.waitTask = x; break;
 	case 12: node.relObject.objType = x; break;
         case 13: node.relObject.idx.x1 = x; break;
-        case 14: node.relObject.idx.x2 = x; break;
-        case 15: node.relObject.idx.y1 = x; break;
-        case 16: node.relObject.idx.y2 = x; break;
-        case 17: node.relObject.idx.z1 = x; break;
+        case 14: node.relObject.idx.y1 = x; break;
+        case 15: node.relObject.idx.z1 = x; break;
+        case 16: node.relObject.idx.x2 = x; break;
+        case 17: node.relObject.idx.y2 = x; break;
         case 18: node.relObject.idx.z2 = x;
           //printf("curVal = %d, objtype = %d\n", curVal, node.thisObject.objType);
           if (node.thisObject.objType == 0) {
@@ -251,7 +252,7 @@ struct StaticSchedule : public CBase_StaticSchedule {
           for (std::list<SendTo>::iterator iter3 = info.sends.begin();
                iter3 != info.sends.end(); ++iter3) {
             // @todo uncomment this once we are running on the right number of pes 
-            //elms.push_back(iter3->pe);
+            elms.push_back(iter3->pe);
           }
           // @todo right now everyone creates and sets these up
           sects[iteration][cellid] =
@@ -264,7 +265,7 @@ struct StaticSchedule : public CBase_StaticSchedule {
 
           Startup& start = *new Startup();
           start.globalID = globalID;
-          //sects[iteration][cellid].warmup(&start);
+          sects[iteration][cellid].warmup(&start);
         
           if (info.rpe == CkMyPe()) {
             mCastGrp->setReductionClient(sects[iteration][cellid],
@@ -282,7 +283,7 @@ struct StaticSchedule : public CBase_StaticSchedule {
                 start.compute = iter4->idx;
                 start.reducingCell = cellid;
                 start.globalID = globalID;
-                //commProxy[pe].warmupRed(&start);
+                commProxy[pe].warmupRed(&start);
               }
             }
           }
@@ -420,7 +421,7 @@ class Comm : public CBase_Comm {
       bool found = false;
       std::list<CkIndex6D> indxs;
 
-      StaticSchedule& sched = *stat.ckLocalBranch();
+      StaticSchedule& sched = *staticSch.ckLocalBranch();
 
       for (std::list<SendTo>::iterator iter = sched.commMap[iteration][cellid].sends.begin();
            iter != sched.commMap[iteration][cellid].sends.end(); ++iter) {
@@ -464,7 +465,7 @@ class Comm : public CBase_Comm {
       cellIndx.x = m->x;
       cellIndx.y = m->y;
       cellIndx.z = m->z;
-      StaticSchedule& sched = *stat.ckLocalBranch();
+      StaticSchedule& sched = *staticSch.ckLocalBranch();
       int cellid = linearize3D(cellIndx);
       CkAssert(cellArray[cellIndx].ckLocal() != 0);
       int iter = cellArray[cellIndx].ckLocal()->stepCount;
@@ -491,23 +492,37 @@ class Comm : public CBase_Comm {
 
     std::map<int, CkSectionInfo> tempInfo;
 
-    void warmup(Startup* s) {
-      CkSectionInfo info;
-      CkGetSectionInfo(info, s);
-      tempInfo[s->globalID] = info;
-    }
-
     // iter -> computeid -> cellid -> section
     std::map<int, std::map<int, std::map<int, CkSectionInfo> > > redInfo;
+    // globalid -> iter -> computeid -> cellid
+    std::map<int, Startup*> tempInfo2;
+
+    void warmup(Startup* s1) {
+      CkSectionInfo info;
+      CkGetSectionInfo(info, s1);
+
+      if (tempInfo2.find(s1->globalID) != tempInfo2.end()) {
+	Startup& s =*tempInfo2[s1->globalID];
+	CkAssert(redInfo[s.iter][linearize6D(s.compute)].find(s.reducingCell) ==
+		 redInfo[s.iter][linearize6D(s.compute)].end());
+	redInfo[s.iter][linearize6D(s.compute)][s.reducingCell] = info;
+      } else {
+	tempInfo[s1->globalID] = info;
+      }
+    }
 
     void warmupRed(Startup* sref) {
       Startup& s = *sref;
-      CkAssert(tempInfo.find(s.globalID) != tempInfo.end());
-      CkSectionInfo info = tempInfo[s.globalID];
-      CkAssert(redInfo[s.iter][linearize6D(s.compute)].find(s.reducingCell) ==
-               redInfo[s.iter][linearize6D(s.compute)].end());
-      redInfo[s.iter][linearize6D(s.compute)][s.reducingCell] = info;
-      delete &s;
+      if (tempInfo.find(s.globalID) == tempInfo.end()) {
+	tempInfo2[s.globalID] = sref;
+      } else {
+	CkAssert(tempInfo.find(s.globalID) != tempInfo.end());
+	CkSectionInfo info = tempInfo[s.globalID];
+	CkAssert(redInfo[s.iter][linearize6D(s.compute)].find(s.reducingCell) ==
+		 redInfo[s.iter][linearize6D(s.compute)].end());
+	redInfo[s.iter][linearize6D(s.compute)][s.reducingCell] = info;
+	delete &s;
+      }
     }
 
     void depositForces(vec3* msg, int n, CkIndex6D depositor, int iter, CkIndex3D target) {
