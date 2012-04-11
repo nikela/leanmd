@@ -61,8 +61,8 @@ struct ComputeMap : public CkArrayMap {
   int procNum(int arrayHdl, const CkArrayIndex &idx) {
     const short *coor = idx.indexShorts; //(const short*)idx.data();
     int proc = map(coor);
-    CkPrintf("coord = %d %d %d %d %d %d -> proc %d\n",
-	     coor[0], coor[1], coor[2], coor[3], coor[4], coor[5], proc);
+    //CkPrintf("coord = %d %d %d %d %d %d -> proc %d\n",
+    //coor[0], coor[1], coor[2], coor[3], coor[4], coor[5], proc);
     return proc;
   }
   int map(const short* coor) {

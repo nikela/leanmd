@@ -156,10 +156,10 @@ struct StaticSchedule : public CBase_StaticSchedule {
 	case 1: cinfo.iter = x; break;
 	case 2: assert(x == 0);  break; // is the CELL_TYPE
 	case 3: sender.x = x; break;
-        case 4: break;
-        case 5: sender.y = x; break;
+        case 4: sender.y = x; break;
+        case 5: sender.z = x; break;
         case 6: break;
-        case 7: sender.z = x; break;
+        case 7: break;
         case 8: break;
         case 9: cinfo.spe = x; break;
         case 10: cinfo.rpe = x; break;
@@ -180,10 +180,10 @@ struct StaticSchedule : public CBase_StaticSchedule {
                 switch (curVal3) {
                 case 1: obj.objType = x; break;
                 case 2: obj.idx.x1 = x; break;
-                case 3: obj.idx.x2 = x; break;
-                case 4: obj.idx.y1 = x; break;
-                case 5: obj.idx.y2 = x; break;
-                case 6: obj.idx.z1 = x; break;
+                case 3: obj.idx.y1 = x; break;
+                case 4: obj.idx.z1 = x; break;
+                case 5: obj.idx.x2 = x; break;
+                case 6: obj.idx.y2 = x; break;
                 case 7: obj.idx.z2 = x;
                   send.sendTo.push_back(obj);
                   curVal3 = 0;
@@ -469,7 +469,11 @@ class Comm : public CBase_Comm {
       int cellid = linearize3D(cellIndx);
       CkAssert(cellArray[cellIndx].ckLocal() != 0);
       int iter = cellArray[cellIndx].ckLocal()->stepCount;
-      //sched.sects[iter][cellid].tryDeliver(m);
+      CkPrintf("sending positions: from cell %d at iter %d to some section\n",
+	       cellid, iter);
+      fflush(stdout);
+      CkAssert(sched.sects[iter].find(cellid) != sched.sects[iter].end());
+      sched.sects[iter][cellid].tryDeliver(m);
     }
 
     void checkMsgs(CkIndex3D indx) {
@@ -495,17 +499,22 @@ class Comm : public CBase_Comm {
     // iter -> computeid -> cellid -> section
     std::map<int, std::map<int, std::map<int, CkSectionInfo> > > redInfo;
     // globalid -> iter -> computeid -> cellid
-    std::map<int, Startup*> tempInfo2;
+    std::map<int, std::list<Startup*> > tempInfo2;
 
     void warmup(Startup* s1) {
       CkSectionInfo info;
       CkGetSectionInfo(info, s1);
 
       if (tempInfo2.find(s1->globalID) != tempInfo2.end()) {
-	Startup& s =*tempInfo2[s1->globalID];
-	CkAssert(redInfo[s.iter][linearize6D(s.compute)].find(s.reducingCell) ==
-		 redInfo[s.iter][linearize6D(s.compute)].end());
-	redInfo[s.iter][linearize6D(s.compute)][s.reducingCell] = info;
+	for (std::list<Startup*>::iterator iter = tempInfo2[s1->globalID].begin();
+	     iter != tempInfo2[s1->globalID].end(); ++iter) {
+	  Startup& s = **iter;
+	  CkAssert(redInfo[s.iter][linearize6D(s.compute)].find(s.reducingCell) ==
+		   redInfo[s.iter][linearize6D(s.compute)].end());
+	  redInfo[s.iter][linearize6D(s.compute)][s.reducingCell] = info;
+	  //delete &s;
+	}
+	tempInfo2[s1->globalID].clear();
       } else {
 	tempInfo[s1->globalID] = info;
       }
@@ -514,7 +523,7 @@ class Comm : public CBase_Comm {
     void warmupRed(Startup* sref) {
       Startup& s = *sref;
       if (tempInfo.find(s.globalID) == tempInfo.end()) {
-	tempInfo2[s.globalID] = sref;
+	tempInfo2[s.globalID].push_back(sref);
       } else {
 	CkAssert(tempInfo.find(s.globalID) != tempInfo.end());
 	CkSectionInfo info = tempInfo[s.globalID];
@@ -526,9 +535,13 @@ class Comm : public CBase_Comm {
     }
 
     void depositForces(vec3* msg, int n, CkIndex6D depositor, int iter, CkIndex3D target) {
-      assert(redInfo[iter][linearize6D(depositor)].find(linearize3D(target)) !=
-             redInfo[iter][linearize6D(depositor)].end());
-      CkSectionInfo info = redInfo[iter][linearize6D(depositor)][linearize3D(target)];
+      int computeid = linearize6D(depositor);
+      CkPrintf("depositing positions: from compute %d to cell %d at iter %d to some section\n",
+	       computeid, linearize3D(target), iter);
+      fflush(stdout);
+      CkAssert(redInfo[iter][computeid].find(linearize3D(target)) !=
+	       redInfo[iter][computeid].end());
+      CkSectionInfo info = redInfo[iter][computeid][linearize3D(target)];
       CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
       mCastGrp->contribute(sizeof(vec3)*n, msg, CkReduction::sum_double, info);
     }

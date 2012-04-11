@@ -86,7 +86,6 @@ void Compute::pup(PUP::er &p) {
 }
 
 void Compute::startMigrate(int pe) {
-  CkAssert(0);
   migrateMe(pe);
 }
 

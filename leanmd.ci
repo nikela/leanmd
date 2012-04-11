@@ -35,7 +35,7 @@ mainmodule leanmd {
         CkPrintf("Starting simulation .... \n\n");
 	fflush(stdout);
 	startTime = CkWallTimer();
-        //cellArray.coordRun();
+        cellArray.coordRun();
         computeArray.coordRun();
         //cellArry.run();
         //computeArray.run();
@@ -83,6 +83,7 @@ mainmodule leanmd {
 
         // current state is 0, haven't started yet
         currentState = 0;
+	stepCount = 0;
 
         // initialize some values here
         StaticSchedule& sched = *staticSch.ckLocalBranch();
@@ -114,8 +115,6 @@ mainmodule leanmd {
         when transition() { }
         atomic {
           currentState++;
-          // two states per iter
-          stepCount = currentState / 2;
         }
       }
     };
@@ -123,14 +122,17 @@ mainmodule leanmd {
     entry void sendState() {
       atomic {
         // make sure it's executing on the PE the schedule expects it to
-        CkPrintf("%d: running cell sendState() on pe %d\n", thisCell, current.pe);
-	fflush(stdout);
+        //CkPrintf("%d: running cell sendState() on pe %d\n", thisCell, current.pe);
+	//fflush(stdout);
         CkAssert(CkMyPe() == current.pe);
       }
 
       if (current.waitTask != -5) { when commRelease() { } }
       //atomic { CkPrintf("released\n"); }
-      atomic { sendPositions(); }
+      atomic {
+	sendPositions();
+	CkPrintf("%d: sending positions\n", thisCell); fflush(stdout);
+      }
       atomic {
         // objType 2 means no object
         if (current.relObject.objType != 2) {
@@ -144,8 +146,8 @@ mainmodule leanmd {
     entry void updateState() {
       atomic {
         // make sure it's executing on the PE the schedule expects it to
-        CkPrintf("%d: running cell updateState() on pe %d\n", thisCell, current.pe);
-	fflush(stdout);
+        //CkPrintf("%d: running cell updateState() on pe %d\n", thisCell, current.pe);
+	//fflush(stdout);
         CkAssert(CkMyPe() == current.pe);
       }
       if (current.waitTask != -5) { when commRelease() { } }
@@ -158,6 +160,8 @@ mainmodule leanmd {
           Obj& obj = current.relObject;
           commProxy[CkMyPe()].releaseNext(obj.objType, obj.idx);
         }
+	// two states per iter
+	stepCount++;
         transition();
       }
     };
@@ -241,6 +245,7 @@ mainmodule leanmd {
 
         // current state is 0, haven't started yet
         currentState = 0;
+	stepCount = 0;
 
         // initialize some values here
         StaticSchedule& sched = *staticSch.ckLocalBranch();
@@ -250,7 +255,7 @@ mainmodule leanmd {
 	  stateCount = sched.computeTransition[thisCompute].size();
 	else
 	  stateCount = 0;
-        CkPrintf("compute %d: found %d states\n", thisCompute, stateCount);
+        //CkPrintf("compute %d: found %d states\n", thisCompute, stateCount);
 	fflush(stdout);
       }
       while (currentState < stateCount) {
@@ -268,7 +273,7 @@ mainmodule leanmd {
 
           switch (current.taskType) {
           case 2: computeState(); break;
-	  case 3: /*migrateState();*/ break;
+	  case 3: migrateState(); break;
           default:
             CkPrintf("invalid state %d for a compute, id = %d\n", current.taskType, thisCompute);
             CkAssert(0);
@@ -278,8 +283,6 @@ mainmodule leanmd {
         when transition() { }
         atomic {
           currentState++;
-          // one states per iter
-          stepCount = currentState;
         }
       }
     };
@@ -287,10 +290,9 @@ mainmodule leanmd {
     entry void computeState() {
       atomic {
         // make sure it's executing on the PE the schedule expects it to
-        CkPrintf("(x1=%d,y1=%d,z1=%d,x2=%d,y2=%d,z2=%d): running on pe %d, expected %d\n",
-		 thisIndex.x1, thisIndex.y1, thisIndex.z1, thisIndex.x2, thisIndex.y2, thisIndex.z2,
-		 CkMyPe(), current.pe);
-	fflush(stdout);
+        //CkPrintf("%d: running on pe %d, expected %d\n",
+	// thisCompute, CkMyPe(), current.pe);
+	//fflush(stdout);
         CkAssert(CkMyPe() == current.pe);
       }
       if (current.waitTask != -5) { when commRelease() { } }
@@ -309,6 +311,7 @@ mainmodule leanmd {
           Obj& obj = current.relObject;
           commProxy[CkMyPe()].releaseNext(obj.objType, obj.idx);
         }
+	stepCount++;
         transition();
       }
     };
