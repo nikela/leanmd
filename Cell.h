@@ -20,12 +20,15 @@ struct ParticleDataMsg : public CkMcastBaseMsg, public CMessage_ParticleDataMsg 
   int z;    //z coordinate
   int iter;
 
+  ParticleDataMsg() : lengthAll(0) { }
+
   void pup(PUP::er &p){
     CMessage_ParticleDataMsg::pup(p);
     p | lengthAll;
     p | x; p | y; p | z;
     p | iter;
     if (p.isUnpacking()){
+      CkAssert(lengthAll < 10000);
       part = new vec3[lengthAll];
     }
     PUParray(p, part, lengthAll);

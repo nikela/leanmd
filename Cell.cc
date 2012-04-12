@@ -277,13 +277,13 @@ void Cell::pup(PUP::er &p) {
 }
 
 void Cell::startMigrate(int pe) {
-  CkPrintf("%d: cell startMigration to %d\n", CkMyPe(), pe);
+  //CkPrintf("%d: cell startMigration to %d\n", CkMyPe(), pe);
   migrateMe(pe);
 }
 
 void Cell::ckJustMigrated() {
-  CkPrintf("%d: cell just ckJustMigrated on %d\n", CkMyPe(), thisCell);
-  fflush(stdout);
+  //CkPrintf("%d: cell just ckJustMigrated on %d\n", CkMyPe(), thisCell);
+  //fflush(stdout);
   ArrayElement::ckJustMigrated();
   migrateDone(0);
 }

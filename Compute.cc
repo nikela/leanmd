@@ -78,6 +78,7 @@ void Compute::pup(PUP::er &p) {
   p | stateCount;
   p | thisCompute;
   p | current;
+  /*CkPrintf("%d: puping message pointer = %p\n", CkMyPe(), bufferedMsg); fflush(stdout);*/
   bool hasMsg = bufferedMsg != NULL;
   p | hasMsg;
   if (p.isUnpacking() && hasMsg) {
@@ -86,18 +87,20 @@ void Compute::pup(PUP::er &p) {
   if (hasMsg) {
     p | *bufferedMsg;
   } else {
-    bufferedMsg = NULL;
+    if (p.isUnpacking()) {
+      bufferedMsg = NULL;
+    }
   }
   PUParray(p, energy, 2);
 }
 
 void Compute::startMigrate(int pe) {
-  CkPrintf("%d: compute startMigration to %d\n", CkMyPe(), pe);
+  //CkPrintf("%d: compute startMigration to %d\n", CkMyPe(), pe);
   migrateMe(pe);
 }
 
 void Compute::ckJustMigrated() {
-  CkPrintf("%d: compute just ckJustMigrated on %d\n", CkMyPe(), thisCompute);
+  //CkPrintf("%d: compute just ckJustMigrated on %d\n", CkMyPe(), thisCompute);
   fflush(stdout);
   ArrayElement::ckJustMigrated();
   migrateDone(0);

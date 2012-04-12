@@ -35,9 +35,9 @@ inline int linearizeFake6D(CkIndex6D idx) {
 
 inline CkIndex3D unlinearize3D(int cellid) {
   CkIndex3D indx;
-  indx.x = cellid % (cellArrayDimZ + 1);
+  indx.z = cellid % (cellArrayDimZ + 1);
   indx.y = (cellid / (cellArrayDimZ + 1)) % (cellArrayDimY + 1);
-  indx.z = (cellid / (cellArrayDimZ + 1) / (cellArrayDimY + 1)) % (cellArrayDimX + 1);
+  indx.x = (cellid / (cellArrayDimZ + 1) / (cellArrayDimY + 1)) % (cellArrayDimX + 1);
   return indx;
 }
 
@@ -143,7 +143,7 @@ struct StaticSchedule : public CBase_StaticSchedule {
     CkIndex3D sender;
     int peSendCount = 0;
 
-    printf("reading collMap\n");
+    //printf("reading collMap\n");
 
     FILE* procMap = fopen("collMap", "r");
 
@@ -164,15 +164,15 @@ struct StaticSchedule : public CBase_StaticSchedule {
         case 9: cinfo.spe = x; break;
         case 10: cinfo.rpe = x; break;
         case 11: peSendCount = x;
-          SendTo send;
           int curVal2 = 0;
           while (fscanf(procMap, "%d ", &x) == 1) {
             curVal2++;
             int objCount = 0;
+	    SendTo send;
+
             switch (curVal2) {
             case 1: send.pe = x; break;
             case 2: objCount = x;
-
               Obj obj;
               int curVal3 = 0;
               while (fscanf(procMap, "%d ", &x) == 1) {
@@ -218,7 +218,7 @@ struct StaticSchedule : public CBase_StaticSchedule {
 
     fclose(procMap);
 
-    printf("finished reading collMap\n");
+    //printf("finished reading collMap\n");
 
     if (CkMyPe() == 0) {
       CkPrintf("finished reading schedule\n");
@@ -237,7 +237,7 @@ struct StaticSchedule : public CBase_StaticSchedule {
   void setUpSections() {
     // @todo at scale this might go to hell
     int globalID = CkMyPe() * 10000;
-    printf("section set up\n");
+    //printf("section set up\n");
     //std::map<int, std::map<int, CommInfo> > commMap;
     for (std::map<int, std::map<int, CommInfo> >::iterator iter = commMap.begin();
          iter != commMap.end(); ++iter) {
@@ -286,6 +286,9 @@ struct StaticSchedule : public CBase_StaticSchedule {
               int computes[iter3->sendTo.size()];
               int x = 0;
 
+	      //CkPrintf("warmup for pe %d, iter = %d, cell = %d, compute size = %d\n",
+	      //pe, iter, reducingCell, iter3->sendTo.size());
+
               for (std::list<Obj>::iterator iter4 = iter3->sendTo.begin();
                  iter4 != iter3->sendTo.end(); ++iter4) {
                 computes[x] = linearize6D(iter4->idx);
@@ -297,6 +300,23 @@ struct StaticSchedule : public CBase_StaticSchedule {
           globalID++;
         }
       }
+    }
+
+    findFinalCells();
+  }
+
+  int numFinalCells;
+
+  void findFinalCells() {
+    numFinalCells = 0;
+    for (std::map<int, std::vector<StateNode> >::iterator iter = cellTransition.begin();
+	 iter != cellTransition.end(); ++iter) {
+      if (iter->second[iter->second.size()-1].pe == CkMyPe())
+	numFinalCells++;
+    }
+    //CkPrintf("%d: has %d final cells\n", CkMyPe(), numFinalCells); fflush(stdout);
+    if (numFinalCells == 0) {
+      commProxy[CkMyPe()].finished();
     }
   }
 
@@ -321,7 +341,8 @@ class Comm : public CBase_Comm {
 
   public:
     Comm()
-      : bufReleaseType(-1) { // at start there is not buffered release
+      : bufReleaseType(-1)
+      , numFinished(0) { // at start there is not buffered release
     }
 
     Comm(CkMigrateMessage*) { }
@@ -340,8 +361,8 @@ class Comm : public CBase_Comm {
         // it's a cell
         int cellid = linearizeFake6D(indx);
         if (myCells.find(cellid) != myCells.end()) {
-          CkPrintf("%d: releasing NEXT cell %d (%d,%d,%d), already on PE\n",
-                   CkMyPe(), cellid, indx.x1, indx.y1, indx.z1);
+//           CkPrintf("%d: releasing NEXT cell %d (%d,%d,%d), already on PE\n",
+//                    CkMyPe(), cellid, indx.x1, indx.y1, indx.z1);
           //CkAssert(bufReleaseType == -1 || bufRelease == indx);
           bufReleaseType = -1;
           // convert to 3d index
@@ -352,22 +373,22 @@ class Comm : public CBase_Comm {
           CkAssert(cellArray[indx3].ckLocal() != 0);
           cellArray[indx3].ckLocal()->commRelease();
         } else {
-          CkPrintf("%d: trying to release, but cell %d not here yet\n",
-                   CkMyPe(), cellid);
+//           CkPrintf("%d: trying to release, but cell %d not here yet\n",
+//                    CkMyPe(), cellid);
           bufferRelease(type, indx);
         }
       } else {
         assert(type == 1); // it's a compute
         int computeid = linearize6D(indx);
         if (myComputes.find(computeid) != myComputes.end()) {
-          CkPrintf("%d: releasing NEXT compute %d, already on PE\n", CkMyPe(),
-		   computeid);
+//           CkPrintf("%d: releasing NEXT compute %d, already on PE\n", CkMyPe(),
+// 		   computeid);
           //CkAssert(bufReleaseType == -1 || bufRelease == indx);
           bufReleaseType = -1;
           computeArray[indx].ckLocal()->commRelease();
         } else {
-          CkPrintf("%d: trying to release, but compute %d not here yet\n",
-                   CkMyPe(), computeid);
+//           CkPrintf("%d: trying to release, but compute %d not here yet\n",
+//                    CkMyPe(), computeid);
           bufferRelease(type, indx);
         }
       }
@@ -417,14 +438,19 @@ class Comm : public CBase_Comm {
     void tryDeliver(vec3* forces, int n) {
       int num = (int)forces[n-1].x;
       int count = (int)forces[n-1].y;
+//       CkPrintf("%d: tryDeliver forces, id = %d, count = %d, cell = %d\n",
+// 	       CkMyPe(), num, count, num / count); fflush(stdout);
       // it's a sum, so divide the num by the number augmentations
       int cellid = num / count;
       CkIndex3D indx = unlinearize3D(cellid);
-      if(myCells.find(num) != myCells.end()) {
+      if (myCells.find(cellid) != myCells.end()) {
+// 	CkPrintf("%d: delivering forces directly, id = %d, count = %d, cell = %d\n",
+// 		 CkMyPe(), num, count, num / count); fflush(stdout);
         deliver(forces, n, indx);
-      }
-      else {
-        vecmsgs[num].push_back(*(new std::pair<vec3*,int> (forces,n)));
+      } else {
+        vecmsgs[cellid].push_back(*(new std::pair<vec3*,int> (forces,n)));
+// 	CkPrintf("%d: buffereing forces, id = %d, count = %d, cell = %d\n",
+// 		 CkMyPe(), num, count, num / count); fflush(stdout);
       }
     }
 
@@ -466,17 +492,35 @@ class Comm : public CBase_Comm {
       }
     }
 
+    void complete() {
+      CkExit();
+    }
+
+    int numFinished;
+    void finished() {
+      StaticSchedule& sched = *staticSch.ckLocalBranch();
+      if (++numFinished >= sched.numFinalCells) {
+	//CkPrintf("%d: local completion detected\n", CkMyPe()); fflush(stdout);
+	contribute(CkCallback(CkReductionTarget(Comm,complete),thisProxy));
+      } else {
+	//CkPrintf("%d: %d cells have checked in\n", CkMyPe(), numFinished); fflush(stdout);
+      }
+    }
+
     void deliver(vec3* forces, int n, CkIndex3D indx) {
       //Remember that this sends n-1 because the nth element is
       //storing the Cell index!
+      CkAssert(cellArray[indx].ckLocal());
       cellArray[indx].ckLocal()->reduceForces(forces, n-1);
     }
 
     void deliver(ParticleDataMsg* m, CkIndex6D indx) {
+      CkAssert(computeArray[indx].ckLocal());
       computeArray[indx].ckLocal()->calculateForces(m);
     }
 
     void reduceForces(vec3* forces, int n) {
+      //CkPrintf("%d: receiving values from contribute\n", CkMyPe());
       tryDeliver(forces, n);
     }
 
@@ -489,9 +533,9 @@ class Comm : public CBase_Comm {
       int cellid = linearize3D(cellIndx);
       CkAssert(cellArray[cellIndx].ckLocal() != 0);
       int iter = cellArray[cellIndx].ckLocal()->stepCount;
-      CkPrintf("%d: sending positions: from cell %d at iter %d to some section\n",
-	       CkMyPe(), cellid, iter);
-      fflush(stdout);
+//       CkPrintf("%d: sending positions: from cell %d at iter %d to some section\n",
+// 	       CkMyPe(), cellid, iter);
+//       fflush(stdout);
       CkAssert(sched.sects[iter].find(cellid) != sched.sects[iter].end());
       sched.sects[iter][cellid].tryDeliver(m);
     }
@@ -578,10 +622,8 @@ class Comm : public CBase_Comm {
       std::pair<int, CkSectionInfo>& p = redInfo[iter][cellid];
       CkSectionInfo info = p.second;
 
-      CkPrintf("%d: depositing positions: from compute %d to cell %d at iter %d to"
-               " section redNo = %d, val = %p\n",
-	       CkMyPe(), computeid, linearize3D(target), iter, info.get_redNo(), info.get_val());
-      fflush(stdout);
+      msg[n-1].x = cellid;
+      msg[n-1].y = 1.0;
 
       if (redCombine[iter].find(cellid) == redCombine[iter].end()) {
         redCombine[iter][cellid] = std::make_pair(n, msg);
@@ -596,13 +638,19 @@ class Comm : public CBase_Comm {
       
       redCount[iter][cellid]++;
 
+//       CkPrintf("%d: depositing positions: from compute %d to cell %d at iter %d to"
+//                " section redNo = %d, val = %p, current = %d, needed = %d\n",
+// 	       CkMyPe(), computeid, linearize3D(target), iter, info.get_redNo(), info.get_val(),
+// 	       redCount[iter][cellid], p.first);
+//       fflush(stdout);
+
       if (redCount[iter][cellid] == p.first) {
         CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
         CkAssert(redCombine[iter][cellid].first == n);
         mCastGrp->contribute(sizeof(vec3)*n, redCombine[iter][cellid].second,
                              CkReduction::sum_double, info);
-        CkPrintf("%d: contributing to reduction on elements redNo = %d, val = %p\n",
-                 CkMyPe(), info.get_redNo(), info.get_val());
+        //CkPrintf("%d: contributing to reduction on elements redNo = %d, val = %p, cellid = %d\n",
+	//CkMyPe(), info.get_redNo(), info.get_val(), cellid);
       }
     }
 };
