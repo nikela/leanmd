@@ -45,6 +45,8 @@ Cell::Cell() {
   updateCount = 0;
   stepTime = 0; 
   energy[0] = energy[1] = 0;
+  
+  commProxy[CkMyPe()].ckLocal()->registerCell(thisIndex);
 }
 
 //constructor for chare object migration
@@ -275,11 +277,13 @@ void Cell::pup(PUP::er &p) {
 }
 
 void Cell::startMigrate(int pe) {
+  CkPrintf("%d: cell startMigration to %d\n", CkMyPe(), pe);
   migrateMe(pe);
 }
 
 void Cell::ckJustMigrated() {
+  CkPrintf("%d: cell just ckJustMigrated on %d\n", CkMyPe(), thisCell);
+  fflush(stdout);
   ArrayElement::ckJustMigrated();
-  thisProxy[thisIndex].migrateDone(0);
-  //migrateDone();
+  migrateDone(0);
 }

@@ -22,6 +22,8 @@ Compute::Compute() {
   stepCount = 1;
   energy[0] = energy[1] = 0;
   usesAtSync = CmiTrue;
+  bufferedMsg = 0;
+  commProxy[CkMyPe()].ckLocal()->registerCompute(thisIndex);
 }
 
 Compute::Compute(CkMigrateMessage *msg): CBase_Compute(msg)  { 
@@ -35,7 +37,7 @@ void Compute::selfInteract(ParticleDataMsg *msg){
   computeTime = CkWallTimer();
   double energyP = 0;
 
-  energyP = calcInternalForces(msg, &mcast1, stepCount, thisIndex);
+  energyP = calcInternalForces(msg, stepCount, thisIndex);
 
   //energy assignment only in begining and end
   if(stepCount == 1) {
@@ -52,11 +54,11 @@ void Compute::interact(ParticleDataMsg *msg){
   computeTime = CkWallTimer();
   double energyP = 0;
 
-  CkSectionInfo *handleA = &mcast1, *handleB = &mcast2;
-  if (bufferedMsg->x*cellArrayDimY*cellArrayDimZ + bufferedMsg->y*cellArrayDimZ + bufferedMsg->z < msg->x*cellArrayDimY*cellArrayDimZ + msg->y*cellArrayDimZ + msg->z){ 
-    swap(handleA, handleB);
-  }
-  energyP = calcPairForces(msg, bufferedMsg, handleA, handleB, stepCount, thisIndex);
+  // CkSectionInfo *handleA = &mcast1, *handleB = &mcast2;
+  // if (bufferedMsg->x*cellArrayDimY*cellArrayDimZ + bufferedMsg->y*cellArrayDimZ + bufferedMsg->z < msg->x*cellArrayDimY*cellArrayDimZ + msg->y*cellArrayDimZ + msg->z){ 
+  //   swap(handleA, handleB);
+  // }
+  energyP = calcPairForces(msg, bufferedMsg, stepCount, thisIndex);
 
   //energy assignment only in begining and end
   if(stepCount == 1) {
@@ -72,24 +74,31 @@ void Compute::pup(PUP::er &p) {
   CBase_Compute::pup(p);
   __sdag_pup(p);
   p | stepCount;
-  p | mcast1;
-  p | mcast2;
   p | currentState;
   p | stateCount;
   p | thisCompute;
   p | current;
-  PUParray(p, energy, 2);
-  if (p.isUnpacking() && CkInRestarting()) {
-    mcast1.get_redNo() = 0;
-    mcast2.get_redNo() = 0;
+  bool hasMsg = bufferedMsg != NULL;
+  p | hasMsg;
+  if (p.isUnpacking() && hasMsg) {
+    bufferedMsg = new ParticleDataMsg();
   }
+  if (hasMsg) {
+    p | *bufferedMsg;
+  } else {
+    bufferedMsg = NULL;
+  }
+  PUParray(p, energy, 2);
 }
 
 void Compute::startMigrate(int pe) {
+  CkPrintf("%d: compute startMigration to %d\n", CkMyPe(), pe);
   migrateMe(pe);
 }
 
 void Compute::ckJustMigrated() {
+  CkPrintf("%d: compute just ckJustMigrated on %d\n", CkMyPe(), thisCompute);
+  fflush(stdout);
   ArrayElement::ckJustMigrated();
-  thisProxy[thisIndex].migrateDone(0);
+  migrateDone(0);
 }

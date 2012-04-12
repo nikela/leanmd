@@ -78,6 +78,15 @@ Main::Main(CkArgMsg* m) {
 
   //initializing the 3D cell array
 
+  CkPrintf("num pes = %d\n", CkNumPes());
+  CkArrayOptions opts(CkNumPes());
+  opts.setMap(CProxy_OnePerPE::ckNew());
+  opts.setAnytimeMigration(false);
+
+  //make commGroup for Dag Scheduling
+  commProxy = CProxy_Comm::ckNew(opts);
+  staticSch = CProxy_StaticSchedule::ckNew();
+
   // @todo use the cell static initial map here
 
   CkArrayOptions opts2(cellArrayDimX,cellArrayDimY,cellArrayDimZ);
@@ -97,15 +106,6 @@ Main::Main(CkArgMsg* m) {
     for (int y=0; y<cellArrayDimY; y++)
       for (int z=0; z<cellArrayDimZ; z++)
         cellArray(x, y, z).createComputes();
-
-  CkPrintf("num pes = %d\n", CkNumPes());
-  CkArrayOptions opts(CkNumPes());
-  opts.setMap(CProxy_OnePerPE::ckNew());
-  opts.setAnytimeMigration(false);
-
-  //make commGroup for Dag Scheduling
-  commProxy = CProxy_Comm::ckNew(opts);
-  staticSch = CProxy_StaticSchedule::ckNew();
 
   CkStartQD(CkCallback(CkIndex_Main::setupFinished(), mainProxy));
   

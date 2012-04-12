@@ -84,7 +84,7 @@ mainmodule leanmd {
         //CkPrintf("%d: cell %d running\n", CkMyPe(), thisCell);
         fflush(stdout);
 
-        commProxy[CkMyPe()].ckLocal()->registerCell(thisIndex);
+        //commProxy[CkMyPe()].ckLocal()->registerCell(thisIndex);
 
         // current state is 0, haven't started yet
         currentState = 0;
@@ -127,8 +127,8 @@ mainmodule leanmd {
     entry void sendState() {
       atomic {
         // make sure it's executing on the PE the schedule expects it to
-        //CkPrintf("%d: running cell sendState() on pe %d\n", thisCell, current.pe);
-	//fflush(stdout);
+        CkPrintf("%d: running cell %d sendState() on pe %d\n", CkMyPe(), thisCell, current.pe);
+	fflush(stdout);
         CkAssert(CkMyPe() == current.pe);
       }
 
@@ -152,7 +152,7 @@ mainmodule leanmd {
     entry void updateState() {
       atomic {
         // make sure it's executing on the PE the schedule expects it to
-        //CkPrintf("%d: running cell updateState() on pe %d\n", thisCell, current.pe);
+        //CkPrintf("%d: running cell %d updateState() on pe %d\n", CkMyPe(), thisCell, current.pe);
 	//fflush(stdout);
         CkAssert(CkMyPe() == current.pe);
       }
@@ -251,7 +251,7 @@ mainmodule leanmd {
         //          thisIndex.x1, thisIndex.x2,
         //          thisIndex.y1, thisIndex.y2,
         //          thisIndex.z1, thisIndex.z2, CkMyPe());
-        commProxy[CkMyPe()].ckLocal()->registerCompute(thisIndex);
+        //commProxy[CkMyPe()].ckLocal()->registerCompute(thisIndex);
 
         // current state is 0, haven't started yet
         currentState = 0;
@@ -299,8 +299,8 @@ mainmodule leanmd {
     entry void computeState() {
       atomic {
         // make sure it's executing on the PE the schedule expects it to
-        //CkPrintf("%d: running compute %d, expected pe %d\n", CkMyPe(), thisCompute, current.pe);
-	//fflush(stdout);
+        CkPrintf("%d: running compute %d, expected pe %d\n", CkMyPe(), thisCompute, current.pe);
+	fflush(stdout);
         CkAssert(CkMyPe() == current.pe);
       }
       if (current.waitTask != -5) { when commRelease() { } }

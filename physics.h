@@ -16,7 +16,8 @@ extern /*readonly*/ CProxy_Comm commProxy;
 #define BLOCK_SIZE	512
 
 //function to calculate forces among 2 lists of atoms
-inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, CkSectionInfo* mcast1, CkSectionInfo* mcast2, int stepCount, CkIndex6D compute) {
+inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second,
+                             int stepCount, CkIndex6D compute) {
   int i, j, jpart, ptpCutOffSqd, diff;
   int firstLen = first->lengthAll;
   int secondLen = second->lengthAll;
@@ -108,16 +109,15 @@ inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, Ck
   commProxy[CkMyPe()].ckLocal()->depositForces(secondmsg, secondLen + 1, compute, stepCount, t2);
 
 
-  delete [] firstmsg;
-  delete [] secondmsg;
+  //delete [] firstmsg;
+  //delete [] secondmsg;
   delete first;
   delete second;
   return energy;
 }
 
 //function to calculate forces among atoms in a single list
-inline double calcInternalForces(ParticleDataMsg* first, CkSectionInfo *mcast1, int stepCount,
-                                 CkIndex6D compute) {
+inline double calcInternalForces(ParticleDataMsg* first, int stepCount, CkIndex6D compute) {
   int i, j, ptpCutOffSqd;
   int firstLen = first->lengthAll;
   double powTwenty, powTen, firstx, firsty, firstz, rx, ry, rz, r, rsqd, fx, fy, fz, f, fr;
@@ -171,7 +171,7 @@ inline double calcInternalForces(ParticleDataMsg* first, CkSectionInfo *mcast1, 
   t1.z = first->z;
   commProxy[CkMyPe()].ckLocal()->depositForces(firstmsg, firstLen + 1, compute, stepCount, t1);
 
-  delete [] firstmsg;
+  //delete [] firstmsg;
   delete first;
   return energy;
 }

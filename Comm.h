@@ -335,6 +335,7 @@ class Comm : public CBase_Comm {
     }
 
     void releaseNext(int type, CkIndex6D indx) {
+      CkAssert(type == 0 || type == 1);
       if (type == 0) {
         // it's a cell
         int cellid = linearizeFake6D(indx);
@@ -598,8 +599,8 @@ class Comm : public CBase_Comm {
       if (redCount[iter][cellid] == p.first) {
         CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
         CkAssert(redCombine[iter][cellid].first == n);
-        //mCastGrp->contribute(sizeof(vec3)*n, redCombine[iter][cellid].second,
-        //CkReduction::sum_double, info);
+        mCastGrp->contribute(sizeof(vec3)*n, redCombine[iter][cellid].second,
+                             CkReduction::sum_double, info);
         CkPrintf("%d: contributing to reduction on elements redNo = %d, val = %p\n",
                  CkMyPe(), info.get_redNo(), info.get_val());
       }
