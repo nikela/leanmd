@@ -264,7 +264,10 @@ struct StaticSchedule : public CBase_StaticSchedule {
           sects[iteration][cellid].ckSectionDelegate(mCastGrp);
 
           Startup& start = *new Startup();
-          start.globalID = globalID;
+          if (info.rpe == CkMyPe())
+            start.globalID = globalID;
+          else
+            start.globalID = -1;
           sects[iteration][cellid].warmup(&start);
         
           if (info.rpe == CkMyPe()) {
@@ -275,16 +278,20 @@ struct StaticSchedule : public CBase_StaticSchedule {
             for (std::list<SendTo>::iterator iter3 = info.sends.begin();
                  iter3 != info.sends.end(); ++iter3) {
               int pe = iter3->pe;
+
+              //void warmupRed(int iter, int reducingCell, int globalID, int n, int* computes) {
+
+              int iter = iteration;
+              int reducingCell = cellid;
+              int computes[iter3->sendTo.size()];
+              int x = 0;
+
               for (std::list<Obj>::iterator iter4 = iter3->sendTo.begin();
                  iter4 != iter3->sendTo.end(); ++iter4) {
-
-                Startup& start = *new Startup();
-                start.iter = iteration;
-                start.compute = iter4->idx;
-                start.reducingCell = cellid;
-                start.globalID = globalID;
-                commProxy[pe].warmupRed(&start);
+                computes[x] = linearize6D(iter4->idx);
+                x++;
               }
+              commProxy[pe].warmupRed(iter, reducingCell, globalID, iter3->sendTo.size(), computes);
             }
           }
           globalID++;
@@ -293,6 +300,14 @@ struct StaticSchedule : public CBase_StaticSchedule {
     }
   }
 
+};
+
+struct BufWarm {
+  int iter;
+  int* computes;
+  int n;
+  int reducingCell;
+  int globalID;
 };
 
 class Comm : public CBase_Comm {
@@ -350,7 +365,8 @@ class Comm : public CBase_Comm {
           bufReleaseType = -1;
           computeArray[indx].ckLocal()->commRelease();
         } else {
-          CkPrintf("trying to release, but compute %d not here yet\n", computeid);
+          CkPrintf("%d: trying to release, but compute %d not here yet\n",
+                   CkMyPe(), computeid);
           bufferRelease(type, indx);
         }
       }
@@ -412,6 +428,7 @@ class Comm : public CBase_Comm {
     }
 
     void tryDeliver(ParticleDataMsg* m) {
+      /*CkPrintf("tryDeliver message = %p\n", m);*/
       CkIndex3D cindx;
       cindx.x = m->x;
       cindx.y = m->y;
@@ -438,10 +455,11 @@ class Comm : public CBase_Comm {
 
       for (std::list<CkIndex6D>::iterator iter = indxs.begin(); iter != indxs.end(); ++iter) {
         int num = linearize6D(*iter);
-        if(myComputes.find(num) != myComputes.end()) {
+        if (myComputes.find(num) != myComputes.end()) {
+          CmiReference(UsrToEnv(m));
           deliver(m,*iter);
-        }
-        else {
+        } else {
+          CmiReference(UsrToEnv(m));
           msgs[num].push_back(m);
         }
       }
@@ -470,8 +488,8 @@ class Comm : public CBase_Comm {
       int cellid = linearize3D(cellIndx);
       CkAssert(cellArray[cellIndx].ckLocal() != 0);
       int iter = cellArray[cellIndx].ckLocal()->stepCount;
-      CkPrintf("sending positions: from cell %d at iter %d to some section\n",
-	       cellid, iter);
+      CkPrintf("%d: sending positions: from cell %d at iter %d to some section\n",
+	       CkMyPe(), cellid, iter);
       fflush(stdout);
       CkAssert(sched.sects[iter].find(cellid) != sched.sects[iter].end());
       sched.sects[iter][cellid].tryDeliver(m);
@@ -497,54 +515,94 @@ class Comm : public CBase_Comm {
 
     std::map<int, CkSectionInfo> tempInfo;
 
-    // iter -> computeid -> cellid -> section
-    std::map<int, std::map<int, std::map<int, CkSectionInfo> > > redInfo;
+    // iter -> cellid -> deposits -> section
+    std::map<int, std::map<int, std::pair<int, CkSectionInfo> > > redInfo;
     // globalid -> iter -> computeid -> cellid
-    std::map<int, std::list<Startup*> > tempInfo2;
+    std::map<int, BufWarm> tempInfo2;
 
     void warmup(Startup* s1) {
-      CkSectionInfo info;
-      CkGetSectionInfo(info, s1);
+      if (s1->globalID != -1) {
+        CkSectionInfo info;
+        CkGetSectionInfo(info, s1);
 
-      if (tempInfo2.find(s1->globalID) != tempInfo2.end()) {
-	for (std::list<Startup*>::iterator iter = tempInfo2[s1->globalID].begin();
-	     iter != tempInfo2[s1->globalID].end(); ++iter) {
-	  Startup& s = **iter;
-	  CkAssert(redInfo[s.iter][linearize6D(s.compute)].find(s.reducingCell) ==
-		   redInfo[s.iter][linearize6D(s.compute)].end());
-	  redInfo[s.iter][linearize6D(s.compute)][s.reducingCell] = info;
-	  //delete &s;
-	}
-	tempInfo2[s1->globalID].clear();
-      } else {
-	tempInfo[s1->globalID] = info;
+        if (tempInfo2.find(s1->globalID) != tempInfo2.end()) {
+          BufWarm b = tempInfo2[s1->globalID];
+          CkAssert(redInfo[b.iter].find(b.reducingCell) == redInfo[b.iter].end());
+          redInfo[b.iter][b.reducingCell] = std::make_pair(b.n, info);
+          //   CkPrintf("%d: warmup extracting info, redNo = %d\n", info.get_redNo());
+          //   fflush(stdout);
+        } else {
+          tempInfo[s1->globalID] = info;
+        }
       }
     }
 
-    void warmupRed(Startup* sref) {
-      Startup& s = *sref;
-      if (tempInfo.find(s.globalID) == tempInfo.end()) {
-	tempInfo2[s.globalID].push_back(sref);
+    void warmupRed(int iter, int reducingCell, int globalID, int n, int* computes) {
+      if (tempInfo.find(globalID) == tempInfo.end()) {
+        BufWarm buf;
+        buf.iter = iter;
+        buf.reducingCell = reducingCell;
+        buf.globalID = globalID;
+        buf.n = n;
+        buf.computes = computes;
+	tempInfo2[globalID] = buf;
       } else {
-	CkAssert(tempInfo.find(s.globalID) != tempInfo.end());
-	CkSectionInfo info = tempInfo[s.globalID];
-	CkAssert(redInfo[s.iter][linearize6D(s.compute)].find(s.reducingCell) ==
-		 redInfo[s.iter][linearize6D(s.compute)].end());
-	redInfo[s.iter][linearize6D(s.compute)][s.reducingCell] = info;
-	delete &s;
+        CkAssert(redInfo[iter].find(reducingCell) == redInfo[iter].end());
+        redInfo[iter][reducingCell] = std::make_pair(n, tempInfo[globalID]);
       }
     }
+
+    // void warmupRed(Startup* sref) {
+    //   Startup& s = *sref;
+    //   if (tempInfo.find(s.globalID) == tempInfo.end()) {
+    //     tempInfo2[s.globalID].push_back(sref);
+    //   } else {
+    //     CkAssert(tempInfo.find(s.globalID) != tempInfo.end());
+    //     CkSectionInfo info = tempInfo[s.globalID];
+    //     CkAssert(redInfo[s.iter][linearize6D(s.compute)].find(s.reducingCell) ==
+    //     	 redInfo[s.iter][linearize6D(s.compute)].end());
+    //     redInfo[s.iter][linearize6D(s.compute)][s.reducingCell] = info;
+    //     delete &s;
+    //   }
+    // }
+
+    std::map<int, std::map<int, int> > redCount;
+    std::map<int, std::map<int, std::pair<int, vec3*> > > redCombine;
 
     void depositForces(vec3* msg, int n, CkIndex6D depositor, int iter, CkIndex3D target) {
       int computeid = linearize6D(depositor);
-      CkPrintf("depositing positions: from compute %d to cell %d at iter %d to some section\n",
-	       computeid, linearize3D(target), iter);
+      int cellid = linearize3D(target);
       fflush(stdout);
-      CkAssert(redInfo[iter][computeid].find(linearize3D(target)) !=
-	       redInfo[iter][computeid].end());
-      CkSectionInfo info = redInfo[iter][computeid][linearize3D(target)];
-      CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
-      mCastGrp->contribute(sizeof(vec3)*n, msg, CkReduction::sum_double, info);
+      CkAssert(redInfo[iter].find(cellid) != redInfo[iter].end());
+      std::pair<int, CkSectionInfo>& p = redInfo[iter][cellid];
+      CkSectionInfo info = p.second;
+
+      CkPrintf("%d: depositing positions: from compute %d to cell %d at iter %d to"
+               " section redNo = %d, val = %p\n",
+	       CkMyPe(), computeid, linearize3D(target), iter, info.get_redNo(), info.get_val());
+      fflush(stdout);
+
+      if (redCombine[iter].find(cellid) == redCombine[iter].end()) {
+        redCombine[iter][cellid] = std::make_pair(n, msg);
+      } else {
+        std::pair<int, vec3*>& payload = redCombine[iter][cellid];
+        CkAssert(payload.first == n);
+        for (int i = 0; i < n; i++) {
+          vec3& vals = *payload.second;
+          vals += *msg;
+        }
+      }
+      
+      redCount[iter][cellid]++;
+
+      if (redCount[iter][cellid] == p.first) {
+        CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
+        CkAssert(redCombine[iter][cellid].first == n);
+        //mCastGrp->contribute(sizeof(vec3)*n, redCombine[iter][cellid].second,
+        //CkReduction::sum_double, info);
+        CkPrintf("%d: contributing to reduction on elements redNo = %d, val = %p\n",
+                 CkMyPe(), info.get_redNo(), info.get_val());
+      }
     }
 };
 

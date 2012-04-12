@@ -91,5 +91,5 @@ void Compute::startMigrate(int pe) {
 
 void Compute::ckJustMigrated() {
   ArrayElement::ckJustMigrated();
-  migrateDone();
+  thisProxy[thisIndex].migrateDone(0);
 }

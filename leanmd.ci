@@ -72,13 +72,18 @@ mainmodule leanmd {
     entry void transition();
     entry void commRelease();
     entry void startMigrate(int pe);
-    entry void migrateDone();
+    entry void migrateDone(int dummy);
 
     entry void coordRun() {
       atomic {
         // do initial registration with the Comm
         //CkPrintf("(%d,%d,%d): tell local comm (pe %d) this element exists\n",
         //thisIndex.x, thisIndex.y, thisIndex.z, CkMyPe());
+
+        thisCell = linearize3D(thisIndex);
+        //CkPrintf("%d: cell %d running\n", CkMyPe(), thisCell);
+        fflush(stdout);
+
         commProxy[CkMyPe()].ckLocal()->registerCell(thisIndex);
 
         // current state is 0, haven't started yet
@@ -87,7 +92,7 @@ mainmodule leanmd {
 
         // initialize some values here
         StaticSchedule& sched = *staticSch.ckLocalBranch();
-        thisCell = linearize3D(thisIndex);
+        
         CkAssert(sched.cellTransition.find(thisCell) != sched.cellTransition.end());
         stateCount = sched.cellTransition[thisCell].size();
         //printf("cell %d: found %d states\n", thisCell, stateCount);
@@ -131,13 +136,14 @@ mainmodule leanmd {
       //atomic { CkPrintf("released\n"); }
       atomic {
 	sendPositions();
-	CkPrintf("%d: sending positions\n", thisCell); fflush(stdout);
+	CkPrintf("%d: sending positions from cell %d\n", CkMyPe(), thisCell); fflush(stdout);
       }
       atomic {
         // objType 2 means no object
         if (current.relObject.objType != 2) {
           Obj& obj = current.relObject;
           commProxy[CkMyPe()].releaseNext(obj.objType, obj.idx);
+          CkPrintf("%d: calling release from cell %d\n", CkMyPe(), thisCell); fflush(stdout);
         }
         transition();
       }
@@ -159,6 +165,7 @@ mainmodule leanmd {
         if (current.relObject.objType != 2) {
           Obj& obj = current.relObject;
           commProxy[CkMyPe()].releaseNext(obj.objType, obj.idx);
+          CkPrintf("%d: calling release from cell %d\n", CkMyPe(), thisCell); fflush(stdout);
         }
 	// two states per iter
 	stepCount++;
@@ -168,12 +175,12 @@ mainmodule leanmd {
 
     entry void migrateState() {
       atomic {
-        CkPrintf("%d: cell migrating %d to %d\n", thisCell, CkMyPe(), current.pe);
+        CkPrintf("%d: cell %d migrating %d to %d\n", CkMyPe(), thisCell, CkMyPe(), current.pe);
 	fflush(stdout);
         commProxy[CkMyPe()].startMigrate(thisIndex, current.pe);
         commProxy[CkMyPe()].ckLocal()->unregister(thisIndex);
       }
-      when migrateDone() atomic {
+      when migrateDone(int dummy) atomic {
         // register with Comm on this pe
         commProxy[CkMyPe()].ckLocal()->registerCell(thisIndex);
       }
@@ -231,12 +238,15 @@ mainmodule leanmd {
     entry void calculateForces(ParticleDataMsg *msg);
     entry void transition();
     entry void commRelease();
-    entry void migrateDone();
+    entry void migrateDone(int dummy);
 
     entry void coordRun() {
       atomic {
         // do initial registration with the Comm
         // @protocol always order these x1,x2,y1,y2...
+        thisCompute = linearize6D(thisIndex);
+        //CkPrintf("%d: compute %d running\n", CkMyPe(), thisCompute);
+        //fflush(stdout);
         // CkPrintf("(%d,%d,%d,%d,%d,%d): tell local comm (pe %d) this element exists\n",
         //          thisIndex.x1, thisIndex.x2,
         //          thisIndex.y1, thisIndex.y2,
@@ -249,12 +259,11 @@ mainmodule leanmd {
 
         // initialize some values here
         StaticSchedule& sched = *staticSch.ckLocalBranch();
-        thisCompute = linearize6D(thisIndex);
-        //CkAssert(sched.computeTransition.find(thisCompute) != sched.computeTransition.end());
-	if (sched.computeTransition.find(thisCompute) != sched.computeTransition.end())
+        CkAssert(sched.computeTransition.find(thisCompute) != sched.computeTransition.end());
+	//if (sched.computeTransition.find(thisCompute) != sched.computeTransition.end())
 	  stateCount = sched.computeTransition[thisCompute].size();
-	else
-	  stateCount = 0;
+	//else
+        //stateCount = 0;
         //CkPrintf("compute %d: found %d states\n", thisCompute, stateCount);
 	fflush(stdout);
       }
@@ -290,8 +299,7 @@ mainmodule leanmd {
     entry void computeState() {
       atomic {
         // make sure it's executing on the PE the schedule expects it to
-        //CkPrintf("%d: running on pe %d, expected %d\n",
-	// thisCompute, CkMyPe(), current.pe);
+        //CkPrintf("%d: running compute %d, expected pe %d\n", CkMyPe(), thisCompute, current.pe);
 	//fflush(stdout);
         CkAssert(CkMyPe() == current.pe);
       }
@@ -299,17 +307,23 @@ mainmodule leanmd {
       if (thisIndex.x1 == thisIndex.x2 &&
           thisIndex.y1 == thisIndex.y2 &&
           thisIndex.z1 == thisIndex.z2) {
-        when calculateForces(ParticleDataMsg *msg) atomic { selfInteract(msg); }
+        when calculateForces(ParticleDataMsg *msg) atomic {
+          CkPrintf("%d: compute from compute %d\n", CkMyPe(), thisCompute); fflush(stdout);
+          selfInteract(msg);
+        }
       } else {
         //receive positions from two cells - buffer the first one
         when calculateForces(ParticleDataMsg *msg) atomic { bufferedMsg = msg; }
-        when calculateForces(ParticleDataMsg *msg) atomic { interact(msg); }
+        when calculateForces(ParticleDataMsg *msg) atomic { interact(msg);
+          CkPrintf("%d: compute from compute %d\n", CkMyPe(), thisCompute); fflush(stdout);
+        }
       }
       atomic {
         // objType 2 means no object
         if (current.relObject.objType != 2) {
           Obj& obj = current.relObject;
           commProxy[CkMyPe()].releaseNext(obj.objType, obj.idx);
+          CkPrintf("%d: calling release from compute %d\n", CkMyPe(), thisCompute); fflush(stdout);
         }
 	stepCount++;
         transition();
@@ -318,11 +332,11 @@ mainmodule leanmd {
 
     entry void migrateState() {
       atomic {
-        CkPrintf("%d: compute migrating %d to %d\n", thisCompute, CkMyPe(), current.pe);
+        CkPrintf("%d: compute %d migrating %d to %d\n", CkMyPe(), thisCompute, CkMyPe(), current.pe);
         commProxy[CkMyPe()].startMigrateComp(thisIndex, current.pe);
         commProxy[CkMyPe()].ckLocal()->unregister(thisIndex);
       }
-      when migrateDone() atomic {
+      when migrateDone(int dummy) atomic {
         // register with Comm on this pe
         commProxy[CkMyPe()].ckLocal()->registerCompute(thisIndex);
       }
@@ -368,7 +382,7 @@ mainmodule leanmd {
     entry Comm();
     entry [reductiontarget] void reduceForces(vec3 forces[n], int n);
     entry void warmup(Startup*);
-    entry void warmupRed(Startup*);
+    entry void warmupRed(int iter, int reducingCell, int globalID, int n, int computes[n]);
     entry void releaseNext(int type, CkIndex6D indx);
     entry void tryDeliver(ParticleDataMsg* m);
     entry void startMigrate(CkIndex3D, int pe);

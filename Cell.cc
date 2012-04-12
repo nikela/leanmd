@@ -280,5 +280,6 @@ void Cell::startMigrate(int pe) {
 
 void Cell::ckJustMigrated() {
   ArrayElement::ckJustMigrated();
-  migrateDone();
+  thisProxy[thisIndex].migrateDone(0);
+  //migrateDone();
 }

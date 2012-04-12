@@ -12,13 +12,13 @@ leanmd: Main.o Cell.o Compute.o leanmd.decl.h
 Main.o: Main.cc Main.h Comm.h leanmd.decl.h defs.h
 	$(CHARMC) $(OPTS) -o Main.o Main.cc
 
-Cell.o: Cell.cc Cell.h leanmd.decl.h defs.h
+Cell.o: Cell.cc Cell.h Comm.h leanmd.decl.h defs.h
 	$(CHARMC) $(OPTS) -o Cell.o Cell.cc
 
-leanmd.decl.h:	leanmd.ci
+leanmd.decl.h:	leanmd.ci Comm.h
 	$(CHARMC) leanmd.ci
 
-Compute.o: Compute.cc Compute.h leanmd.decl.h defs.h physics.h
+Compute.o: Compute.cc Compute.h Comm.h leanmd.decl.h defs.h physics.h
 	$(CHARMC) $(OPTS) -o Compute.o Compute.cc
 
 test: leanmd
