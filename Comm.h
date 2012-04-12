@@ -85,6 +85,8 @@ struct StaticSchedule : public CBase_StaticSchedule {
       fflush(stdout);
     }
 
+    traceEnd();
+
     int curVal = 0, x;
 
     // read from file;
@@ -421,6 +423,11 @@ class Comm : public CBase_Comm {
 
     void startMigrateComp(CkIndex6D indx, int pe) {
       computeArray[indx].ckLocal()->startMigrate(pe);
+    }
+
+    void startTracing() {
+      traceBegin();
+      contribute(CkCallback(CkReductionTarget(Main,setupFinished),mainProxy));
     }
 
     void unregister(CkIndex3D indx) {

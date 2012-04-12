@@ -107,7 +107,7 @@ Main::Main(CkArgMsg* m) {
       for (int z=0; z<cellArrayDimZ; z++)
         cellArray(x, y, z).createComputes();
 
-  CkStartQD(CkCallback(CkIndex_Main::setupFinished(), mainProxy));
+  CkStartQD(CkCallback(CkIndex_Comm::startTracing(), commProxy));
   
   delete m;
 }

@@ -24,7 +24,7 @@ mainmodule leanmd {
     entry [reductiontarget] void computesCreated(); //called when computes have been created
     entry [reductiontarget] void energySumP(double iP, double fP);  //reduction of potential energy
     entry [reductiontarget] void energySumK(double iK, double fK);  //reduction of kinetic energy
-    entry void setupFinished();
+    entry [reductiontarget] void setupFinished();
     entry void allFinished();
 
     //this get called after the main constructor has called cell array constructor
@@ -403,5 +403,6 @@ mainmodule leanmd {
     entry void startMigrate(CkIndex3D, int pe);
     entry void startMigrateComp(CkIndex6D, int pe);
     entry void finished();
+    entry void startTracing();
   };
 };
