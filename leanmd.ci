@@ -25,6 +25,7 @@ mainmodule leanmd {
     entry [reductiontarget] void energySumP(double iP, double fP);  //reduction of potential energy
     entry [reductiontarget] void energySumK(double iK, double fK);  //reduction of kinetic energy
     entry void setupFinished();
+    entry void allFinished();
 
     //this get called after the main constructor has called cell array constructor
     entry void run() {
@@ -39,6 +40,12 @@ mainmodule leanmd {
         computeArray.coordRun();
         //cellArry.run();
         //computeArray.run();
+	startTime = CkWallTimer();
+      }
+      when allFinished() atomic {
+	CkPrintf("total time = %f\n", CkWallTimer() - startTime);
+	fflush(stdout);
+	CkExit();
       }
       //receive intial and final energies and compare
       when energySumP(double fP, double iP),

@@ -493,7 +493,7 @@ class Comm : public CBase_Comm {
     }
 
     void complete() {
-      CkExit();
+      mainProxy.allFinished();
     }
 
     int numFinished;

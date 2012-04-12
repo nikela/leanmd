@@ -7,7 +7,7 @@ OPTS            = -O3 -g
 all: leanmd
 
 leanmd: Main.o Cell.o Compute.o leanmd.decl.h
-	$(CHARMC) $(OPTS) -module CkMulticast -module CommonLBs -tracemode projections -language charm++ -o leanmd Main.o Cell.o Compute.o
+	$(CHARMC) $(OPTS) -tracemode projections -module CkMulticast -module CommonLBs -language charm++ -o leanmd Main.o Cell.o Compute.o
 
 Main.o: Main.cc Main.h Comm.h leanmd.decl.h defs.h
 	$(CHARMC) $(OPTS) -o Main.o Main.cc
