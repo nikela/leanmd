@@ -4,6 +4,7 @@ mainmodule leanmd {
   readonly CProxy_Cell cellArray;     //array that houses atoms
   readonly CProxy_Compute computeArray; //computational kernels
   readonly CProxy_Comm commProxy; //comm
+  readonly CProxy_PME pmeArray;
   readonly CkGroupID mCastGrpID;      //multicast group handle
   readonly CProxy_StaticSchedule staticSch;
 
@@ -80,6 +81,7 @@ mainmodule leanmd {
     entry void commRelease();
     entry void startMigrate(int pe);
     entry void migrateDone(int dummy);
+    entry void updateCharge(int n, double charges[n]);
 
     entry void coordRun() {
       atomic {
@@ -213,6 +215,7 @@ mainmodule leanmd {
         atomic { 
 	  double sendTime = CkWallTimer();
 	  sendPositions();
+	  sendCharges();
 	  sendTime = CkWallTimer() - sendTime;
 	}
 
@@ -412,59 +415,68 @@ mainmodule leanmd {
     entry void xAllToAll(int n, double remoteCharges[n]);
     entry void yAllToAll(int n, double remoteCharges[n]);
     entry void run() {
-      for (numZ = 0; numZ < cellArrayDimZ; numZ++) {
-        when recvCharges(int n, double remoteCharges[n]) atomic {
-          CkAssert(CHARGES_PER_CELL == n);
-          memcpy(&charges[numZ * CHARGES_PER_CELL], remoteCharges, n);
-        }
-      }
-      for (phase = 0; phase < 2; phase++) {
-        atomic {
-          for (int i = 0; i < CHARGES_PER_CELL * cellArrayDimZ; i++) {
-            charges[i] += 10.8 * i;
+      for (stepCount = 0; stepCount < finalStepCount; stepCount++) {
+        for (numZ = 0; numZ < cellArrayDimZ; numZ++) {
+          when recvCharges(int n, double remoteCharges[n]) atomic {
+            CkAssert(CHARGES_PER_CELL == n);
+            memcpy(&charges[numZ * CHARGES_PER_CELL], remoteCharges, n);
           }
         }
-        atomic {
-          for (int x = 0; x < cellArrayDimX; x++) {
-            thisProxy(x,thisIndex.y).xAllToAll(CHARGES_PER_CELL, &charges[x * CHARGES_PER_CELL]);
-          }
-        }
-        for (numX = 0; numX < cellArrayDimX; numX++) {
-          when xAllToAll(int n, double remoteCharges[n]) atomic {
-            memcpy(&charges[numX * CHARGES_PER_CELL], remoteCharges, n);
-          }
-        }
-        atomic {
-          for (int i = 0; i < CHARGES_PER_CELL * cellArrayDimZ; i++) {
-            charges[i] += 10.8 * i;
-          }
-        }
-        atomic {
-          for (int y = 0; y < cellArrayDimY; y++) {
-            thisProxy(thisIndex.x,y).yAllToAll(CHARGES_PER_CELL, &charges[y * CHARGES_PER_CELL]);
-          }
-        }
-        for (numY = 0; numY < cellArrayDimY; numY++) {
-          when yAllToAll(int n, double remoteCharges[n]) atomic {
-            memcpy(&charges[numY * CHARGES_PER_CELL], remoteCharges, n);
-          }
-        }
-        atomic {
-          for (int i = 0; i < CHARGES_PER_CELL * cellArrayDimZ; i++) {
-            charges[i] += 10.8 * i;
-          }
-        }
-        if (phase == 0) {
+        for (phase = 0; phase < 2; phase++) {
           atomic {
             for (int i = 0; i < CHARGES_PER_CELL * cellArrayDimZ; i++) {
-              charges[i] *= 0.454;
+              charges[i] += 10.8 * i;
             }
           }
-        } else if (phase == 1) {
+          atomic {
+            for (int x = 0; x < cellArrayDimX; x++) {
+              thisProxy(x,thisIndex.y).xAllToAll(CHARGES_PER_CELL, &charges[x * CHARGES_PER_CELL]);
+            }
+          }
+          for (numX = 0; numX < cellArrayDimX; numX++) {
+            when xAllToAll(int n, double remoteCharges[n]) atomic {
+              //CkPrintf("(%d,%d): xAllToAll\n", thisIndex.x, thisIndex.y);
+              memcpy(&charges[numX * CHARGES_PER_CELL], remoteCharges, n);
+            }
+          }
           atomic {
             for (int i = 0; i < CHARGES_PER_CELL * cellArrayDimZ; i++) {
-              charges[i] += 0.3884;
+              charges[i] += 10.8 * i;
             }
+          }
+          atomic {
+            for (int y = 0; y < cellArrayDimY; y++) {
+              thisProxy(thisIndex.x,y).yAllToAll(CHARGES_PER_CELL, &charges[y * CHARGES_PER_CELL]);
+            }
+          }
+          for (numY = 0; numY < cellArrayDimY; numY++) {
+            when yAllToAll(int n, double remoteCharges[n]) atomic {
+              memcpy(&charges[numY * CHARGES_PER_CELL], remoteCharges, n);
+            }
+          }
+          atomic {
+            for (int i = 0; i < CHARGES_PER_CELL * cellArrayDimZ; i++) {
+              charges[i] += 10.8 * i;
+            }
+          }
+          if (phase == 0) {
+            atomic {
+              for (int i = 0; i < CHARGES_PER_CELL * cellArrayDimZ; i++) {
+                charges[i] *= 0.454;
+              }
+            }
+          } else if (phase == 1) {
+            atomic {
+              for (int i = 0; i < CHARGES_PER_CELL * cellArrayDimZ; i++) {
+                charges[i] += 0.3884;
+              }
+            }
+          }
+        }
+        for (numZ = 0; numZ < cellArrayDimZ; numZ++) {
+          atomic {
+            cellArray(thisIndex.x,thisIndex.y,numZ).
+              updateCharge(CHARGES_PER_CELL, &charges[numZ * CHARGES_PER_CELL]);
           }
         }
       }

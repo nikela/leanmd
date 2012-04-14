@@ -4,6 +4,7 @@
 extern /* readonly */ CProxy_Cell cellArray;
 extern /* readonly */ CProxy_Compute computeArray;
 extern /* readonly */ CProxy_StaticSchedule staticSch;
+extern /* readonly */ CProxy_PME pmeArray;
 extern /* readonly */ int cellArrayDimX;
 extern /* readonly */ int cellArrayDimY;
 extern /* readonly */ int cellArrayDimZ;

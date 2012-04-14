@@ -15,6 +15,7 @@
 /* readonly */ CProxy_Compute computeArray;
 /* readonly */ CkGroupID mCastGrpID;
 /* readonly */ CProxy_StaticSchedule staticSch;
+/* readonly */ CProxy_PME pmeArray;
 
 /* readonly */ int cellArrayDimX;
 /* readonly */ int cellArrayDimY;
@@ -107,8 +108,11 @@ Main::Main(CkArgMsg* m) {
       for (int z=0; z<cellArrayDimZ; z++)
         cellArray(x, y, z).createComputes();
 
+  pmeArray = CProxy_PME::ckNew(cellArrayDimX,cellArrayDimY);
+
   CkStartQD(CkCallback(CkIndex_Comm::startTracing(), commProxy));
-  
+
+  thisProxy.run();
   delete m;
 }
 

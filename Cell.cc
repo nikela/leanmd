@@ -5,11 +5,11 @@
 #include "Comm.h"
 #include "ckmulticast.h"
 
+extern /* readonly */ CProxy_PME pmeArray;
 extern /* readonly */ CProxy_Main mainProxy;
 extern /* readonly */ CProxy_Cell cellArray;
 extern /* readonly */ CProxy_Compute computeArray;
 extern /* readonly */ CkGroupID mCastGrpID;
-
 extern /* readonly */ int cellArrayDimX;
 extern /* readonly */ int cellArrayDimY;
 extern /* readonly */ int cellArrayDimZ;
@@ -156,24 +156,6 @@ void Cell::sendPositions() {
 
 //send the atoms that have moved beyond my cell to neighbors
 void Cell::migrateParticles(){
-  CkAssert(0);
-  int i, x1, y1, z1;
-  CkVec<Particle> *outgoing = new CkVec<Particle>[inbrs];
-
-  for(i=0; i<particles.length(); i++) {
-    migrateToCell(particles[i], x1, y1, z1);
-    if(x1!=0 || y1!=0 || z1!=0) {
-      outgoing[(x1+1)*NBRS_Y*NBRS_Z + (y1+1)*NBRS_Z + (z1+1)].push_back(wrapAround(particles[i]));
-      particles.remove(i);
-    }
-  }
-  for(int num=0; num<inbrs; num++) {
-    x1 = num / (NBRS_Y * NBRS_Z)            - NBRS_X/2;
-    y1 = (num % (NBRS_Y * NBRS_Z)) / NBRS_Z - NBRS_Y/2;
-    z1 = num % NBRS_Z                       - NBRS_Z/2;
-    //cellArray(WRAP_X(thisIndex.x+x1), WRAP_Y(thisIndex.y+y1), WRAP_Z(thisIndex.z+z1)).receiveParticles(outgoing[num]);
-  }
-  delete [] outgoing;
 }
 
 //check if the particle is to be moved
@@ -218,6 +200,11 @@ void Cell::updateProperties(vec3 *forces, int lengthUp) {
 
     particles[i].pos += particles[i].vel * realTimeDelta;
   }
+}
+
+void Cell::sendCharges() {
+  double charges[3000];
+  pmeArray(thisIndex.x,thisIndex.y).recvCharges(3000, charges);
 }
 
 inline double velocityCheck(double inVelocity) {
