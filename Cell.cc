@@ -270,24 +270,3 @@ void Cell::pup(PUP::er &p) {
     mg->setReductionClient(mCastSecProxy, new CkCallback(CkReductionTarget(Cell,reduceForces), thisProxy(thisIndex.x, thisIndex.y, thisIndex.z)));
   }
 }
-
-// make sure all cells reach to the barrier
-// and energy reduction is done
-void Cell::startCheckpoint(int numCell)
-{
-  static int ncell = 0;
-  numReadyCheckpoint ++;
-  if (numCell) ncell = numCell;
-  else ncell = cellArrayDimX * cellArrayDimY * cellArrayDimZ;
-  if (ncell && numReadyCheckpoint == ncell) {
-        CkCallback cb(CkIndex_Cell::recvCheckPointDone(), thisProxy);
-#if CMK_MEM_CHECKPOINT
-        CkPrintf("[%d] Activating Checkpoint ... \n", CkMyPe());
-        CkStartMemCheckpoint(cb);
-#else
-        cb.send();
-#endif
-        numReadyCheckpoint = 0;
-  }
-}
-
