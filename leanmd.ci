@@ -82,6 +82,7 @@ mainmodule leanmd {
             }
           }
         }
+
         if (thisIndex.x==0 && thisIndex.y==0 && thisIndex.z==0 && 
           stepCount%20==0) atomic {
           CkPrintf("Step %d Benchmark Time %lf ms/step\n", 
@@ -127,4 +128,71 @@ mainmodule leanmd {
       atomic { contribute(2*sizeof(double),energy,CkReduction::sum_double,CkCallback(CkReductionTarget(Main,energySumP),mainProxy)); }
     };
   };
+  
+  array [2D] PME {
+    entry PME();
+    entry void recvCharges(int n, double remoteCharges[n]);
+    entry void xAllToAll(int n, double remoteCharges[n]);
+    entry void yAllToAll(int n, double remoteCharges[n]);
+    entry void run() {
+      for (numZ = 0; numZ < cellArrayDimZ; numZ++) {
+        when recvCharges(int n, double remoteCharges[n]) atomic {
+          CkAssert(CHARGES_PER_CELL == n);
+          memcpy(&charges[numZ * CHARGES_PER_CELL], remoteCharges, n);
+        }
+      }
+      for (phase = 0; phase < 2; phase++) {
+        atomic {
+          for (int i = 0; i < CHARGES_PER_CELL * cellArrayDimZ; i++) {
+            charges[i] += 10.8 * i;
+          }
+        }
+        atomic {
+          for (int x = 0; x < cellArrayDimX; x++) {
+            thisProxy(x,thisIndex.y).xAllToAll(CHARGES_PER_CELL, &charges[x * CHARGES_PER_CELL]);
+          }
+        }
+        for (numX = 0; numX < cellArrayDimX; numX++) {
+          when xAllToAll(int n, double remoteCharges[n]) atomic {
+            memcpy(&charges[numX * CHARGES_PER_CELL], remoteCharges, n);
+          }
+        }
+        atomic {
+          for (int i = 0; i < CHARGES_PER_CELL * cellArrayDimZ; i++) {
+            charges[i] += 10.8 * i;
+          }
+        }
+        atomic {
+          for (int y = 0; y < cellArrayDimY; y++) {
+            thisProxy(thisIndex.x,y).yAllToAll(CHARGES_PER_CELL, &charges[y * CHARGES_PER_CELL]);
+          }
+        }
+        for (numY = 0; numY < cellArrayDimY; numY++) {
+          when yAllToAll(int n, double remoteCharges[n]) atomic {
+            memcpy(&charges[numY * CHARGES_PER_CELL], remoteCharges, n);
+          }
+        }
+        atomic {
+          for (int i = 0; i < CHARGES_PER_CELL * cellArrayDimZ; i++) {
+            charges[i] += 10.8 * i;
+          }
+        }
+        if (phase == 0) {
+          atomic {
+            for (int i = 0; i < CHARGES_PER_CELL * cellArrayDimZ; i++) {
+              charges[i] *= 0.454;
+            }
+          }
+        } else if (phase == 1) {
+          atomic {
+            for (int i = 0; i < CHARGES_PER_CELL * cellArrayDimZ; i++) {
+              charges[i] += 0.3884;
+            }
+          }
+        }
+      }
+      
+    };
+  };
+
 };

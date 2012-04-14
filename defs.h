@@ -25,6 +25,8 @@
 #define NBRS_Z		            (2*KAWAY_Z+1)
 #define NUM_NEIGHBORS	        (NBRS_X * NBRS_Y * NBRS_Z)
 
+#define CHARGES_PER_CELL      3000
+
 #define CELLARRAY_DIM_X	      3
 #define CELLARRAY_DIM_Y	      3
 #define CELLARRAY_DIM_Z	      3
