@@ -11,6 +11,7 @@
 /* readonly */ CProxy_Cell cellArray;
 /* readonly */ CProxy_Compute computeArray;
 /* readonly */ CkGroupID mCastGrpID;
+/* readonly */ CProxy_PME pmeArray;
 
 /* readonly */ int cellArrayDimX;
 /* readonly */ int cellArrayDimY;
@@ -76,6 +77,8 @@ Main::Main(CkArgMsg* m) {
   cellArray = CProxy_Cell::ckNew(cellArrayDimX,cellArrayDimY,cellArrayDimZ);
   CkPrintf("\nCells: %d X %d X %d .... created\n", cellArrayDimX, cellArrayDimY, cellArrayDimZ);
 
+  pmeArray = CProxy_PME::ckNew(cellArrayDimX,cellArrayDimY);
+
   //initializing the 6D compute array
   computeArray = CProxy_Compute::ckNew();
   for (int x=0; x<cellArrayDimX; x++)
@@ -84,6 +87,7 @@ Main::Main(CkArgMsg* m) {
         cellArray(x, y, z).createComputes();
 
   thisProxy.run();
+  pmeArray.run();
   delete m;
 }
 

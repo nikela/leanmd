@@ -52,6 +52,7 @@ class Cell : public CBase_Cell {
     void limitVelocity(Particle &p); //limit velcities to an upper limit
     Particle& wrapAround(Particle &p); //particles going out of right enters from left
     CProxySection_Compute mCastSecProxy; //handle to section proxy of computes
+    void sendCharges();
 
   public:
     Cell();
@@ -67,7 +68,7 @@ class Cell : public CBase_Cell {
 class PME : public CBase_PME {
   PME_SDAG_CODE
   std::vector<double> charges;
-  int phase, numX, numY, numZ;
+  int phase, numX, numY, numZ, stepCount;
 
   PME()
     : charges(CHARGES_PER_CELL * cellArrayDimZ) {
@@ -86,6 +87,7 @@ class PME : public CBase_PME {
     p | numY;
     p | numZ;
     p | charges;
+    p | stepCount;
   }
 };
 
