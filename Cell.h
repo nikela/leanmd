@@ -7,9 +7,14 @@ extern /* readonly */ CkGroupID mCastGrpID;
 extern /* readonly */ int firstLdbStep;
 extern /* readonly */ int ldbPeriod;
 extern /* readonly */ int finalStepCount;
+extern /* readonly */ int cellArrayDimX;
+extern /* readonly */ int cellArrayDimY;
+extern /* readonly */ int cellArrayDimZ;
 
 #include "ckmulticast.h"
 #include "Main.h"
+#include <vector>
+#include <pup_stl.h>
 
 //data message to be sent to computes
 struct ParticleDataMsg : public CkMcastBaseMsg, public CMessage_ParticleDataMsg {
@@ -71,6 +76,31 @@ class Cell : public CBase_Cell {
     void sendPositions();
     void startMigrate(int pe);
     virtual void ckJustMigrated();
+};
+
+class PME : public CBase_PME {
+  PME_SDAG_CODE
+  std::vector<double> charges;
+  int phase, numX, numY, numZ;
+
+  PME()
+    : charges(CHARGES_PER_CELL * cellArrayDimZ) {
+    __sdag_init();
+  }
+
+  PME(CkMigrateMessage *msg) {
+    __sdag_init();
+  }
+
+  void pup(PUP::er &p) {
+    CBase_PME::pup(p);
+    __sdag_pup(p);
+    p | phase;
+    p | numX;
+    p | numY;
+    p | numZ;
+    p | charges;
+  }
 };
 
 #endif
