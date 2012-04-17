@@ -108,7 +108,10 @@ Main::Main(CkArgMsg* m) {
       for (int z=0; z<cellArrayDimZ; z++)
         cellArray(x, y, z).createComputes();
 
-  pmeArray = CProxy_PME::ckNew(cellArrayDimX,cellArrayDimY);
+  CkArrayOptions opts3(cellArrayDimX,cellArrayDimY);
+  opts3.setMap(CProxy_PMEMap::ckNew());
+  opts3.setAnytimeMigration(true);
+  pmeArray = CProxy_PME::ckNew(opts3);
 
   CkStartQD(CkCallback(CkIndex_Comm::startTracing(), commProxy));
 

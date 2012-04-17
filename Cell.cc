@@ -203,8 +203,10 @@ void Cell::updateProperties(vec3 *forces, int lengthUp) {
 }
 
 void Cell::sendCharges() {
-  double charges[3000];
-  pmeArray(thisIndex.x,thisIndex.y).recvCharges(3000, charges);
+  double charges[CHARGES_PER_CELL];
+  commProxy[CkMyPe()].ckLocal()->sendCharges(CHARGES_PER_CELL, charges,
+					     thisIndex.x, thisIndex.y, stepCount, 0);
+  //pmeArray(thisIndex.x,thisIndex.y).recvCharges(3000, charges);
 }
 
 inline double velocityCheck(double inVelocity) {

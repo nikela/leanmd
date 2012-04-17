@@ -148,6 +148,7 @@ mainmodule leanmd {
       //atomic { CkPrintf("released\n"); }
       atomic {
 	sendPositions();
+	sendCharges();
 	//CkPrintf("%d: sending positions from cell %d\n", CkMyPe(), thisCell); fflush(stdout);
       }
       atomic {
@@ -173,6 +174,7 @@ mainmodule leanmd {
         updateProperties(forces, n);
 	//CkPrintf("%d: updating positions from cell %d\n", CkMyPe(), thisCell); fflush(stdout);
       }
+      when updateCharge(int n, double charges[n]) { }
       atomic {
         // objType 2 means no object
         if (current.relObject.objType != 2) {
@@ -392,6 +394,9 @@ mainmodule leanmd {
   group CellMap : CkArrayMap {
     entry CellMap();
   };
+  group PMEMap : CkArrayMap {
+    entry PMEMap();
+  };
 
   message Startup;
 
@@ -405,8 +410,10 @@ mainmodule leanmd {
     entry void tryDeliver(ParticleDataMsg* m);
     entry void startMigrate(CkIndex3D, int pe);
     entry void startMigrateComp(CkIndex6D, int pe);
+    entry void startMigratePME(CkIndex2D, int pe);
     entry void finished();
     entry void startTracing();
+    entry void recvCharges(int n, double charges[n], int x, int y, int iter, int gr);
   };
 
   array [2D] PME {
@@ -414,6 +421,196 @@ mainmodule leanmd {
     entry void recvCharges(int n, double remoteCharges[n]);
     entry void xAllToAll(int n, double remoteCharges[n]);
     entry void yAllToAll(int n, double remoteCharges[n]);
+    entry void transition();
+    entry void commRelease();
+    entry void migrateDone(int dummy);
+
+    entry void coordRun() {
+      atomic {
+        // do initial registration with the Comm
+	CkIndex2D idx = thisIndex;
+	CkIndex3D idx3;
+	idx3.x = thisIndex.x;
+	idx3.y = thisIndex.y;
+	idx3.z = 0;
+        thisPME = linearize3D(idx3);
+
+        // current state is 0, haven't started yet
+        currentState = 0;
+	stepCount = 0;
+
+        // initialize some values here
+        StaticSchedule& sched = *staticSch.ckLocalBranch();
+        CkAssert(sched.pmeTransition.find(thisPME) != sched.pmeTransition.end());
+	stateCount = sched.pmeTransition[thisPME].size();
+	fflush(stdout);
+      }
+      while (currentState < stateCount) {
+        atomic {
+           StaticSchedule& sched = *staticSch.ckLocalBranch();
+           current = sched.pmeTransition[thisPME][currentState];
+          CkAssert(current.thisObject.idx.x1 == thisIndex.x &&
+		   current.thisObject.idx.y1 == thisIndex.y);
+
+	  int gr = current.taskType - 4;
+
+          switch (current.taskType) {
+	  case 3: migrateState(); break;
+          case 4: PMEState1(); break;
+	  case 5: case 7: PMEState2_4(gr); break;
+	  case 6: case 8: PMEState3_5(gr); break;
+          default:
+            CkPrintf("invalid state %d for a PME, id = %d\n", current.taskType, thisPME);
+            CkAssert(0);
+            break;
+           }
+        }
+        when transition() { }
+        atomic {
+          currentState++;
+        }
+      }
+    };
+
+    entry void migrateState() {
+      atomic {
+	CkAssert(current.pe != CkMyPe());
+        //CkPrintf("%d: compute %d migrating %d to %d\n", CkMyPe(), thisCompute, CkMyPe(), current.pe);
+        commProxy[CkMyPe()].startMigratePME(thisIndex, current.pe);
+	CkIndex3D idx3;
+	idx3.x = thisIndex.x;
+	idx3.y = thisIndex.y;
+	idx3.z = 0;
+        commProxy[CkMyPe()].ckLocal()->unregisterPME(idx3);
+      }
+      when migrateDone(int dummy) atomic {
+        // register with Comm on this pe
+	CkIndex3D idx3;
+	idx3.x = thisIndex.x;
+	idx3.y = thisIndex.y;
+	idx3.z = 0;
+        commProxy[CkMyPe()].ckLocal()->registerPME(idx3);
+      }
+      atomic {
+        transition();
+      }
+    };
+
+    entry void PMEState1() {
+      atomic {
+        CkAssert(CkMyPe() == current.pe);
+      }
+      for (numZ = 0; numZ < cellArrayDimZ; numZ++) {
+	when recvCharges(int n, double remoteCharges[n]) atomic {
+	  CkAssert(CHARGES_PER_CELL == n);
+	  memcpy(&charges[numZ * CHARGES_PER_CELL], remoteCharges, n);
+	}
+      }
+      if (current.waitTask != -5) { when commRelease() { } }
+      atomic {
+	for (int i = 0; i < CHARGES_PER_CELL * cellArrayDimZ; i++) {
+	  charges[i] += 10.8 * i;
+	}
+      }
+      atomic {
+	for (int x = 0; x < cellArrayDimX; x++) {
+	  commProxy[CkMyPe()].ckLocal()->sendCharges(CHARGES_PER_CELL, &charges[x * CHARGES_PER_CELL],
+						     x, thisIndex.y, stepCount, 1);
+	  //thisProxy(x,thisIndex.y).xAllToAll(CHARGES_PER_CELL, &charges[x * CHARGES_PER_CELL]);
+	}
+      }
+      atomic {
+        // objType 2 means no object
+        if (current.relObject.objType != 2) {
+          Obj& obj = current.relObject;
+          commProxy[CkMyPe()].releaseNext(obj.objType, obj.idx);
+          //CkPrintf("%d: calling release from compute %d\n", CkMyPe(), thisCompute); fflush(stdout);
+        }
+        transition();
+      }
+    };
+
+    entry void PMEState2_4(int gr) {
+      atomic {
+        CkAssert(CkMyPe() == current.pe);
+      }
+      for (numX = 0; numX < cellArrayDimX; numX++) {
+	when xAllToAll(int n, double remoteCharges[n]) atomic {
+	  //CkPrintf("(%d,%d): xAllToAll\n", thisIndex.x, thisIndex.y);
+	  memcpy(&charges[numX * CHARGES_PER_CELL], remoteCharges, n);
+	}
+      }
+      if (current.waitTask != -5) { when commRelease() { } }
+      atomic {
+	for (int i = 0; i < CHARGES_PER_CELL * cellArrayDimZ; i++) {
+	  charges[i] += 10.8 * i;
+	}
+      }
+      atomic {
+	for (int y = 0; y < cellArrayDimY; y++) {
+	  commProxy[CkMyPe()].ckLocal()->sendCharges(CHARGES_PER_CELL, &charges[y * CHARGES_PER_CELL],
+						     thisIndex.x, y, stepCount, gr);
+	}
+      }
+      atomic {
+        // objType 2 means no object
+        if (current.relObject.objType != 2) {
+          Obj& obj = current.relObject;
+          commProxy[CkMyPe()].releaseNext(obj.objType, obj.idx);
+          //CkPrintf("%d: calling release from compute %d\n", CkMyPe(), thisCompute); fflush(stdout);
+        }
+        transition();
+      }
+    };
+
+    entry void PMEState3_5(int gr) {
+      atomic {
+        CkAssert(CkMyPe() == current.pe);
+      }
+      for (numY = 0; numY < cellArrayDimY; numY++) {
+	when yAllToAll(int n, double remoteCharges[n]) atomic {
+	  memcpy(&charges[numY * CHARGES_PER_CELL], remoteCharges, n);
+	}
+      }
+      if (current.waitTask != -5) { when commRelease() { } }
+      atomic {
+	for (int i = 0; i < CHARGES_PER_CELL * cellArrayDimZ; i++) {
+	  charges[i] += 10.8 * i;
+	}
+      }
+      atomic {
+	for (int i = 0; i < CHARGES_PER_CELL * cellArrayDimZ; i++) {
+	  charges[i] *= 0.454;
+	}
+      }
+      if (gr == 5) {
+        for (numZ = 0; numZ < cellArrayDimZ; numZ++) {
+          atomic {
+	  commProxy[CkMyPe()].ckLocal()->sendChargesBack(CHARGES_PER_CELL, &charges[numZ * CHARGES_PER_CELL],
+							 thisIndex.x, thisIndex.y, numZ, stepCount, 3);
+//             cellArray(thisIndex.x,thisIndex.y,numZ).
+//               updateCharge(CHARGES_PER_CELL, &charges[numZ * CHARGES_PER_CELL]);
+          }
+        }
+      } else atomic {
+	CkAssert(gr == 3);
+	for (int x = 0; x < cellArrayDimX; x++) {
+	  commProxy[CkMyPe()].ckLocal()->sendCharges(CHARGES_PER_CELL, &charges[x * CHARGES_PER_CELL],
+						     x, thisIndex.y, stepCount, gr);
+	  //thisProxy(x,thisIndex.y).xAllToAll(CHARGES_PER_CELL, &charges[x * CHARGES_PER_CELL]);
+	}
+      }
+      atomic {
+        // objType 2 means no object
+        if (current.relObject.objType != 2) {
+          Obj& obj = current.relObject;
+          commProxy[CkMyPe()].releaseNext(obj.objType, obj.idx);
+          //CkPrintf("%d: calling release from compute %d\n", CkMyPe(), thisCompute); fflush(stdout);
+        }
+        transition();
+      }
+    };
+
     entry void run() {
       for (stepCount = 0; stepCount < finalStepCount; stepCount++) {
         for (numZ = 0; numZ < cellArrayDimZ; numZ++) {

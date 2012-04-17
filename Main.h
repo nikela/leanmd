@@ -26,7 +26,7 @@ struct Obj {
 
 struct StateNode {
   Obj thisObject, relObject;
-  int taskid, taskType, pe, waitTask;
+  int taskid, iter, taskType, pe, waitTask;
 
   void pup(PUP::er &p) {
     p | thisObject;
@@ -82,6 +82,18 @@ struct CellMap : public CkArrayMap {
   }
   int map(const int coor[3]) {
 #include "cellInit"
+    else return 99999;
+  }
+};
+
+struct PMEMap : public CkArrayMap {
+  PMEMap() { }
+  int procNum(int arrayHdl, const CkArrayIndex &idx) {
+    const int *coor = idx.data();
+    return map(coor);
+  }
+  int map(const int coor[2]) {
+#include "pmeInit"
     else return 99999;
   }
 };

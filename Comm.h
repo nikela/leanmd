@@ -75,6 +75,10 @@ struct Startup : public CkMcastBaseMsg, public CMessage_Startup {
 struct StaticSchedule : public CBase_StaticSchedule {
   std::map<int, std::vector<StateNode> > cellTransition;
   std::map<int, std::vector<StateNode> > computeTransition;
+  std::map<int, std::vector<StateNode> > pmeTransition;
+
+  //# iter -> PMEid -> PME group
+  std::map<int, std::map<int, std::vector<StateNode> > > pmeComm;
 
   //# iter <cell-obj> (spe,rpe) -> [ (pe,[obj,iter]) ]
   std::map<int, std::map<int, CommInfo> > commMap;
@@ -117,7 +121,8 @@ struct StaticSchedule : public CBase_StaticSchedule {
         case 15: node.relObject.idx.z1 = x; break;
         case 16: node.relObject.idx.x2 = x; break;
         case 17: node.relObject.idx.y2 = x; break;
-        case 18: node.relObject.idx.z2 = x;
+        case 18: node.relObject.idx.z2 = x; break;
+	case 19: node.iter = x;
           //printf("curVal = %d, objtype = %d\n", curVal, node.thisObject.objType);
           if (node.thisObject.objType == 0) {
             //printf("found cell\n");
@@ -129,6 +134,11 @@ struct StaticSchedule : public CBase_StaticSchedule {
             //printf("found compute\n");
             // compute
             computeTransition[linearize6D(node.thisObject.idx)].push_back(node);
+	  } else if (node.thisObject.objType == 3) {
+	    CkIndex6D idx6 = node.thisObject.idx;
+	    CkIndex3D idx3; idx3.x = idx6.x1; idx3.y = idx6.y1; idx3.z = idx6.z1;
+	    pmeTransition[linearize3D(idx3)].push_back(node);
+	    pmeComm[node.iter][linearize3D(idx3)].push_back(node);
           } else {
             assert(0);
           }
@@ -336,6 +346,7 @@ class Comm : public CBase_Comm {
   private:
     std::set<int> myCells;
     std::set<int> myComputes;
+    std::set<int> myPMEs;
     std::map< int, std::list< ParticleDataMsg* > > msgs;
     std::map< int, std::list< std::pair< vec3*, int> > > vecmsgs;
     CkIndex6D bufRelease;
@@ -353,6 +364,14 @@ class Comm : public CBase_Comm {
       int cellid = linearize3D(indx);
       //CkPrintf("%d: registering cell %d\n", CkMyPe(), cellid);
       myCells.insert(cellid);
+      checkBufferedRelease();
+      checkMsgs(indx);
+    }
+
+    void registerPME(CkIndex3D indx) {
+      int PMEid = linearize3D(indx);
+      //CkPrintf("%d: registering cell %d\n", CkMyPe(), cellid);
+      myPMEs.insert(PMEid);
       checkBufferedRelease();
       checkMsgs(indx);
     }
@@ -377,6 +396,20 @@ class Comm : public CBase_Comm {
         } else {
 //           CkPrintf("%d: trying to release, but cell %d not here yet\n",
 //                    CkMyPe(), cellid);
+          bufferRelease(type, indx);
+        }
+      } else if (type == 3) {
+	// it's a PME
+	int PMEid = linearizeFake6D(indx);
+        if (myPMEs.find(PMEid) != myPMEs.end()) {
+          bufReleaseType = -1;
+          // convert to 2d index
+          CkIndex2D indx2;
+          indx2.x = indx.x1;
+          indx2.y = indx.y1;
+          CkAssert(pmeArray[indx2].ckLocal() != 0);
+          pmeArray[indx2].ckLocal()->commRelease();
+        } else {
           bufferRelease(type, indx);
         }
       } else {
@@ -421,6 +454,10 @@ class Comm : public CBase_Comm {
       cellArray[indx].ckLocal()->startMigrate(pe);
     }
 
+    void startMigratePME(CkIndex2D indx, int pe) {
+      pmeArray[indx].ckLocal()->startMigrate(pe);
+    }
+
     void startMigrateComp(CkIndex6D indx, int pe) {
       computeArray[indx].ckLocal()->startMigrate(pe);
     }
@@ -434,6 +471,12 @@ class Comm : public CBase_Comm {
       int cellid = linearize3D(indx);
       assert(myCells.find(cellid) != myCells.end());
       myCells.erase(cellid);
+    }
+
+    void unregisterPME(CkIndex3D indx) {
+      int PMEid = linearize3D(indx);
+      assert(myPMEs.find(PMEid) != myPMEs.end());
+      myPMEs.erase(PMEid);
     }
 
     void unregister(CkIndex6D indx) {
@@ -545,6 +588,32 @@ class Comm : public CBase_Comm {
 //       fflush(stdout);
       CkAssert(sched.sects[iter].find(cellid) != sched.sects[iter].end());
       sched.sects[iter][cellid].tryDeliver(m);
+    }
+
+    void sendCharges(int n, double* charges, int x, int y, int iter, int group) {
+      CkIndex3D pmeIdx;
+      pmeIdx.x = x;
+      pmeIdx.y = y;
+      pmeIdx.z = 0;
+      StaticSchedule& sched = *staticSch.ckLocalBranch();
+      int pmeID = linearize3D(pmeIdx);
+      CkAssert(sched.pmeComm[iter][pmeID].size() > group);
+      commProxy[sched.pmeComm[iter][pmeID][group].pe].recvCharges(n, charges, x, y, iter, group);
+    }
+
+    void sendChargesBack(int n, double* charges, int x, int y, int z, int iter, int group) {
+      CkIndex3D cellIdx;
+      cellIdx.x = x;
+      cellIdx.y = y;
+      cellIdx.z = z;
+      StaticSchedule& sched = *staticSch.ckLocalBranch();
+      int cellid = linearize3D(cellIdx);
+      //CkAssert(sched.pmeComm[iter][pmeID].size() > group);
+      //commProxy[sched.pmeComm[iter][pmeID][group].pe].recvCharges(n, charges, x, y, iter, group);
+    }
+
+    void recvCharges(int n, double* charges, int x, int y, int iter, int group) {
+      
     }
 
     void checkMsgs(CkIndex3D indx) {

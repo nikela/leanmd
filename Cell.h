@@ -84,6 +84,12 @@ class PME : public CBase_PME {
   std::vector<double> charges;
   int phase, numX, numY, numZ, stepCount;
 
+  // SDAG static scheduling state stuff
+  int currentState;
+  int stateCount;
+  int thisPME;
+  StateNode current;
+
   PME()
     : charges(CHARGES_PER_CELL * cellArrayDimZ) {
     __sdag_init();
@@ -102,6 +108,14 @@ class PME : public CBase_PME {
     p | numZ;
     p | charges;
     p | stepCount;
+    p | currentState;
+    p | stateCount;
+    p | thisPME;
+    p | current;
+  }
+
+  void startMigrate(int pe) {
+    migrateMe(pe);
   }
 };
 
