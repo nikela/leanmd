@@ -90,11 +90,7 @@ class PME : public CBase_PME {
   int thisPME;
   StateNode current;
 
-  PME()
-    : charges(CHARGES_PER_CELL * cellArrayDimZ) {
-    __sdag_init();
-  }
-
+  PME();
   PME(CkMigrateMessage *msg) {
     __sdag_init();
   }

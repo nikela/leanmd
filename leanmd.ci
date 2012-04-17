@@ -535,8 +535,9 @@ mainmodule leanmd {
         CkAssert(CkMyPe() == current.pe);
       }
       for (numX = 0; numX < cellArrayDimX; numX++) {
-	when xAllToAll(int n, double remoteCharges[n]) atomic {
+	when recvCharges(int n, double remoteCharges[n]) atomic {
 	  //CkPrintf("(%d,%d): xAllToAll\n", thisIndex.x, thisIndex.y);
+	  //when xAllToAll(int n, double remoteCharges[n]) atomic { }
 	  memcpy(&charges[numX * CHARGES_PER_CELL], remoteCharges, n);
 	}
       }
@@ -568,7 +569,8 @@ mainmodule leanmd {
         CkAssert(CkMyPe() == current.pe);
       }
       for (numY = 0; numY < cellArrayDimY; numY++) {
-	when yAllToAll(int n, double remoteCharges[n]) atomic {
+	when recvCharges(int n, double remoteCharges[n]) atomic {
+	  //when yAllToAll(int n, double remoteCharges[n]) atomic { }
 	  memcpy(&charges[numY * CHARGES_PER_CELL], remoteCharges, n);
 	}
       }

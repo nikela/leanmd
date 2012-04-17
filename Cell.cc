@@ -276,3 +276,15 @@ void Cell::ckJustMigrated() {
   ArrayElement::ckJustMigrated();
   migrateDone(0);
 }
+
+
+PME::PME()
+  : charges(CHARGES_PER_CELL * cellArrayDimZ) {
+  __sdag_init();
+  
+  CkIndex3D idx3;
+  idx3.x = thisIndex.x;
+  idx3.y = thisIndex.y;
+  idx3.z = 0;
+  commProxy[CkMyPe()].ckLocal()->registerPME(idx3);
+}

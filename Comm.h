@@ -349,6 +349,8 @@ class Comm : public CBase_Comm {
     std::set<int> myPMEs;
     std::map< int, std::list< ParticleDataMsg* > > msgs;
     std::map< int, std::list< std::pair< vec3*, int> > > vecmsgs;
+    std::map<int, std::list<std::pair<int, double*> > > cellchargemsgs;
+    std::map<int, std::list<std::pair<int, double*> > > chargemsgs;
     CkIndex6D bufRelease;
     int bufReleaseType;
 
@@ -373,11 +375,11 @@ class Comm : public CBase_Comm {
       //CkPrintf("%d: registering cell %d\n", CkMyPe(), cellid);
       myPMEs.insert(PMEid);
       checkBufferedRelease();
-      checkMsgs(indx);
+      checkMsgsPME(indx);
     }
 
     void releaseNext(int type, CkIndex6D indx) {
-      CkAssert(type == 0 || type == 1);
+      CkAssert(type == 0 || type == 1 || type == 3);
       if (type == 0) {
         // it's a cell
         int cellid = linearizeFake6D(indx);
@@ -504,6 +506,32 @@ class Comm : public CBase_Comm {
       }
     }
 
+    void tryDeliver(int n, double* charges, CkIndex3D idx) {
+      int pmeID = linearize3D(idx);
+      if (myPMEs.find(pmeID) != myPMEs.end()) {
+// 	CkPrintf("%d: delivering charges directly, id = %d, count = %d, cell = %d\n",
+// 		 CkMyPe(), num, count, num / count); fflush(stdout);
+        deliver(charges, n, idx);
+      } else {
+        chargemsgs[pmeID].push_back(std::make_pair<int, double*>(n, charges));
+// 	CkPrintf("%d: buffereing forces, id = %d, count = %d, cell = %d\n",
+// 		 CkMyPe(), num, count, num / count); fflush(stdout);
+      }
+    }
+
+    void tryDeliverChargeCell(int n, double* charges, CkIndex3D idx) {
+      int cellid = linearize3D(idx);
+      if (myCells.find(cellid) != myCells.end()) {
+// 	CkPrintf("%d: delivering charges directly, id = %d, count = %d, cell = %d\n",
+// 		 CkMyPe(), num, count, num / count); fflush(stdout);
+        deliverCell(charges, n, idx);
+      } else {
+        cellchargemsgs[cellid].push_back(std::make_pair<int, double*>(n, charges));
+// 	CkPrintf("%d: buffereing forces, id = %d, count = %d, cell = %d\n",
+// 		 CkMyPe(), num, count, num / count); fflush(stdout);
+      }
+    }
+
     void tryDeliver(ParticleDataMsg* m) {
       /*CkPrintf("tryDeliver message = %p\n", m);*/
       CkIndex3D cindx;
@@ -564,6 +592,18 @@ class Comm : public CBase_Comm {
       cellArray[indx].ckLocal()->reduceForces(forces, n-1);
     }
 
+    void deliver(double* charges, int n, CkIndex3D indx) {
+      int x = indx.x;
+      int y = indx.y;
+      CkAssert(pmeArray(x,y).ckLocal());
+      pmeArray(x,y).ckLocal()->recvCharges(n, charges);
+    }
+
+    void deliverCell(double* charges, int n, CkIndex3D indx) {
+      CkAssert(cellArray[indx].ckLocal());
+      cellArray[indx].ckLocal()->updateCharge(n, charges);
+    }
+
     void deliver(ParticleDataMsg* m, CkIndex6D indx) {
       CkAssert(computeArray[indx].ckLocal());
       computeArray[indx].ckLocal()->calculateForces(m);
@@ -591,6 +631,8 @@ class Comm : public CBase_Comm {
     }
 
     void sendCharges(int n, double* charges, int x, int y, int iter, int group) {
+      CkPrintf("%d: sendCharges, group = %d, x = %d, y = %d, iter = %d\n",
+	       CkMyPe(), group, x, y, iter); fflush(stdout);
       CkIndex3D pmeIdx;
       pmeIdx.x = x;
       pmeIdx.y = y;
@@ -613,16 +655,42 @@ class Comm : public CBase_Comm {
     }
 
     void recvCharges(int n, double* charges, int x, int y, int iter, int group) {
-      
+      CkIndex3D pmeIdx;
+      pmeIdx.x = x;
+      pmeIdx.y = y;
+      pmeIdx.z = 0;
+      tryDeliver(n, charges, pmeIdx);
+    }
+
+    void recvChargesCell(int n, double* charges, int x, int y, int z, int iter) {
+      CkIndex3D cellIdx;
+      cellIdx.x = x;
+      cellIdx.y = y;
+      cellIdx.z = z;
+      tryDeliverChargeCell(n, charges, cellIdx);
     }
 
     void checkMsgs(CkIndex3D indx) {
       int cellid = linearize3D(indx);
       for(std::list< std::pair<vec3*,int> >::iterator iter =
           vecmsgs[cellid].begin(); iter != vecmsgs[cellid].end(); ++iter) {
-        deliver((*iter).first, (*iter).second, indx);
+        deliver(iter->first, iter->second, indx);
       }
       vecmsgs[cellid].clear();
+      for(std::list< std::pair<int,double*> >::iterator iter =
+          cellchargemsgs[cellid].begin(); iter != cellchargemsgs[cellid].end(); ++iter) {
+        deliverCell(iter->second, iter->first, indx);
+      }
+      cellchargemsgs[cellid].clear();
+    }
+
+    void checkMsgsPME(CkIndex3D indx) {
+      int pmeID = linearize3D(indx);
+      for(std::list< std::pair<int,double*> >::iterator iter =
+          chargemsgs[pmeID].begin(); iter != chargemsgs[pmeID].end(); ++iter) {
+        deliver(iter->second, iter->first, indx);
+      }
+      chargemsgs[pmeID].clear();
     }
 
     void checkMsgs(CkIndex6D indx) {
