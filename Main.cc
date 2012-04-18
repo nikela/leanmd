@@ -115,7 +115,6 @@ Main::Main(CkArgMsg* m) {
 
   CkStartQD(CkCallback(CkIndex_Comm::startTracing(), commProxy));
 
-  thisProxy.run();
   delete m;
 }
 

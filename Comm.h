@@ -139,6 +139,8 @@ struct StaticSchedule : public CBase_StaticSchedule {
 	    CkIndex3D idx3; idx3.x = idx6.x1; idx3.y = idx6.y1; idx3.z = idx6.z1;
 	    pmeTransition[linearize3D(idx3)].push_back(node);
 	    pmeComm[node.iter][linearize3D(idx3)].push_back(node);
+	    if (node.iter == 0)
+	      CkPrintf("PME processor iter %d, pe = %d\n", node.iter, node.pe); fflush(stdout);
           } else {
             assert(0);
           }
@@ -372,7 +374,7 @@ class Comm : public CBase_Comm {
 
     void registerPME(CkIndex3D indx) {
       int PMEid = linearize3D(indx);
-      //CkPrintf("%d: registering cell %d\n", CkMyPe(), cellid);
+      CkPrintf("%d: registering PME %d\n", CkMyPe(), PMEid);
       myPMEs.insert(PMEid);
       checkBufferedRelease();
       checkMsgsPME(indx);
@@ -507,15 +509,16 @@ class Comm : public CBase_Comm {
     }
 
     void tryDeliver(int n, double* charges, CkIndex3D idx) {
+      //CkPrintf("%d: tryDeliver charges\n", CkMyPe()); fflush(stdout);
+
       int pmeID = linearize3D(idx);
       if (myPMEs.find(pmeID) != myPMEs.end()) {
-// 	CkPrintf("%d: delivering charges directly, id = %d, count = %d, cell = %d\n",
-// 		 CkMyPe(), num, count, num / count); fflush(stdout);
+ 	CkPrintf("%d: delivering charges directly, pmeid = %d, element (%d,%d)\n",
+		 CkMyPe(), pmeID, idx.x, idx.y); fflush(stdout);
         deliver(charges, n, idx);
       } else {
         chargemsgs[pmeID].push_back(std::make_pair<int, double*>(n, charges));
-// 	CkPrintf("%d: buffereing forces, id = %d, count = %d, cell = %d\n",
-// 		 CkMyPe(), num, count, num / count); fflush(stdout);
+ 	CkPrintf("%d: buffering charges, pmeid = %d\n", CkMyPe(), pmeID); fflush(stdout);
       }
     }
 
@@ -596,6 +599,7 @@ class Comm : public CBase_Comm {
       int x = indx.x;
       int y = indx.y;
       CkAssert(pmeArray(x,y).ckLocal());
+      CkPrintf("%d: delivering to element (%d,%d)\n", CkMyPe(), x, y); fflush(stdout);
       pmeArray(x,y).ckLocal()->recvCharges(n, charges);
     }
 
@@ -650,11 +654,15 @@ class Comm : public CBase_Comm {
       cellIdx.z = z;
       StaticSchedule& sched = *staticSch.ckLocalBranch();
       int cellid = linearize3D(cellIdx);
+      //# iter <cell-obj> (spe,rpe) -> [ (pe,[obj,iter]) ]
+      commProxy[sched.commMap[iter][cellid].rpe].recvChargesCell(n, charges, x, y, z, iter);
       //CkAssert(sched.pmeComm[iter][pmeID].size() > group);
       //commProxy[sched.pmeComm[iter][pmeID][group].pe].recvCharges(n, charges, x, y, iter, group);
     }
 
     void recvCharges(int n, double* charges, int x, int y, int iter, int group) {
+      CkPrintf("%d: recvCharges, group = %d, x = %d, y = %d, iter = %d\n",
+	       CkMyPe(), group, x, y, iter); fflush(stdout);
       CkIndex3D pmeIdx;
       pmeIdx.x = x;
       pmeIdx.y = y;

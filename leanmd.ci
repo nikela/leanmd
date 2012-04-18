@@ -39,6 +39,7 @@ mainmodule leanmd {
 	startTime = CkWallTimer();
         cellArray.coordRun();
         computeArray.coordRun();
+	pmeArray.coordRun();
         //cellArry.run();
         //computeArray.run();
 	startTime = CkWallTimer();
@@ -414,6 +415,7 @@ mainmodule leanmd {
     entry void finished();
     entry void startTracing();
     entry void recvCharges(int n, double charges[n], int x, int y, int iter, int gr);
+    entry void recvChargesCell(int n, double charges[n], int x, int y, int z, int iter);
   };
 
   array [2D] PME {
@@ -498,6 +500,7 @@ mainmodule leanmd {
 
     entry void PMEState1() {
       atomic {
+	//CkPrintf("running on %d, expected core %d\n", CkMyPe(), current.pe); fflush(stdout);
         CkAssert(CkMyPe() == current.pe);
       }
       for (numZ = 0; numZ < cellArrayDimZ; numZ++) {
@@ -513,6 +516,8 @@ mainmodule leanmd {
 	}
       }
       atomic {
+	CkPrintf("%d: PMEState1() (%d,%d) executing group 0\n",
+		 CkMyPe(), thisIndex.x, thisIndex.y); fflush(stdout);
 	for (int x = 0; x < cellArrayDimX; x++) {
 	  commProxy[CkMyPe()].ckLocal()->sendCharges(CHARGES_PER_CELL, &charges[x * CHARGES_PER_CELL],
 						     x, thisIndex.y, stepCount, 1);
@@ -548,6 +553,8 @@ mainmodule leanmd {
 	}
       }
       atomic {
+	CkPrintf("%d: PMEState2_4() (%d,%d) executing group 2_4\n",
+		 CkMyPe(), thisIndex.x, thisIndex.y); fflush(stdout);
 	for (int y = 0; y < cellArrayDimY; y++) {
 	  commProxy[CkMyPe()].ckLocal()->sendCharges(CHARGES_PER_CELL, &charges[y * CHARGES_PER_CELL],
 						     thisIndex.x, y, stepCount, gr);
