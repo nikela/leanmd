@@ -9,7 +9,10 @@
 #define VDW_B			            (1.031093844 * pow(10.0, -77))
 
 #define ENERGY_VAR  		      (1.0 * pow(10.0,-5))
-#define PARTICLES_PER_CELL   	300
+//average of next two should be what you want as you atom density
+#define PARTICLES_PER_CELL_START  200
+#define PARTICLES_PER_CELL_END  	400
+
 
 #define DEFAULT_DELTA         1	// in femtoseconds
 
