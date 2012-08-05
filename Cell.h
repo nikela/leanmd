@@ -7,9 +7,7 @@ extern /* readonly */ CkGroupID mCastGrpID;
 extern /* readonly */ int firstLdbStep;
 extern /* readonly */ int ldbPeriod;
 extern /* readonly */ int finalStepCount;
-#ifdef __FAULT__
 extern /* readonly */ int checkptFreq;
-#endif
 
 #include "ckmulticast.h"
 
