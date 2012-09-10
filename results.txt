@@ -1,0 +1,21 @@
+Checkpoint/Restart
+Step 20 Benchmark Time 309.782696 ms/step
+Step 40 Benchmark Time 295.296395 ms/step
+Step 60 Benchmark Time 295.469797 ms/step
+Step 80 Benchmark Time 295.467246 ms/step
+Step 100 Benchmark Time 302.585399 ms/step
+
+Message-Logging
+Step 20 Benchmark Time 353.831244 ms/step
+Step 40 Benchmark Time 336.102891 ms/step
+Step 60 Benchmark Time 343.753898 ms/step
+Step 80 Benchmark Time 345.411503 ms/step
+Step 100 Benchmark Time 353.407693 ms/step
+
+Message-Logging (-store messages)
+Step 20 Benchmark Time 350.604153 ms/step
+Step 40 Benchmark Time 341.527057 ms/step
+Step 60 Benchmark Time 345.410252 ms/step
+Step 80 Benchmark Time 346.511042 ms/step
+Step 100 Benchmark Time 361.748743 ms/step
+

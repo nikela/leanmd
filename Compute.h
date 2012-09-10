@@ -10,9 +10,6 @@ class Compute : public CBase_Compute {
     int stepCount;  //current step number
     double energy[2]; //store potential energy
     ParticleDataMsg *bufferedMsg; //copy of first message received for interaction
-    //handles to differentiate the two multicast sections I am part of
-    CkSectionInfo mcast1;     
-    CkSectionInfo mcast2;
 
   public:
     Compute();

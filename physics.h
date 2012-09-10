@@ -1,7 +1,6 @@
 #ifndef __PHYSICS_H__
 #define __PHYSICS_H__
 
-#include "ckmulticast.h"
 
 extern /* readonly */ CkGroupID mCastGrpID;
 
@@ -13,7 +12,7 @@ extern /* readonly */ int finalStepCount;
 #define BLOCK_SIZE	512
 
 //function to calculate forces among 2 lists of atoms
-inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, CkSectionInfo* mcast1, CkSectionInfo* mcast2, int stepCount) {
+inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, int stepCount) {
   int i, j, jpart, ptpCutOffSqd, diff;
   int firstLen = first->lengthAll;
   int secondLen = second->lengthAll;
@@ -76,21 +75,18 @@ inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, Ck
         }
       }
 
-  CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
-  CkGetSectionInfo(*mcast1, first);
-  mCastGrp->contribute(sizeof(vec3)*firstLen, firstmsg, CkReduction::sum_double, *mcast1);
-  CkGetSectionInfo(*mcast2, second);
-  mCastGrp->contribute(sizeof(vec3)*secondLen, secondmsg, CkReduction::sum_double, *mcast2);
+  cellArray(first->x, first->y, first->z).receiveForces(stepCount,firstmsg,firstLen);
+  cellArray(second->x, second->y, second->z).receiveForces(stepCount,secondmsg,secondLen);
 
-  delete [] firstmsg;
-  delete [] secondmsg;
+  delete firstmsg;
+  delete secondmsg;
   delete first;
   delete second;
   return energy;
 }
 
 //function to calculate forces among atoms in a single list
-inline double calcInternalForces(ParticleDataMsg* first, CkSectionInfo *mcast1, int stepCount) {
+inline double calcInternalForces(ParticleDataMsg* first, int stepCount) {
   int i, j, ptpCutOffSqd;
   int firstLen = first->lengthAll;
   double powTwenty, powTen, firstx, firsty, firstz, rx, ry, rz, r, rsqd, fx, fy, fz, f, fr;
@@ -127,10 +123,8 @@ inline double calcInternalForces(ParticleDataMsg* first, CkSectionInfo *mcast1, 
       }
     }
   }
-  CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
-  CkGetSectionInfo(*mcast1, first);
-  mCastGrp->contribute(sizeof(vec3)*firstLen, firstmsg, CkReduction::sum_double, *mcast1);
-  delete [] firstmsg;
+  cellArray(first->x, first->y, first->z).receiveForces(stepCount,firstmsg,firstLen);
+  delete firstmsg;
   delete first;
   return energy;
 }

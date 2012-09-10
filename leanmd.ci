@@ -3,7 +3,6 @@ mainmodule leanmd {
   readonly CProxy_Main mainProxy;       //central controller
   readonly CProxy_Cell cellArray;     //array that houses atoms
   readonly CProxy_Compute computeArray; //computational kernels
-  readonly CkGroupID mCastGrpID;      //multicast group handle
 
   readonly int cellArrayDimX;		// X dimension of the Cell array
   readonly int cellArrayDimY;		// Y dimension of the Cell array
@@ -56,21 +55,24 @@ mainmodule leanmd {
     entry void ResumeFromSync();    //resume from here after load balancing
     entry void startCheckpoint(int ncells);
     entry void recvCheckPointDone();
-    entry [reductiontarget] void reduceForces(vec3 forces[n], int n);   //receives forces from my computes on my atoms
+    entry void receiveForces(int iter, vec3 forces[n], int n);   //receives forces from my computes on my atoms
 
     //function to perform iterations for Cells
     entry void run() {
       if(thisIndex.x==0 && thisIndex.y==0 && thisIndex.z==0) atomic {
           stepTime = CkWallTimer(); }
 
-      atomic { createSection(); }
-
       for(stepCount = 1; stepCount <= finalStepCount; stepCount++) {
         //send current atom positions to my computes 
         atomic { sendPositions(); } 
 
         //update properties of atoms using new force values 
-        when reduceForces(vec3 forces[n], int n) atomic { updateProperties(forces, n); }
+        // when reduceForces(vec3 forces[n], int n) atomic { updateProperties(forces, n); }
+        for(forceCount=0; forceCount < inbrs; forceCount++){
+        	when receiveForces[stepCount](int iter, vec3 forces[n], int n) atomic { addForces(forces); }
+		}
+
+		atomic { updateProperties(); }
 
         if ((stepCount %  MIGRATE_STEPCOUNT) == 0) {
           //send atoms that have moved beyond my cell to neighbors
@@ -123,11 +125,11 @@ mainmodule leanmd {
       for(stepCount = 1; stepCount <= finalStepCount; stepCount++) {
         //self interaction check
         if(thisIndex.x1==thisIndex.x2 && thisIndex.y1==thisIndex.y2 && thisIndex.z1==thisIndex.z2) {
-          when calculateForces(ParticleDataMsg *msg) atomic { selfInteract(msg); }
+          when calculateForces[stepCount](ParticleDataMsg *msg) atomic { selfInteract(msg); }
         } else {
           //receive positions from two cells - buffer the first one
-          when calculateForces(ParticleDataMsg *msg) atomic { bufferedMsg = msg; }
-          when calculateForces(ParticleDataMsg *msg) atomic { interact(msg); }
+          when calculateForces[stepCount](ParticleDataMsg *msg) atomic { bufferedMsg = msg; }
+          when calculateForces[stepCount](ParticleDataMsg *msg) atomic { interact(msg); }
         }
         //periodically call load balancer
         if (stepCount >= firstLdbStep && (stepCount - firstLdbStep) % ldbPeriod== 0) {

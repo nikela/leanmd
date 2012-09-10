@@ -10,8 +10,8 @@
 
 #define ENERGY_VAR  		      (1.0 * pow(10.0,-5))
 //average of next two should be what you want as you atom density
-#define PARTICLES_PER_CELL_START  200
-#define PARTICLES_PER_CELL_END  	400
+#define PARTICLES_PER_CELL_START  300
+#define PARTICLES_PER_CELL_END  	300
 
 
 #define DEFAULT_DELTA         1	// in femtoseconds
@@ -77,7 +77,7 @@ PUPbytes(vec3)
 struct Particle {
   double mass;
   //   Position, acceleration, velocity
-  vec3 pos,acc,vel;
+  vec3 pos,acc,vel,force;
 
   // Function for pupping properties
   void pup(PUP::er &p) {
@@ -85,6 +85,7 @@ struct Particle {
     p | pos;
     p | acc;
     p | vel;
+	p | force;
   }
 };
 #endif

@@ -3,7 +3,6 @@
 #include "Cell.h"
 #include "Compute.h"
 #include "physics.h"
-#include "ckmulticast.h"
 #include <algorithm>
 using std::swap;
 
@@ -33,7 +32,7 @@ Compute::Compute(CkMigrateMessage *msg): CBase_Compute(msg)  {
 void Compute::selfInteract(ParticleDataMsg *msg){
   double energyP = 0;
 
-  energyP = calcInternalForces(msg, &mcast1, stepCount);
+  energyP = calcInternalForces(msg, stepCount);
 
   //energy assignment only in begining and end
   if(stepCount == 1) {
@@ -44,15 +43,10 @@ void Compute::selfInteract(ParticleDataMsg *msg){
 }
 
 //interaction between two cells
-//mcast1 attached to message from lower id cell
 void Compute::interact(ParticleDataMsg *msg){
   double energyP = 0;
 
-  CkSectionInfo *handleA = &mcast1, *handleB = &mcast2;
-  if (bufferedMsg->x*cellArrayDimY*cellArrayDimZ + bufferedMsg->y*cellArrayDimZ + bufferedMsg->z < msg->x*cellArrayDimY*cellArrayDimZ + msg->y*cellArrayDimZ + msg->z){ 
-    swap(handleA, handleB);
-  }
-  energyP = calcPairForces(msg, bufferedMsg, handleA, handleB, stepCount);
+  energyP = calcPairForces(msg, bufferedMsg, stepCount);
 
   //energy assignment only in begining and end
   if(stepCount == 1) {
@@ -67,11 +61,5 @@ void Compute::pup(PUP::er &p) {
   CBase_Compute::pup(p);
   __sdag_pup(p);
   p | stepCount;
-  p | mcast1;
-  p | mcast2;
   PUParray(p, energy, 2);
-  if (p.isUnpacking() && CkInRestarting()) {
-    mcast1.get_redNo() = 0;
-    mcast2.get_redNo() = 0;
-  }
 }
