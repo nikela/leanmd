@@ -1,6 +1,6 @@
 # to be set appropiately
-#CHARMBASE      = $(HOME)/charm/net-linux-x86_64-syncft
-CHARMBASE      = $(HOME)/charm/net-linux-x86_64-syncft
+CHARMBASE      = /dcsdata/home/emenese2/charm/net-linux-x86_64-smp-syncft
+#CHARMBASE      = /dcsdata/home/emenese2/charm/net-linux-x86_64
 CHARMC         = $(CHARMBASE)/bin/charmc
 
 OPTS            = -O3
@@ -8,7 +8,7 @@ OPTS            = -O3
 all: leanmd
 
 leanmd: Main.o Cell.o Compute.o leanmd.decl.h
-	$(CHARMC) $(OPTS) -module DummyLB \
+	$(CHARMC) $(OPTS) -module CkMulticast -module CommonLBs \
 	-language charm++ -o leanmd Main.o Cell.o Compute.o
 
 Main.o: Main.cc Main.h leanmd.decl.h defs.h

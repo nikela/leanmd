@@ -1,4 +1,5 @@
 #include "time.h"
+#include "ckmulticast.h"
 
 #include "defs.h"
 #include "leanmd.decl.h"
@@ -34,6 +35,11 @@ Main::Main(CkArgMsg* m) {
   checkptFreq = DEFAULT_FT_PERIOD;
 
   mainProxy = thisProxy;
+
+  //branch factor for spanning tree of multicast
+  int bFactor = 4;
+  //creating the multicast spanning tree
+  mCastGrpID = CProxy_CkMulticastMgr::ckNew(bFactor);
 
   int numPes = CkNumPes();
   int currPe = -1, pe;

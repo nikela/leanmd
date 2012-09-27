@@ -9,6 +9,7 @@ extern /* readonly */ int ldbPeriod;
 extern /* readonly */ int finalStepCount;
 extern /* readonly */ int checkptFreq;
 
+#include "ckmulticast.h"
 
 //data message to be sent to computes
 struct ParticleDataMsg : public CkMcastBaseMsg, public CMessage_ParticleDataMsg {
@@ -42,10 +43,9 @@ class Cell : public CBase_Cell {
     int updateCount;
     double energy[2]; //store kinetic energy - initial and final
 	int numReadyCheckpoint;
-	int forceCount;
 
     void migrateToCell(Particle p, int &px, int &py, int &pz);
-    void updateProperties();	//updates properties after receiving forces from computes
+    void updateProperties(vec3 *forces, int lengthUp);	//updates properties after receiving forces from computes
     void limitVelocity(Particle &p); //limit velcities to an upper limit
     Particle& wrapAround(Particle &p); //particles going out of right enters from left
     CProxySection_Compute mCastSecProxy; //handle to section proxy of computes
@@ -56,10 +56,10 @@ class Cell : public CBase_Cell {
     ~Cell();
     void pup(PUP::er &p);
     void createComputes();  //add my computes
+    void createSection();   //created multicast section of computes
     void migrateParticles();
     void sendPositions();
 	void startCheckpoint(int);
-	void addForces(vec3* forces);
 };
 
 #endif

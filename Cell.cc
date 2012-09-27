@@ -2,6 +2,7 @@
 #include "defs.h"
 #include "leanmd.decl.h"
 #include "Cell.h"
+#include "ckmulticast.h"
 
 extern /* readonly */ CProxy_Main mainProxy;
 extern /* readonly */ CProxy_Cell cellArray;
@@ -39,14 +40,10 @@ Cell::Cell() {
     particles[i].vel.x = (drand48() - 0.5) * .2 * MAX_VELOCITY;
     particles[i].vel.y = (drand48() - 0.5) * .2 * MAX_VELOCITY;
     particles[i].vel.z = (drand48() - 0.5) * .2 * MAX_VELOCITY;
-	particles[i].force.x = 0.0;
-	particles[i].force.y = 0.0;
-	particles[i].force.z = 0.0;
   }
 
   stepCount = 1;
   updateCount = 0;
-  forceCount = 0;
   stepTime = 0; 
   energy[0] = energy[1] = 0;
 }
@@ -117,6 +114,23 @@ void Cell::createComputes() {
   contribute(0,NULL,CkReduction::nop,CkCallback(CkReductionTarget(Main,computesCreated),mainProxy));
 }
 
+//call multicast section creation
+void Cell::createSection() {
+  CkVec<CkArrayIndex6D> elems;
+  //create a vector list of my computes
+  for (int num=0; num<inbrs; num++)
+    elems.push_back(CkArrayIndex6D(computesList[num][0], computesList[num][1], computesList[num][2], computesList[num][3], computesList[num][4], computesList[num][5]));
+
+  CkArrayID computeArrayID = computeArray.ckGetArrayID();
+  //knit the computes into a section
+  mCastSecProxy = CProxySection_Compute::ckNew(computeArrayID, elems.getVec(), elems.size()); 
+
+  //delegate the communication responsibility for this section to multicast library
+  CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
+  mCastSecProxy.ckSectionDelegate(mCastGrp);
+  mCastGrp->setReductionClient(mCastSecProxy, new CkCallback(CkReductionTarget(Cell,reduceForces), thisProxy(thisIndex.x, thisIndex.y, thisIndex.z)));
+}
+
 // Function to start interaction among particles in neighboring cells as well as its own particles
 void Cell::sendPositions() {
   int len = particles.length();
@@ -131,31 +145,7 @@ void Cell::sendPositions() {
   for (int i = 0; i < len; i++)
     msg->part[i] = particles[i].pos;
 
-  CkSetRefNum(msg,stepCount);
-
-  int px1, py1, pz1, px2, py2, pz2;
-
-  for(int num=0; num<inbrs; num++) {
-    px1 = computesList[num][0];
-    py1 = computesList[num][1];
-    pz1 = computesList[num][2];
-    px2 = computesList[num][3];
-    py2 = computesList[num][4];
-    pz2 = computesList[num][5];
-    if (num == inbrs-1)
-      computeArray(px1, py1, pz1, px2, py2, pz2).calculateForces(msg);
-    else {
-      ParticleDataMsg* newMsg = new (len) ParticleDataMsg;
-      newMsg->x = thisIndex.x;
-      newMsg->y = thisIndex.y;
-      newMsg->z = thisIndex.z;
-      newMsg->lengthAll = len;
-      memcpy(newMsg->part, msg->part, len*sizeof(vec3));
-      CkSetRefNum(newMsg,stepCount);
-      computeArray(px1, py1, pz1, px2, py2, pz2).calculateForces(newMsg);
-    }
-  }
-
+  mCastSecProxy.calculateForces(msg);
 }
 
 //send the atoms that have moved beyond my cell to neighbors
@@ -199,7 +189,7 @@ void Cell::migrateToCell(Particle p, int &px, int &py, int &pz) {
 }
 
 // Function to update properties (i.e. acceleration, velocity and position) in particles
-void Cell::updateProperties() {
+void Cell::updateProperties(vec3 *forces, int lengthUp) {
   int i;
   double powTen, powFteen, realTimeDelta, invMassParticle;
   powTen = pow(10.0, -10);
@@ -214,24 +204,13 @@ void Cell::updateProperties() {
     }
     // applying kinetic equations
     invMassParticle = 1 / particles[i].mass;
-    particles[i].acc = particles[i].force * invMassParticle;
+    particles[i].acc = forces[i] * invMassParticle;
     particles[i].vel += particles[i].acc * realTimeDelta;
 
     limitVelocity(particles[i]);
 
     particles[i].pos += particles[i].vel * realTimeDelta;
-	particles[i].force.x = 0.0;
-	particles[i].force.y = 0.0;
-	particles[i].force.z = 0.0;
   }
-  forceCount = 0;
-}
-
-void Cell::addForces(vec3 *forces){
-	// updating force information
-	for(int i = 0; i < particles.length(); i++){
-		particles[i].force += forces[i];
-	}
 }
 
 inline double velocityCheck(double inVelocity) {
@@ -272,7 +251,6 @@ void Cell::pup(PUP::er &p) {
   p | updateCount;
   p | stepTime;
   p | inbrs;
-  p | forceCount;
   PUParray(p, energy, 2);
 
   if (p.isUnpacking()){
@@ -286,6 +264,13 @@ void Cell::pup(PUP::er &p) {
     PUParray(p, computesList[i], 6);
   }
 
+  p | mCastSecProxy;
+  //adjust the multicast tree to give best performance after moving
+  if (p.isUnpacking()){
+    CkMulticastMgr *mg = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
+    mg->resetSection(mCastSecProxy);
+    mg->setReductionClient(mCastSecProxy, new CkCallback(CkReductionTarget(Cell,reduceForces), thisProxy(thisIndex.x, thisIndex.y, thisIndex.z)));
+  }
 }
 
 // make sure all cells reach to the barrier
