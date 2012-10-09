@@ -1,6 +1,5 @@
 # to be set appropiately
-CHARMBASE      = /dcsdata/home/emenese2/charm/net-linux-x86_64-smp-syncft
-#CHARMBASE      = /dcsdata/home/emenese2/charm/net-linux-x86_64
+CHARMBASE      = $(HOME)/charm/net-linux-x86_64
 CHARMC         = $(CHARMBASE)/bin/charmc
 
 OPTS            = -O3
