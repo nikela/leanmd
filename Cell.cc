@@ -251,6 +251,7 @@ void Cell::pup(PUP::er &p) {
   p | updateCount;
   p | stepTime;
   p | inbrs;
+  p | numReadyCheckpoint;
   PUParray(p, energy, 2);
 
   if (p.isUnpacking()){
@@ -267,9 +268,14 @@ void Cell::pup(PUP::er &p) {
   p | mCastSecProxy;
   //adjust the multicast tree to give best performance after moving
   if (p.isUnpacking()){
-    CkMulticastMgr *mg = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
-    mg->resetSection(mCastSecProxy);
-    mg->setReductionClient(mCastSecProxy, new CkCallback(CkReductionTarget(Cell,reduceForces), thisProxy(thisIndex.x, thisIndex.y, thisIndex.z)));
+    if(CkInRestarting()){
+		createSection();
+	}
+	else{
+	 	CkMulticastMgr *mg = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
+    	mg->resetSection(mCastSecProxy);
+    	mg->setReductionClient(mCastSecProxy, new CkCallback(CkReductionTarget(Cell,reduceForces), thisProxy(thisIndex.x, thisIndex.y, thisIndex.z)));
+	}
   }
 }
 
