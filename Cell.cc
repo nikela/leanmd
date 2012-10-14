@@ -198,7 +198,7 @@ void Cell::updateProperties(vec3 *forces, int lengthUp) {
   for(i = 0; i < particles.length(); i++) {
     //calculate energy only in begining and end
     if(stepCount == 1) {
-      energy[0] += (0.5 * particles[i].mass * dot(particles[i].vel, particles[i].vel) * powTen);
+      energy[0] += (0.5 * particles[i].mass * dot(particles[i].vel, particles[i].vel) * powTen); // in milliJoules
     } else if(stepCount == finalStepCount) { 
       energy[1] += (0.5 * particles[i].mass * dot(particles[i].vel, particles[i].vel) * powTen);
     }
@@ -209,7 +209,7 @@ void Cell::updateProperties(vec3 *forces, int lengthUp) {
 
     limitVelocity(particles[i]);
 
-    particles[i].pos += particles[i].vel; // in A
+    particles[i].pos += particles[i].vel * DEFAULT_DELTA; // in A
   }
 }
 

@@ -67,7 +67,7 @@ inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, Ck
             rTwelve = rSix * rSix;
             f = (double)(VDW_A / rTwelve - VDW_B / rSix);
             if(doEnergy)
-              energy += (double)( VDW_A / (12*rTwelve) - VDW_B / (6*rSix));
+              energy += (double)( VDW_A / (12*rTwelve) - VDW_B / (6*rSix)); // in milliJoules
             fr = f / rsqd;
             force = separation * (fr * powTen);
             firstmsg[i] += force;

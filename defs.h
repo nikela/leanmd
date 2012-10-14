@@ -4,7 +4,7 @@
 
 #include "pup.h"
 
-#define HYDROGEN_MASS         (1.67 * pow( 10.0,-24))
+#define HYDROGEN_MASS                       (1.67 * pow( 10.0,-24))
 #define VDW_A			            (1.60694452 * pow(10.0, -134))
 #define VDW_B			            (1.031093844 * pow(10.0, -77))
 
