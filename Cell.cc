@@ -191,10 +191,12 @@ void Cell::migrateToCell(Particle p, int &px, int &py, int &pz) {
 // Function to update properties (i.e. acceleration, velocity and position) in particles
 void Cell::updateProperties(vec3 *forces, int lengthUp) {
   int i;
-  double powTen, powFteen, realTimeDelta, invMassParticle;
+  double powTen, powFteen, powFive, realTimeDelta, realTimeDeltaVel, invMassParticle;
   powTen = pow(10.0, -10);
   powFteen = pow(10.0, -15);
-  realTimeDelta = DEFAULT_DELTA * powFteen;
+  powFive = pow(10.0, -5);
+  realTimeDeltaVel = DEFAULT_DELTA * powFteen;
+  realTimeDelta = DEFAULT_DELTA * powFive;
   for(i = 0; i < particles.length(); i++) {
     //calculate energy only in begining and end
     if(stepCount == 1) {
@@ -205,7 +207,7 @@ void Cell::updateProperties(vec3 *forces, int lengthUp) {
     // applying kinetic equations
     invMassParticle = 1 / particles[i].mass;
     particles[i].acc = forces[i] * invMassParticle;
-    particles[i].vel += particles[i].acc * realTimeDelta;
+    particles[i].vel += particles[i].acc * realTimeDeltaVel;
 
     limitVelocity(particles[i]);
 
