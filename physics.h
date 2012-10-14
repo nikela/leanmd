@@ -60,7 +60,7 @@ inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, Ck
         for(jpart = j1; jpart < j1+BLOCK_SIZE && jpart < secondLen; jpart++) {
           separation = first->part[i] - second->part[jpart];
           rsqd = dot(separation, separation);
-          if (rsqd >= 0.001 && rsqd < ptpCutOffSqd) {
+          if (rsqd >= 1 && rsqd < ptpCutOffSqd) {
             rsqd = rsqd * powTwenty;
             r = sqrt(rsqd);
             rSix = ((double)rsqd) * rsqd * rsqd;
@@ -68,7 +68,7 @@ inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, Ck
             f = (double)(VDW_A / rTwelve - VDW_B / rSix);
             if(doEnergy)
               energy += (double)( VDW_A / (12*rTwelve) - VDW_B / (6*rSix));
-            fr = f /r;
+            fr = f / rsqd;
             force = separation * (fr * powTen);
             firstmsg[i] += force;
             secondmsg[jpart] -= force;
@@ -111,7 +111,7 @@ inline double calcInternalForces(ParticleDataMsg* first, CkSectionInfo *mcast1, 
       // computing base values
       separation = firstpos - first->part[j];
       rsqd = dot(separation, separation);
-      if(rsqd >= 0.001 && rsqd < ptpCutOffSqd){
+      if(rsqd >= 1 && rsqd < ptpCutOffSqd){
         rsqd = rsqd * powTwenty;
         r = sqrt(rsqd);
         rSix = ((double)rsqd) * rsqd * rsqd;
@@ -120,7 +120,7 @@ inline double calcInternalForces(ParticleDataMsg* first, CkSectionInfo *mcast1, 
         if(doEnergy)
           energy += (double)( VDW_A / (12*rTwelve) - VDW_B / (6*rSix));
 
-        fr = f /r;
+        fr = f / rsqd;
         force = separation * (fr * powTen);
         firstmsg[j] += force;
         firstmsg[i] -= force;

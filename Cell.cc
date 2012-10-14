@@ -191,32 +191,31 @@ void Cell::migrateToCell(Particle p, int &px, int &py, int &pz) {
 // Function to update properties (i.e. acceleration, velocity and position) in particles
 void Cell::updateProperties(vec3 *forces, int lengthUp) {
   int i;
-  double powTen, powFteen, powFive, realTimeDelta, realTimeDeltaVel, invMassParticle;
-  powTen = pow(10.0, -10);
-  powFteen = pow(10.0, -15);
-  powFive = pow(10.0, -5);
-  realTimeDeltaVel = DEFAULT_DELTA * powFteen;
-  realTimeDelta = DEFAULT_DELTA * powFive;
+  double powTen, powTwenty, realTimeDeltaVel, invMassParticle;
+  powTen = pow(10.0, 10);
+  powTwenty = pow(10.0, -20);
+  realTimeDeltaVel = DEFAULT_DELTA * powTwenty;
   for(i = 0; i < particles.length(); i++) {
     //calculate energy only in begining and end
     if(stepCount == 1) {
-      energy[0] += (0.5 * particles[i].mass * dot(particles[i].vel, particles[i].vel));
+      energy[0] += (0.5 * particles[i].mass * dot(particles[i].vel, particles[i].vel) * powTen);
     } else if(stepCount == finalStepCount) { 
-      energy[1] += (0.5 * particles[i].mass * dot(particles[i].vel, particles[i].vel));
+      energy[1] += (0.5 * particles[i].mass * dot(particles[i].vel, particles[i].vel) * powTen);
     }
     // applying kinetic equations
     invMassParticle = 1 / particles[i].mass;
-    particles[i].acc = forces[i] * invMassParticle;
-    particles[i].vel += particles[i].acc * realTimeDeltaVel;
+    particles[i].acc = forces[i] * invMassParticle; // in m/sec^2
+    particles[i].vel += particles[i].acc * realTimeDeltaVel; // in A/fm
 
     limitVelocity(particles[i]);
 
-    particles[i].pos += particles[i].vel * realTimeDelta;
+    particles[i].pos += particles[i].vel; // in A
   }
 }
 
 inline double velocityCheck(double inVelocity) {
   if(fabs(inVelocity) > MAX_VELOCITY) {
+    printf("EXCEED\n");
     if(inVelocity < 0.0 )
       return -MAX_VELOCITY;
     else

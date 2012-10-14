@@ -10,8 +10,8 @@
 
 #define ENERGY_VAR  		      (1.0 * pow(10.0,-5))
 //average of next two should be what you want as you atom density
-#define PARTICLES_PER_CELL_START  200
-#define PARTICLES_PER_CELL_END  	400
+#define PARTICLES_PER_CELL_START  500
+#define PARTICLES_PER_CELL_END  	700
 
 
 #define DEFAULT_DELTA         1	// in femtoseconds
@@ -42,7 +42,7 @@
 
 #define MIGRATE_STEPCOUNT	    20
 #define DEFAULT_FINALSTEPCOUNT	1001
-#define MAX_VELOCITY		      30.0
+#define MAX_VELOCITY		      10.0
 
 #define WRAP_X(a)		(((a)+cellArrayDimX)%cellArrayDimX)
 #define WRAP_Y(a)		(((a)+cellArrayDimY)%cellArrayDimY)
