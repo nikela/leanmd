@@ -31,8 +31,9 @@ mainmodule leanmd {
         computeArray.run();
       }
       //receive intial and final energies and compare
-      when energySumP(double fP, double iP), energySumK(double fK, double iK) atomic {
-        if(abs(fP + fK - iP - iK)>ENERGY_VAR) {
+      when energySumP(double iP, double fP), energySumK(double iK, double fK) atomic {
+        printf("Energues %E %E %E %E\n", iP,fP, iK, fK);
+        if(fabs(fP + fK - iP - iK)>ENERGY_VAR) {
           CkPrintf("Energy value has varied significantly from %E to %E\n",iP+iK,fP+fK);
           CkPrintf("\nEnergy conservation test failed for maximum allowed variation of %E units.\nSIMULATION UNSUCCESSFULL\n",ENERGY_VAR);  
         } else {

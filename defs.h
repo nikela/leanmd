@@ -5,12 +5,13 @@
 #include "pup.h"
 
 #define HYDROGEN_MASS                       (1.67 * pow( 10.0,-24))
-#define VDW_A			            (1.60694452 * pow(10.0, -134))
-#define VDW_B			            (1.031093844 * pow(10.0, -77))
+#define VDW_A			            (1.1328 * pow(10.0, -133)) //in (g m^2/s^2) m^12
+#define VDW_B			            (2.23224 * pow(10.0, -76)) // in (g m^2/s^2) m^6
 
 #define ENERGY_VAR  		      (1.0 * pow(10.0,-5))
+
 //average of next two should be what you want as you atom density
-#define PARTICLES_PER_CELL_START  500
+#define PARTICLES_PER_CELL_START   500
 #define PARTICLES_PER_CELL_END  	700
 
 

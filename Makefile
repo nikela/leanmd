@@ -1,5 +1,5 @@
 # to be set appropiately
-CHARMBASE      = $(HOME)/charm/net-linux-x86_64
+CHARMBASE      = $(HOME)/collegestuff/charm/net-darwin-x86_64
 CHARMC         = $(CHARMBASE)/bin/charmc
 
 OPTS            = -O3
