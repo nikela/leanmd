@@ -13,9 +13,11 @@ extern /* readonly */ int cellArrayDimX;
 extern /* readonly */ int cellArrayDimY;
 extern /* readonly */ int cellArrayDimZ;
 extern /* readonly */ int finalStepCount; 
+extern /* readonly */ int checkptStrategy; 
+extern /* readonly */ std::string logs; 
 
 //default constructor
-Cell::Cell() {
+Cell::Cell(){
   __sdag_init();
   int i;
   inbrs = NUM_NEIGHBORS;
@@ -293,7 +295,10 @@ void Cell::startCheckpoint(int numCell)
         CkCallback cb(CkIndex_Cell::recvCheckPointDone(), thisProxy);
 #if CMK_MEM_CHECKPOINT
         CkPrintf("[%d] Activating Checkpoint ... \n", CkMyPe());
-        CkStartMemCheckpoint(cb);
+        if(checkptStrategy==0)
+			CkStartCheckpoint(logs.c_str(),cb);
+		else
+			CkStartMemCheckpoint(cb);
 #else
         cb.send();
 #endif

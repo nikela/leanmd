@@ -12,7 +12,8 @@ mainmodule leanmd {
   readonly int firstLdbStep;		// begin load balancing after this many steps
   readonly int ldbPeriod;		// load balancing period
   readonly int checkptFreq;     // do FT every period
-
+  readonly int checkptStrategy;     // choose the checkpoint strategy
+  readonly std::string logs;
   //central controller chare
   mainchare [migratable] Main {
     entry Main(CkArgMsg* msg);
