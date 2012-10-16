@@ -1,6 +1,5 @@
 #ifndef __CELL_H__
 #define __CELL_H__
-
 extern /* readonly */ CProxy_Main mainProxy;
 extern /* readonly */ CProxy_Cell cellArray;
 extern /* readonly */ CkGroupID mCastGrpID;
@@ -10,6 +9,7 @@ extern /* readonly */ int finalStepCount;
 extern /* readonly */ int checkptFreq;
 
 #include "ckmulticast.h"
+#include <string>
 
 //data message to be sent to computes
 struct ParticleDataMsg : public CkMcastBaseMsg, public CMessage_ParticleDataMsg {
@@ -43,7 +43,6 @@ class Cell : public CBase_Cell {
     int updateCount;
     double energy[2]; //store kinetic energy - initial and final
 	int numReadyCheckpoint;
-
     void migrateToCell(Particle p, int &px, int &py, int &pz);
     void updateProperties(vec3 *forces, int lengthUp);	//updates properties after receiving forces from computes
     void limitVelocity(Particle &p); //limit velcities to an upper limit
