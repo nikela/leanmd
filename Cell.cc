@@ -46,12 +46,14 @@ Cell::Cell() {
   updateCount = 0;
   stepTime = 0; 
   energy[0] = energy[1] = 0;
+  setMigratable(CmiFalse);
 }
 
 //constructor for chare object migration
 Cell::Cell(CkMigrateMessage *msg): CBase_Cell(msg) {
   __sdag_init();
   usesAtSync = CmiTrue;
+  setMigratable(CmiFalse);
   delete msg;
 }  
 
@@ -215,7 +217,6 @@ void Cell::updateProperties(vec3 *forces, int lengthUp) {
 
 inline double velocityCheck(double inVelocity) {
   if(fabs(inVelocity) > MAX_VELOCITY) {
-    printf("EXCEED\n");
     if(inVelocity < 0.0 )
       return -MAX_VELOCITY;
     else
