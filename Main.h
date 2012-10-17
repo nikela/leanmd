@@ -12,6 +12,7 @@ extern /* readonly */ int cellArrayDimZ;
 class Main : public CBase_Main {
   private:
     Main_SDAG_CODE
+    double startBenchmarkTime;
 
   public:
     Main(CkArgMsg* msg);

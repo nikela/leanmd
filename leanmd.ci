@@ -39,6 +39,7 @@ mainmodule leanmd {
         } else {
           CkPrintf("\nEnergy conservation test passed for maximum allowed variation of %E units.\nSIMULATION SUCCESSFULL \n",ENERGY_VAR);
         }
+        CkPrintf("Total application time %f\n", (CkWallTimer() - startBenchmarkTime));
         CkExit();
       }
     };
