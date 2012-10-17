@@ -105,6 +105,7 @@ Main::Main(CkArgMsg* m) {
       for (int z=0; z<cellArrayDimZ; z++)
         cellArray(x, y, z).createComputes();
 
+  startBenchmarkTime = CkWallTimer();
   thisProxy.run();
   delete m;
 }
