@@ -13,9 +13,11 @@ extern /* readonly */ int cellArrayDimX;
 extern /* readonly */ int cellArrayDimY;
 extern /* readonly */ int cellArrayDimZ;
 extern /* readonly */ int finalStepCount; 
+extern /* readonly */ int checkptStrategy; 
+extern /* readonly */ std::string logs; 
 
 //default constructor
-Cell::Cell() {
+Cell::Cell(){
   __sdag_init();
   int i;
   inbrs = NUM_NEIGHBORS;
@@ -46,12 +48,14 @@ Cell::Cell() {
   updateCount = 0;
   stepTime = 0; 
   energy[0] = energy[1] = 0;
+  setMigratable(CmiFalse);
 }
 
 //constructor for chare object migration
 Cell::Cell(CkMigrateMessage *msg): CBase_Cell(msg) {
   __sdag_init();
   usesAtSync = CmiTrue;
+  setMigratable(CmiFalse);
   delete msg;
 }  
 
@@ -191,27 +195,25 @@ void Cell::migrateToCell(Particle p, int &px, int &py, int &pz) {
 // Function to update properties (i.e. acceleration, velocity and position) in particles
 void Cell::updateProperties(vec3 *forces, int lengthUp) {
   int i;
-  double powTen, powFteen, powFive, realTimeDelta, realTimeDeltaVel, invMassParticle;
-  powTen = pow(10.0, -10);
-  powFteen = pow(10.0, -15);
-  powFive = pow(10.0, -5);
-  realTimeDeltaVel = DEFAULT_DELTA * powFteen;
-  realTimeDelta = DEFAULT_DELTA * powFive;
+  double powTen, powTwenty, realTimeDeltaVel, invMassParticle;
+  powTen = pow(10.0, 10);
+  powTwenty = pow(10.0, -20);
+  realTimeDeltaVel = DEFAULT_DELTA * powTwenty;
   for(i = 0; i < particles.length(); i++) {
     //calculate energy only in begining and end
     if(stepCount == 1) {
-      energy[0] += (0.5 * particles[i].mass * dot(particles[i].vel, particles[i].vel));
+      energy[0] += (0.5 * particles[i].mass * dot(particles[i].vel, particles[i].vel) * powTen); // in milliJoules
     } else if(stepCount == finalStepCount) { 
-      energy[1] += (0.5 * particles[i].mass * dot(particles[i].vel, particles[i].vel));
+      energy[1] += (0.5 * particles[i].mass * dot(particles[i].vel, particles[i].vel) * powTen);
     }
     // applying kinetic equations
     invMassParticle = 1 / particles[i].mass;
-    particles[i].acc = forces[i] * invMassParticle;
-    particles[i].vel += particles[i].acc * realTimeDeltaVel;
+    particles[i].acc = forces[i] * invMassParticle; // in m/sec^2
+    particles[i].vel += particles[i].acc * realTimeDeltaVel; // in A/fm
 
     limitVelocity(particles[i]);
 
-    particles[i].pos += particles[i].vel * realTimeDelta;
+    particles[i].pos += particles[i].vel * DEFAULT_DELTA; // in A
   }
 }
 
@@ -293,7 +295,10 @@ void Cell::startCheckpoint(int numCell)
         CkCallback cb(CkIndex_Cell::recvCheckPointDone(), thisProxy);
 #if CMK_MEM_CHECKPOINT
         CkPrintf("[%d] Activating Checkpoint ... \n", CkMyPe());
-        CkStartMemCheckpoint(cb);
+        if(checkptStrategy==0)
+			CkStartCheckpoint(logs.c_str(),cb);
+		else
+			CkStartMemCheckpoint(cb);
 #else
         cb.send();
 #endif

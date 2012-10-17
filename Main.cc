@@ -1,6 +1,7 @@
 #include "time.h"
 #include "ckmulticast.h"
-
+#include <string>
+#include <pup_stl.h>
 #include "defs.h"
 #include "leanmd.decl.h"
 #include "Main.h"
@@ -19,6 +20,8 @@
 /* readonly */ int firstLdbStep; 
 /* readonly */ int ldbPeriod;
 /* readonly */ int checkptFreq; 
+/* readonly */ int checkptStrategy;
+/* readonly */ std::string logs;
 
 // Entry point of Charm++ application
 Main::Main(CkArgMsg* m) {
@@ -79,10 +82,21 @@ Main::Main(CkArgMsg* m) {
 		checkptFreq=atoi(m->argv[cur_arg++]);
 		CkPrintf("FT Period:%d\n",checkptFreq);
 	}
-
+	
+	//choose the checkpointing strategy
+	if (m->argc > cur_arg) {
+		checkptStrategy=atoi(m->argv[cur_arg++]);
+	}
   //initializing the 3D cell array
-  cellArray = CProxy_Cell::ckNew(cellArrayDimX,cellArrayDimY,cellArrayDimZ);
-  CkPrintf("\nCells: %d X %d X %d .... created\n", cellArrayDimX, cellArrayDimY, cellArrayDimZ);
+	if(checkptStrategy == 0){
+		if(m->argc == cur_arg){
+			CkAbort("must specify the checkpoint directory");
+		}else
+			logs = m->argv[cur_arg];
+
+	}
+	cellArray = CProxy_Cell::ckNew(cellArrayDimX,cellArrayDimY,cellArrayDimZ);
+	CkPrintf("\nCells: %d X %d X %d .... created\n", cellArrayDimX, cellArrayDimY, cellArrayDimZ);
 
   //initializing the 6D compute array
   computeArray = CProxy_Compute::ckNew();

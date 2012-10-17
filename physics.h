@@ -2,6 +2,7 @@
 #define __PHYSICS_H__
 
 #include "ckmulticast.h"
+#include "defs.h"
 
 extern /* readonly */ CkGroupID mCastGrpID;
 
@@ -14,7 +15,7 @@ extern /* readonly */ int finalStepCount;
 
 //function to calculate forces among 2 lists of atoms
 inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, CkSectionInfo* mcast1, CkSectionInfo* mcast2, int stepCount) {
-  int i, j, jpart, ptpCutOffSqd, diff;
+  int i, j, ptpCutOffSqd, diff;
   int firstLen = first->lengthAll;
   int secondLen = second->lengthAll;
   double powTwenty, powTen, r, rsqd, f, fr;
@@ -57,21 +58,21 @@ inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, Ck
   for(i1 = 0; i1 < firstLen; i1=i1+BLOCK_SIZE)
     for(j1 = 0; j1 < secondLen; j1=j1+BLOCK_SIZE)
       for(i = i1; i < i1+BLOCK_SIZE && i < firstLen; i++) {
-        for(jpart = j1; jpart < j1+BLOCK_SIZE && jpart < secondLen; jpart++) {
-          separation = first->part[i] - second->part[jpart];
+        for(j = j1; j < j1+BLOCK_SIZE && j < secondLen; j++) {
+          separation = first->part[i] - second->part[j];
           rsqd = dot(separation, separation);
-          if (rsqd >= 0.001 && rsqd < ptpCutOffSqd) {
+          if (rsqd >= 2 && rsqd < ptpCutOffSqd) {
             rsqd = rsqd * powTwenty;
             r = sqrt(rsqd);
             rSix = ((double)rsqd) * rsqd * rsqd;
             rTwelve = rSix * rSix;
-            f = (double)(VDW_A / rTwelve - VDW_B / rSix);
+            f = (double)( (12 * VDW_A) / rTwelve - (6 * VDW_B) / rSix);
             if(doEnergy)
-              energy += (double)( VDW_A / (12*rTwelve) - VDW_B / (6*rSix));
-            fr = f /r;
+              energy += (double)( VDW_A / rTwelve - VDW_B / rSix); // in milliJoules
+            fr = f / rsqd;
             force = separation * (fr * powTen);
             firstmsg[i] += force;
-            secondmsg[jpart] -= force;
+            secondmsg[j] -= force;
           }
         }
       }
@@ -111,19 +112,19 @@ inline double calcInternalForces(ParticleDataMsg* first, CkSectionInfo *mcast1, 
       // computing base values
       separation = firstpos - first->part[j];
       rsqd = dot(separation, separation);
-      if(rsqd >= 0.001 && rsqd < ptpCutOffSqd){
+      if(rsqd >= 2 && rsqd < ptpCutOffSqd){
         rsqd = rsqd * powTwenty;
         r = sqrt(rsqd);
         rSix = ((double)rsqd) * rsqd * rsqd;
         rTwelve = rSix * rSix;
-        f = (double)(VDW_A / rTwelve - VDW_B / rSix);
+        f = (double)( (12 * VDW_A) / rTwelve - (6 * VDW_B) / rSix);
         if(doEnergy)
-          energy += (double)( VDW_A / (12*rTwelve) - VDW_B / (6*rSix));
+          energy += (double)( VDW_A / rTwelve - VDW_B / rSix);
 
-        fr = f /r;
+        fr = f / rsqd;
         force = separation * (fr * powTen);
-        firstmsg[j] += force;
-        firstmsg[i] -= force;
+        firstmsg[i] += force;
+        firstmsg[j] -= force;
       }
     }
   }
