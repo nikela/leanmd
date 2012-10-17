@@ -82,7 +82,7 @@ Main::Main(CkArgMsg* m) {
 		checkptFreq=atoi(m->argv[cur_arg++]);
 		CkPrintf("FT Period:%d\n",checkptFreq);
 	}
-	
+	checkptStrategy = 1;
 	//choose the checkpointing strategy
 	if (m->argc > cur_arg) {
 		checkptStrategy=atoi(m->argv[cur_arg++]);
