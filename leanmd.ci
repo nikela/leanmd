@@ -122,10 +122,7 @@ mainmodule leanmd {
 
         if (stepCount == 65 && thisIndex.x == 1 && thisIndex.y == 1 && thisIndex.z == 0) {
           atomic {
-            if (CkHasCheckpoints()){   
-			CkPrintf("CkDieNow step 65\n");
-			CkDieNow();
-		}
+            killForFT();
           }
         }
       }

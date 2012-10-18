@@ -283,3 +283,12 @@ void Cell::pup(PUP::er &p) {
   }
 }
 
+
+void Cell::killForFT() {
+#if CMK_MEM_CHECKPOINT
+  if (CkHasCheckpoints()){   
+    CkPrintf("CkDieNow step 60\n");
+    CkDieNow();
+  }
+#endif
+}
