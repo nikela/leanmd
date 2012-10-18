@@ -49,6 +49,8 @@ class Cell : public CBase_Cell {
     Particle& wrapAround(Particle &p); //particles going out of right enters from left
     CProxySection_Compute mCastSecProxy; //handle to section proxy of computes
 
+    void killForFT();
+
   public:
     Cell();
     Cell(CkMigrateMessage *msg);

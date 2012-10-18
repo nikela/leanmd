@@ -111,12 +111,7 @@ mainmodule leanmd {
         }
         if (stepCount == 60 && thisIndex.x == 1 && thisIndex.y == 1 && thisIndex.z == 0) {
           atomic {
-#if CMK_MEM_CHECKPOINT
-            if (CkHasCheckpoints()){   
-			CkPrintf("CkDieNow step 60\n");
-			CkDieNow();
-#endif
-		}
+            killForFT();
           }
         }
       }
