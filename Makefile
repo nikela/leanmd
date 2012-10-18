@@ -17,7 +17,7 @@ Cell.o: Cell.cc Cell.h leanmd.decl.h defs.h
 	$(CHARMC) $(OPTS) -o Cell.o Cell.cc
 
 leanmd.decl.h:	leanmd.ci
-	$(CHARMC) leanmd.ci
+	$(CHARMC) -E leanmd.ci
 
 Compute.o: Compute.cc Compute.h leanmd.decl.h defs.h physics.h
 	$(CHARMC) $(OPTS) -o Compute.o Compute.cc
