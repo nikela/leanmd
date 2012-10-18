@@ -120,7 +120,7 @@ mainmodule leanmd {
           when recvCheckPointDone() {}
         }
 
-        if (stepCount == 65 && thisIndex.x == 1 && thisIndex.y == 1 && thisIndex.z == 0) {
+        if (stepCount == 60 && thisIndex.x == 1 && thisIndex.y == 1 && thisIndex.z == 0) {
           atomic {
             killForFT();
           }
