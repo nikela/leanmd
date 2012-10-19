@@ -43,7 +43,7 @@
 
 #define MIGRATE_STEPCOUNT	    10
 #define DEFAULT_FINALSTEPCOUNT	1001
-#define MAX_VELOCITY		      1.0
+#define MAX_VELOCITY		      1
 
 #define WRAP_X(a)		(((a)+cellArrayDimX)%cellArrayDimX)
 #define WRAP_Y(a)		(((a)+cellArrayDimY)%cellArrayDimY)

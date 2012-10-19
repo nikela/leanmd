@@ -160,7 +160,7 @@ void Cell::migrateParticles(){
   for(i=0; i<particles.length(); i++) {
     migrateToCell(particles[i], x1, y1, z1);
     if(x1!=0 || y1!=0 || z1!=0) {
-      outgoing[(x1+1)*NBRS_Y*NBRS_Z + (y1+1)*NBRS_Z + (z1+1)].push_back(wrapAround(particles[i]));
+      outgoing[(x1+KAWAY_X)*NBRS_Y*NBRS_Z + (y1+KAWAY_Y)*NBRS_Z + (z1+KAWAY_Z)].push_back(wrapAround(particles[i]));
       particles.remove(i);
     }
   }
@@ -182,14 +182,21 @@ void Cell::migrateToCell(Particle p, int &px, int &py, int &pz) {
   int z = thisIndex.z * CELL_SIZE_Z + CELL_ORIGIN_Z;
   px = py = pz = 0;
 
-  if (p.pos.x < x) px = -1;
-  else if (p.pos.x > x+CELL_SIZE_X) px = 1;
+  if (p.pos.x < (x-CELL_SIZE_X)) px = -2;
+  else if (p.pos.x < x) px = -1;
+  else if (p.pos.x > (x+2*CELL_SIZE_X)) px = 2;
+  else if (p.pos.x > (x+CELL_SIZE_X)) px = 1;
 
-  if (p.pos.y < y) py = -1;
-  else if (p.pos.y > y+CELL_SIZE_Y) py = 1;
+  if (p.pos.y < (y-CELL_SIZE_Y)) py = -2;
+  else if (p.pos.y < y) py = -1;
+  else if (p.pos.y > (y+2*CELL_SIZE_Y)) py = 2;
+  else if (p.pos.y > (y+CELL_SIZE_Y)) py = 1;
+  
+  if (p.pos.z < (z-CELL_SIZE_Z)) pz = -2;
+  else if (p.pos.z < z) pz = -1;
+  else if (p.pos.z > (z+2*CELL_SIZE_Z)) pz = 2;
+  else if (p.pos.z > (z+CELL_SIZE_Z)) pz = 1;
 
-  if (p.pos.z < z) pz = -1;
-  else if (p.pos.z > z+CELL_SIZE_Z) pz = 1;
 }
 
 // Function to update properties (i.e. acceleration, velocity and position) in particles

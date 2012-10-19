@@ -8,7 +8,7 @@ all: leanmd
 
 leanmd: Main.o Cell.o Compute.o leanmd.decl.h
 	$(CHARMC) $(OPTS) -module CkMulticast -module CommonLBs \
-	-language charm++ -o leanmd Main.o Cell.o Compute.o -tracemode projections
+	-language charm++ -o leanmd Main.o Cell.o Compute.o 
 
 Main.o: Main.cc Main.h leanmd.decl.h defs.h
 	$(CHARMC) $(OPTS) -o Main.o Main.cc

@@ -57,6 +57,7 @@ mainmodule leanmd {
     entry void createComputes();    //call to insert computes that I need  
     entry void receiveParticles(CkVec<Particle> updates);   //receive atoms that have migrated to neighboring cells to me
     entry void ResumeFromSync();    //resume from here after load balancing
+    entry [reductiontarget] void newReduction();
     entry [reductiontarget] void startCheckpoint();
     entry void recvCheckPointDone();
     entry [reductiontarget] void reduceForces(vec3 forces[n], int n);   //receives forces from my computes on my atoms
@@ -88,6 +89,10 @@ mainmodule leanmd {
             }
           }
         }
+
+        atomic { contribute(0,NULL,CkReduction::nop,CkCallback(CkReductionTarget(Cell,newReduction),thisProxy)); }
+        when newReduction() atomic {}
+        
         if (thisIndex.x==0 && thisIndex.y==0 && thisIndex.z==0) atomic {
           CkPrintf("Step %d Benchmark Time %lf ms/step\n", 
           stepCount, ((CkWallTimer() - stepTime))*1000);
