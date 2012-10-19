@@ -30,6 +30,7 @@ mainmodule leanmd {
         CkPrintf("Starting simulation .... \n\n");
         cellArray.run();
         computeArray.run();
+        startBenchmarkTime = CkWallTimer();
       }
       //receive intial and final energies and compare
       when energySumP(double iP, double fP), energySumK(double iK, double fK) atomic {
@@ -87,18 +88,15 @@ mainmodule leanmd {
             }
           }
         }
-        if (thisIndex.x==0 && thisIndex.y==0 && thisIndex.z==0 && 
-          stepCount%20==0) atomic {
+        if (thisIndex.x==0 && thisIndex.y==0 && thisIndex.z==0) atomic {
           CkPrintf("Step %d Benchmark Time %lf ms/step\n", 
-          stepCount, ((CkWallTimer() - stepTime)/20)*1000);
+          stepCount, ((CkWallTimer() - stepTime))*1000);
           stepTime = CkWallTimer();
         }
         //periodically call load balancer
         if (stepCount >= firstLdbStep && (stepCount - firstLdbStep) % ldbPeriod == 0) {
           atomic { AtSync();}
-          when ResumeFromSync() atomic { 
-            stepTime = CkWallTimer();
-          }
+          when ResumeFromSync() atomic { }
         }
 
 		if (stepCount % checkptFreq == 0) {
