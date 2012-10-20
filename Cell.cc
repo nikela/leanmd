@@ -162,6 +162,7 @@ void Cell::migrateParticles(){
     if(x1!=0 || y1!=0 || z1!=0) {
       outgoing[(x1+KAWAY_X)*NBRS_Y*NBRS_Z + (y1+KAWAY_Y)*NBRS_Z + (z1+KAWAY_Z)].push_back(wrapAround(particles[i]));
       particles.remove(i);
+      --i;
     }
   }
   for(int num=0; num<inbrs; num++) {
