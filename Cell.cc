@@ -24,11 +24,11 @@ Cell::Cell(){
   //load balancing to be called when AtSync is called
   usesAtSync = CmiTrue;
 
-  int myid = thisIndex.x + thisIndex.y*cellArrayDimX + thisIndex.z*cellArrayDimX*cellArrayDimY;
+  int myid = thisIndex.z + thisIndex.y*cellArrayDimZ + thisIndex.x*cellArrayDimY*cellArrayDimZ;
   myNumParts = PARTICLES_PER_CELL_START + (myid*(PARTICLES_PER_CELL_END-PARTICLES_PER_CELL_START))/(cellArrayDimX*cellArrayDimY*cellArrayDimZ);
 
   // starting random generator
-  srand48(thisIndex.x+cellArrayDimX*(thisIndex.y+thisIndex.z*cellArrayDimY));
+  srand48(thisIndex.z+cellArrayDimZ*(thisIndex.y+thisIndex.x*cellArrayDimY));
 
   // Particle initialization
   for(i=0; i < myNumParts; i++) {
