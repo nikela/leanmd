@@ -11,8 +11,8 @@
 #define ENERGY_VAR  		      (1.0 * pow(10.0,-5))
 
 //average of next two should be what you want as you atom density
-#define PARTICLES_PER_CELL_START   50
-#define PARTICLES_PER_CELL_END  	150
+#define PARTICLES_PER_CELL_START  100
+#define PARTICLES_PER_CELL_END  	200
 
 
 #define DEFAULT_DELTA         1	// in femtoseconds
@@ -32,7 +32,7 @@
 #define CELLARRAY_DIM_X	      3
 #define CELLARRAY_DIM_Y	      3
 #define CELLARRAY_DIM_Z	      3
-#define PTP_CUT_OFF		        24 // cut off for atom to atom interactions
+#define PTP_CUT_OFF		        16 // cut off for atom to atom interactions
 #define CELL_MARGIN		        4  // constant diff between cutoff and cell size
 #define CELL_SIZE_X		        (PTP_CUT_OFF + CELL_MARGIN)/KAWAY_X
 #define CELL_SIZE_Y		        (PTP_CUT_OFF + CELL_MARGIN)/KAWAY_Y
@@ -41,9 +41,9 @@
 #define CELL_ORIGIN_Y		      0
 #define CELL_ORIGIN_Z		      0
 
-#define MIGRATE_STEPCOUNT	    10
+#define MIGRATE_STEPCOUNT	    20
 #define DEFAULT_FINALSTEPCOUNT	1001
-#define MAX_VELOCITY		      1
+#define MAX_VELOCITY		      .1  //in A/fs
 
 #define WRAP_X(a)		(((a)+cellArrayDimX)%cellArrayDimX)
 #define WRAP_Y(a)		(((a)+cellArrayDimY)%cellArrayDimY)

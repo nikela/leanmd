@@ -95,15 +95,21 @@ Main::Main(CkArgMsg* m) {
 			logs = m->argv[cur_arg];
 
 	}
-	cellArray = CProxy_Cell::ckNew(cellArrayDimX,cellArrayDimY,cellArrayDimZ);
-	CkPrintf("\nCells: %d X %d X %d .... created\n", cellArrayDimX, cellArrayDimY, cellArrayDimZ);
+	cellArray = CProxy_Cell::ckNew();
 
-  //initializing the 6D compute array
+  //initializing the 3D Patch array (with a uniform distribution) and 6D compute array
+  int patchCount = 0;
+  float ratio = ((float)CkNumPes() - 1)/(cellArrayDimX*cellArrayDimY*cellArrayDimZ);
   computeArray = CProxy_Compute::ckNew();
   for (int x=0; x<cellArrayDimX; x++)
     for (int y=0; y<cellArrayDimY; y++)
-      for (int z=0; z<cellArrayDimZ; z++)
+      for (int z=0; z<cellArrayDimZ; z++) {
+        cellArray(x, y, z).insert((int)(patchCount++ * ratio));
         cellArray(x, y, z).createComputes();
+      }
+
+  cellArray.doneInserting();
+  CkPrintf("\nCells: %d X %d X %d .... created\n", cellArrayDimX, cellArrayDimY, cellArrayDimZ);
 
   thisProxy.run();
   delete m;
