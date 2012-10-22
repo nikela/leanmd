@@ -36,9 +36,9 @@ Cell::Cell(){
     particles[i].mass = HYDROGEN_MASS;
 
     //give random values for position and velocity
-    particles[i].pos.x = 1.5 + thisIndex.x * CELL_SIZE_X + ((i*KAWAY_Y*KAWAY_Z)/(PERDIM*PERDIM))*GAP;
-    particles[i].pos.y = 1.5 + thisIndex.y * CELL_SIZE_Y + (((i*KAWAY_Z)/PERDIM)%(PERDIM/KAWAY_Y))*GAP;
-    particles[i].pos.z = 1.5 + thisIndex.z * CELL_SIZE_Z + (i%(PERDIM/KAWAY_Z))*GAP; 
+    particles[i].pos.x = (GAP/(float)2) + thisIndex.x * CELL_SIZE_X + ((i*KAWAY_Y*KAWAY_Z)/(PERDIM*PERDIM))*GAP;
+    particles[i].pos.y = (GAP/(float)2) + thisIndex.y * CELL_SIZE_Y + (((i*KAWAY_Z)/PERDIM)%(PERDIM/KAWAY_Y))*GAP;
+    particles[i].pos.z = (GAP/(float)2) + thisIndex.z * CELL_SIZE_Z + (i%(PERDIM/KAWAY_Z))*GAP; 
     particles[i].vel.x = (drand48() - 0.5) * .2 * MAX_VELOCITY;
     particles[i].vel.y = (drand48() - 0.5) * .2 * MAX_VELOCITY;
     particles[i].vel.z = (drand48() - 0.5) * .2 * MAX_VELOCITY;

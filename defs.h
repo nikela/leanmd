@@ -14,9 +14,6 @@
 #define PARTICLES_PER_CELL_START  150
 #define PARTICLES_PER_CELL_END  	250
 
-#define PERDIM                8
-#define GAP                   3
-
 #define DEFAULT_DELTA         1	// in femtoseconds
 
 #define DEFAULT_FIRST_LDB     20
@@ -39,6 +36,11 @@
 #define CELL_SIZE_X		        (PTP_CUT_OFF + CELL_MARGIN)/KAWAY_X
 #define CELL_SIZE_Y		        (PTP_CUT_OFF + CELL_MARGIN)/KAWAY_Y
 #define CELL_SIZE_Z		        (PTP_CUT_OFF + CELL_MARGIN)/KAWAY_Z
+
+//variables to control initial uniform placement of atoms
+#define PERDIM                8
+#define GAP                   (PTP_CUT_OFF + CELL_MARGIN)/PERDIM
+
 #define CELL_ORIGIN_X		      0
 #define CELL_ORIGIN_Y		      0
 #define CELL_ORIGIN_Z		      0
