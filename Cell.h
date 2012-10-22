@@ -42,7 +42,7 @@ class Cell : public CBase_Cell {
     double stepTime;
     int updateCount;
     double energy[2]; //store kinetic energy - initial and final
-	int numReadyCheckpoint;
+	  int numReadyCheckpoint;
     void migrateToCell(Particle p, int &px, int &py, int &pz);
     void updateProperties(vec3 *forces, int lengthUp);	//updates properties after receiving forces from computes
     void limitVelocity(Particle &p); //limit velcities to an upper limit

@@ -11,9 +11,11 @@
 #define ENERGY_VAR  		      (1.0 * pow(10.0,-5))
 
 //average of next two should be what you want as you atom density
-#define PARTICLES_PER_CELL_START  100
-#define PARTICLES_PER_CELL_END  	200
+#define PARTICLES_PER_CELL_START  150
+#define PARTICLES_PER_CELL_END  	250
 
+#define PERDIM                8
+#define GAP                   3
 
 #define DEFAULT_DELTA         1	// in femtoseconds
 
@@ -32,7 +34,7 @@
 #define CELLARRAY_DIM_X	      3
 #define CELLARRAY_DIM_Y	      3
 #define CELLARRAY_DIM_Z	      3
-#define PTP_CUT_OFF		        16 // cut off for atom to atom interactions
+#define PTP_CUT_OFF		        20 // cut off for atom to atom interactions
 #define CELL_MARGIN		        4  // constant diff between cutoff and cell size
 #define CELL_SIZE_X		        (PTP_CUT_OFF + CELL_MARGIN)/KAWAY_X
 #define CELL_SIZE_Y		        (PTP_CUT_OFF + CELL_MARGIN)/KAWAY_Y

@@ -24,11 +24,11 @@ Cell::Cell(){
   //load balancing to be called when AtSync is called
   usesAtSync = CmiTrue;
 
-  int myid = thisIndex.z + thisIndex.y*cellArrayDimZ + thisIndex.x*cellArrayDimY*cellArrayDimZ;
+  int myid = thisIndex.z+cellArrayDimZ*(thisIndex.y+thisIndex.x*cellArrayDimY); 
   myNumParts = PARTICLES_PER_CELL_START + (myid*(PARTICLES_PER_CELL_END-PARTICLES_PER_CELL_START))/(cellArrayDimX*cellArrayDimY*cellArrayDimZ);
 
   // starting random generator
-  srand48(thisIndex.z+cellArrayDimZ*(thisIndex.y+thisIndex.x*cellArrayDimY));
+  srand48(myid);
 
   // Particle initialization
   for(i=0; i < myNumParts; i++) {
@@ -36,9 +36,9 @@ Cell::Cell(){
     particles[i].mass = HYDROGEN_MASS;
 
     //give random values for position and velocity
-    particles[i].pos.x = drand48() * CELL_SIZE_X + thisIndex.x * CELL_SIZE_X;
-    particles[i].pos.y = drand48() * CELL_SIZE_Y + thisIndex.y * CELL_SIZE_Y;
-    particles[i].pos.z = drand48() * CELL_SIZE_Z + thisIndex.z * CELL_SIZE_Z;
+    particles[i].pos.x = 1.5 + thisIndex.x * CELL_SIZE_X + ((i*KAWAY_Y*KAWAY_Z)/(PERDIM*PERDIM))*GAP;
+    particles[i].pos.y = 1.5 + thisIndex.y * CELL_SIZE_Y + (((i*KAWAY_Z)/PERDIM)%(PERDIM/KAWAY_Y))*GAP;
+    particles[i].pos.z = 1.5 + thisIndex.z * CELL_SIZE_Z + (i%(PERDIM/KAWAY_Z))*GAP; 
     particles[i].vel.x = (drand48() - 0.5) * .2 * MAX_VELOCITY;
     particles[i].vel.y = (drand48() - 0.5) * .2 * MAX_VELOCITY;
     particles[i].vel.z = (drand48() - 0.5) * .2 * MAX_VELOCITY;
@@ -93,9 +93,9 @@ void Cell::createComputes() {
     dz = num % NBRS_Z                       - NBRS_Z/2;
 
     if (num >= inbrs/2){
-      px1 = x + 2;
-      py1 = y + 2;
-      pz1 = z + 2;
+      px1 = x + KAWAY_X;
+      py1 = y + KAWAY_Y;
+      pz1 = z + KAWAY_Z;
       px2 = px1+dx;
       py2 = py1+dy;
       pz2 = pz1+dz;
@@ -105,9 +105,9 @@ void Cell::createComputes() {
     }
     else {
       // these computes will be created by pairing cells
-      px1 = WRAP_X(x+dx)+2 ;
-      py1 = WRAP_Y(y+dy)+2;
-      pz1 = WRAP_Z(z+dz)+2;
+      px1 = WRAP_X(x+dx)+KAWAY_X;
+      py1 = WRAP_Y(y+dy)+KAWAY_Y;
+      pz1 = WRAP_Z(z+dz)+KAWAY_Z;
       px2 = px1 - dx;
       py2 = py1 - dy;
       pz2 = pz1 - dz;
@@ -165,6 +165,7 @@ void Cell::migrateParticles(){
       --i;
     }
   }
+
   for(int num=0; num<inbrs; num++) {
     x1 = num / (NBRS_Y * NBRS_Z)            - NBRS_X/2;
     y1 = (num % (NBRS_Y * NBRS_Z)) / NBRS_Z - NBRS_Y/2;
