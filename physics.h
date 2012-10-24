@@ -14,7 +14,7 @@ extern /* readonly */ int finalStepCount;
 #define BLOCK_SIZE	512
 
 //function to calculate forces among 2 lists of atoms
-inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, CkSectionInfo* mcast1, CkSectionInfo* mcast2, int stepCount) {
+inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, int stepCount, vec3 *&firstmsg, vec3 *&secondmsg) {
   int i, j, ptpCutOffSqd, diff;
   int firstLen = first->lengthAll;
   int secondLen = second->lengthAll;
@@ -26,8 +26,8 @@ inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, Ck
   if(stepCount == 1 || stepCount == finalStepCount)
     doEnergy = 1;
 
-  vec3 *firstmsg = new vec3[firstLen];
-  vec3 *secondmsg = new vec3[secondLen];
+  firstmsg = new vec3[firstLen];
+  secondmsg = new vec3[secondLen];
   //check for wrap around and adjust locations accordingly
   if (abs(first->x - second->x) > 1){
     diff = CELL_SIZE_X * cellArrayDimX;
@@ -77,21 +77,11 @@ inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, Ck
         }
       }
 
-  CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
-  CkGetSectionInfo(*mcast1, first);
-  mCastGrp->contribute(sizeof(vec3)*firstLen, firstmsg, CkReduction::sum_double, *mcast1);
-  CkGetSectionInfo(*mcast2, second);
-  mCastGrp->contribute(sizeof(vec3)*secondLen, secondmsg, CkReduction::sum_double, *mcast2);
-
-  delete [] firstmsg;
-  delete [] secondmsg;
-  delete first;
-  delete second;
   return energy;
 }
 
 //function to calculate forces among atoms in a single list
-inline double calcInternalForces(ParticleDataMsg* first, CkSectionInfo *mcast1, int stepCount) {
+inline double calcInternalForces(ParticleDataMsg* first, int stepCount, vec3 *&firstmsg) {
   int i, j, ptpCutOffSqd;
   int firstLen = first->lengthAll;
   double powTwenty, powTen, firstx, firsty, firstz, rx, ry, rz, r, rsqd, fx, fy, fz, f, fr;
@@ -101,7 +91,7 @@ inline double calcInternalForces(ParticleDataMsg* first, CkSectionInfo *mcast1, 
   int doEnergy = 0;
   if(stepCount == 1 || stepCount == finalStepCount)
     doEnergy = 1;
-  vec3 *firstmsg = new vec3[firstLen];
+  firstmsg = new vec3[firstLen];
 
   ptpCutOffSqd = PTP_CUT_OFF * PTP_CUT_OFF;
   powTen = pow(10.0, -10);
@@ -128,11 +118,6 @@ inline double calcInternalForces(ParticleDataMsg* first, CkSectionInfo *mcast1, 
       }
     }
   }
-  CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
-  CkGetSectionInfo(*mcast1, first);
-  mCastGrp->contribute(sizeof(vec3)*firstLen, firstmsg, CkReduction::sum_double, *mcast1);
-  delete [] firstmsg;
-  delete first;
   return energy;
 }
 #endif

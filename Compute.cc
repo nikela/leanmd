@@ -30,8 +30,9 @@ Compute::Compute(CkMigrateMessage *msg): CBase_Compute(msg)  {
 //interaction within a cell
 void Compute::selfInteract(ParticleDataMsg *msg){
   double energyP = 0;
+  vec3 * fmsg;
 
-  energyP = calcInternalForces(msg, &mcast1, stepCount);
+  energyP = calcInternalForces(msg,  stepCount, fmsg);
 
   //energy assignment only in begining and end
   if(stepCount == 1) {
@@ -39,17 +40,25 @@ void Compute::selfInteract(ParticleDataMsg *msg){
   } else if(stepCount == finalStepCount) {
     energy[1] = energyP;
   }
+
+  CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
+  CkGetSectionInfo(mcast1, msg);
+  mCastGrp->contribute(sizeof(vec3)*msg->lengthAll, fmsg, CkReduction::sum_double, mcast1);
+
+  delete msg;
+  delete [] fmsg;
 }
 
 //interaction between two cells
 void Compute::interact(ParticleDataMsg *msg1, ParticleDataMsg *msg2){
   double energyP = 0;
+  vec3 *fmsg1, *fmsg2;
 
   CkSectionInfo *handleA = &mcast1, *handleB = &mcast2;
-  if (msg1->x*cellArrayDimY*cellArrayDimZ + msg1->y*cellArrayDimZ + msg1->z < msg2->x*cellArrayDimY*cellArrayDimZ + msg2->y*cellArrayDimZ + msg2->z){ 
+  if (msg2->x*cellArrayDimY*cellArrayDimZ + msg2->y*cellArrayDimZ + msg2->z < msg1->x*cellArrayDimY*cellArrayDimZ + msg1->y*cellArrayDimZ + msg1->z){ 
     swap(handleA, handleB);
   }
-  energyP = calcPairForces(msg2, msg1, handleA, handleB, stepCount);
+  energyP = calcPairForces(msg1, msg2, stepCount, fmsg1, fmsg2);
 
   //energy assignment only in begining and end
   if(stepCount == 1) {
@@ -57,6 +66,17 @@ void Compute::interact(ParticleDataMsg *msg1, ParticleDataMsg *msg2){
   } else if(stepCount == finalStepCount) {
     energy[1] = energyP;
   }
+
+  CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
+  CkGetSectionInfo(*handleA, msg1);
+  mCastGrp->contribute(sizeof(vec3)*msg1->lengthAll, fmsg1, CkReduction::sum_double, *handleA);
+  CkGetSectionInfo(*handleB, msg2);
+  mCastGrp->contribute(sizeof(vec3)*msg2->lengthAll, fmsg2, CkReduction::sum_double, *handleB);
+
+  delete msg1;
+  delete msg2;
+  delete [] fmsg1;
+  delete [] fmsg2;
 }
 
 //pack important information if I am moving
