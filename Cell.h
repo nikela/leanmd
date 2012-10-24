@@ -15,9 +15,10 @@ extern /* readonly */ int checkptFreq;
 struct ParticleDataMsg : public CkMcastBaseMsg, public CMessage_ParticleDataMsg {
   vec3* part; //list of atoms
   int lengthAll;  //length of list
-  int x;    //x coordinate of cell sending this message
-  int y;    //y coordinate
-  int z;    //z coordinate
+  int x, y, z;    // (x,y,z) coordinate of cell sending this message
+
+  ParticleDataMsg(const int x_, const int y_, const int z_, const int numPos)
+    : x(x_), y(y_), z(z_), lengthAll(numPos) { }
 
   void pup(PUP::er &p){
     CMessage_ParticleDataMsg::pup(p);

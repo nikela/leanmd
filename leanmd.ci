@@ -22,7 +22,7 @@ mainmodule leanmd {
     entry [reductiontarget] void energySum(double iE, double fE);  //reduction of potential energy
 
     // called when computes have been created
-    entry void run() {
+    entry [reductiontarget] void run() {
       serial {
         computeArray.doneInserting();
         CkPrintf("Computes: %d .... created\n", (NUM_NEIGHBORS/2+1)*cellArrayDimX*cellArrayDimY*cellArrayDimZ);

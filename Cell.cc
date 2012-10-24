@@ -134,14 +134,9 @@ void Cell::createSection() {
 
 // Function to start interaction among particles in neighboring cells as well as its own particles
 void Cell::sendPositions() {
-  int len = particles.length();
-
+  unsigned int len = particles.length();
   //create the particle and control message to be sent to computes
-  ParticleDataMsg* msg = new (len) ParticleDataMsg;
-  msg->x = thisIndex.x;
-  msg->y = thisIndex.y;
-  msg->z = thisIndex.z;
-  msg->lengthAll = len;
+  ParticleDataMsg* msg = new (len) ParticleDataMsg(thisIndex.x, thisIndex.y, thisIndex.z, len);
 
   for (int i = 0; i < len; i++)
     msg->part[i] = particles[i].pos;
@@ -151,10 +146,10 @@ void Cell::sendPositions() {
 
 //send the atoms that have moved beyond my cell to neighbors
 void Cell::migrateParticles(){
-  int i, x1, y1, z1;
+  int x1, y1, z1;
   std::vector<Particle> outgoing[inbrs];
 
-  for(i=0; i<particles.length(); i++) {
+  for(int i = 0; i < particles.length(); i++) {
     migrateToCell(particles[i], x1, y1, z1);
     if(x1!=0 || y1!=0 || z1!=0) {
       outgoing[(x1+KAWAY_X)*NBRS_Y*NBRS_Z + (y1+KAWAY_Y)*NBRS_Z + (z1+KAWAY_Z)].push_back(wrapAround(particles[i]));
@@ -163,7 +158,7 @@ void Cell::migrateParticles(){
     }
   }
 
-  for(int num=0; num<inbrs; num++) {
+  for(int num = 0; num < inbrs; num++) {
     x1 = num / (NBRS_Y * NBRS_Z)            - NBRS_X/2;
     y1 = (num % (NBRS_Y * NBRS_Z)) / NBRS_Z - NBRS_Y/2;
     z1 = num % NBRS_Z                       - NBRS_Z/2;
