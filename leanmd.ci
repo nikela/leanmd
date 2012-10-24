@@ -23,7 +23,7 @@ mainmodule leanmd {
 
     // called when computes have been created
     entry void run() {
-      atomic {
+      serial {
         computeArray.doneInserting();
         CkPrintf("Computes: %d .... created\n", (NUM_NEIGHBORS/2+1)*cellArrayDimX*cellArrayDimY*cellArrayDimZ);
         CkPrintf("Starting simulation .... \n\n");
@@ -32,7 +32,7 @@ mainmodule leanmd {
         startBenchmarkTime = CkWallTimer();
       }
       //receive intial and final energies and compare
-      when energySum(double iE1, double fE1) when energySum(double iE2, double fE2) atomic {
+      when energySum(double iE1, double fE1) when energySum(double iE2, double fE2) serial {
         if(fabs(fE1 + fE2 - iE1 - iE2) > ENERGY_VAR) {
           CkPrintf("Energy value has varied significantly from %E to %E\n", iE1 + iE2, fE1 + fE2);
           CkPrintf("\nEnergy conservation test failed for maximum allowed variation of %E units.\nSIMULATION UNSUCCESSFULL\n",ENERGY_VAR);  
@@ -62,32 +62,32 @@ mainmodule leanmd {
 
     //function to perform iterations for Cells
     entry void run() {
-      if(thisIndex.x==0 && thisIndex.y==0 && thisIndex.z==0) atomic {
+      if(thisIndex.x==0 && thisIndex.y==0 && thisIndex.z==0) serial {
           stepTime = CkWallTimer(); }
 
-      atomic { createSection(); }
+      serial { createSection(); }
 
       for(stepCount = 1; stepCount <= finalStepCount; stepCount++) {
         //send current atom positions to my computes 
-        atomic { sendPositions(); } 
+        serial { sendPositions(); } 
 
         //update properties of atoms using new force values 
-        when reduceForces(vec3 forces[n], int n) atomic { updateProperties(forces, n); }
+        when reduceForces(vec3 forces[n], int n) serial { updateProperties(forces, n); }
 
         if ((stepCount %  MIGRATE_STEPCOUNT) == 0) {
           //send atoms that have moved beyond my cell to neighbors
-          atomic { migrateParticles(); } 
+          serial { migrateParticles(); } 
     
           //receive particles from my neighbors
           for(updateCount = 0; updateCount < inbrs; updateCount++) {
-            when receiveParticles(std::vector<Particle> &updates) atomic {
+            when receiveParticles(std::vector<Particle> &updates) serial {
               for (std::vector<Particle>::iterator iter = updates.begin(); iter != updates.end(); ++iter)
                 particles.push_back(*iter); //add particles that have moved from neighboring cells to my cell
             }
           }
         }
 
-        if (thisIndex.x==0 && thisIndex.y==0 && thisIndex.z==0) atomic {
+        if (thisIndex.x==0 && thisIndex.y==0 && thisIndex.z==0) serial {
           CkPrintf("Step %d Benchmark Time %lf ms/step\n", 
           stepCount, ((CkWallTimer() - stepTime))*1000);
           stepTime = CkWallTimer();
@@ -95,13 +95,13 @@ mainmodule leanmd {
 
         //periodically call load balancer
         if (stepCount >= firstLdbStep && (stepCount - firstLdbStep) % ldbPeriod == 0) {
-          atomic { AtSync();}
+          serial { AtSync();}
           when ResumeFromSync() { }
         }
 
         //periodically checkpointing
         if (stepCount % checkptFreq == 0) {
-          atomic {
+          serial {
             //coordinate to start checkpointing
             if (thisIndex.x==0 && thisIndex.y==0 && thisIndex.z==0) {
               CkPrintf("[%d] CHECKPOINT at step %d\n", CkMyPe(), stepCount);
@@ -109,7 +109,7 @@ mainmodule leanmd {
             contribute(CkCallback(CkReductionTarget(Cell,startCheckpoint),thisProxy(0,0,0)));
           }
           if (thisIndex.x==0 && thisIndex.y==0 && thisIndex.z==0) {
-            when startCheckpoint() atomic {
+            when startCheckpoint() serial {
               CkCallback cb(CkIndex_Cell::recvCheckPointDone(), thisProxy);
               if(checkptStrategy==0)
                 CkStartCheckpoint(logs.c_str(),cb);
@@ -123,7 +123,7 @@ mainmodule leanmd {
 #if CMK_MEM_CHECKPOINT
         //kill one of processes to demonstrate fault tolerance
         if (stepCount == 60 && thisIndex.x == 1 && thisIndex.y == 1 && thisIndex.z == 0) {
-          atomic {
+          serial {
             if (CkHasCheckpoints()){   
               CkPrintf("CkDieNow step 60\n");
               CkDieNow();
@@ -134,7 +134,7 @@ mainmodule leanmd {
       }
 
       //everything done, reduction on kinetic energy
-      atomic { contribute(2*sizeof(double),energy,CkReduction::sum_double,CkCallback(CkReductionTarget(Main,energySum),mainProxy)); }
+      serial { contribute(2*sizeof(double),energy,CkReduction::sum_double,CkCallback(CkReductionTarget(Main,energySum),mainProxy)); }
     };
   };
 
@@ -148,20 +148,20 @@ mainmodule leanmd {
       for(stepCount = 1; stepCount <= finalStepCount; stepCount++) {
         //self interaction check
         if(thisIndex.x1==thisIndex.x2 && thisIndex.y1==thisIndex.y2 && thisIndex.z1==thisIndex.z2) {
-          when calculateForces(ParticleDataMsg *msg) atomic { selfInteract(msg); }
+          when calculateForces(ParticleDataMsg *msg) serial { selfInteract(msg); }
         } else {
           //receive positions from two cells
           when calculateForces(ParticleDataMsg *msg1) 
-            when calculateForces(ParticleDataMsg *msg2) atomic { interact(msg1, msg2); }
+            when calculateForces(ParticleDataMsg *msg2) serial { interact(msg1, msg2); }
         }
         //periodically call load balancer
         if (stepCount >= firstLdbStep && (stepCount - firstLdbStep) % ldbPeriod== 0) {
-          atomic { AtSync();}
+          serial { AtSync();}
           when ResumeFromSync() { }
         }
       }
       //everything done, reduction on potential energy
-      atomic { contribute(2*sizeof(double),energy,CkReduction::sum_double,CkCallback(CkReductionTarget(Main,energySum),mainProxy)); }
+      serial { contribute(2*sizeof(double),energy,CkReduction::sum_double,CkCallback(CkReductionTarget(Main,energySum),mainProxy)); }
     };
   };
 };
