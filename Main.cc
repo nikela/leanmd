@@ -25,7 +25,6 @@
 
 // Entry point of Charm++ application
 Main::Main(CkArgMsg* m) {
-   __sdag_init();
   CkPrintf("\nLENNARD JONES MOLECULAR DYNAMICS START UP ...\n");
 
   //set variable values to a default set
@@ -77,26 +76,27 @@ Main::Main(CkArgMsg* m) {
     CkPrintf("LB Period:%d\n",ldbPeriod);
   }
 
-	//periodicity of checkpointing
-	if (m->argc > cur_arg) {
-		checkptFreq=atoi(m->argv[cur_arg++]);
-		CkPrintf("FT Period:%d\n",checkptFreq);
-	}
-	checkptStrategy = 1;
-	//choose the checkpointing strategy
-	if (m->argc > cur_arg) {
-		checkptStrategy=atoi(m->argv[cur_arg++]);
-	}
-  //initializing the 3D cell array
-	if(checkptStrategy == 0){
-		if(m->argc == cur_arg){
-			CkAbort("must specify the checkpoint directory");
-		}else
-			logs = m->argv[cur_arg];
+  //periodicity of checkpointing
+  if (m->argc > cur_arg) {
+    checkptFreq=atoi(m->argv[cur_arg++]);
+    CkPrintf("FT Period:%d\n",checkptFreq);
+  }
 
-	}
-	cellArray = CProxy_Cell::ckNew();
+  checkptStrategy = 1;
+  //choose the checkpointing strategy
+  if (m->argc > cur_arg) {
+    checkptStrategy=atoi(m->argv[cur_arg++]);
+  }
 
+  if(checkptStrategy == 0){
+    if(m->argc == cur_arg){
+      CkAbort("Checkpoint directory has to be specified for split execution");
+    }else
+      logs = m->argv[cur_arg];
+
+  }
+  
+  cellArray = CProxy_Cell::ckNew();
   //initializing the 3D Patch array (with a uniform distribution) and 6D compute array
   int patchCount = 0;
   float ratio = ((float)CkNumPes() - 1)/(cellArrayDimX*cellArrayDimY*cellArrayDimZ);
@@ -117,13 +117,12 @@ Main::Main(CkArgMsg* m) {
 
 //constructor for chare object migration
 Main::Main(CkMigrateMessage* msg): CBase_Main(msg) { 
-  __sdag_init();
 }
 
 //pup routine incase the main chare moves, pack important information
 void Main::pup(PUP::er &p) {
   CBase_Main::pup(p);
-   __sdag_pup(p);
+  __sdag_pup(p);
 }
 
 #include "leanmd.def.h"

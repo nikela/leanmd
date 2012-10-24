@@ -17,14 +17,12 @@ extern /* readonly */ int finalStepCount;
 
 //compute - Default constructor
 Compute::Compute() {
-  __sdag_init();
   stepCount = 1;
   energy[0] = energy[1] = 0;
   usesAtSync = CmiTrue;
 }
 
 Compute::Compute(CkMigrateMessage *msg): CBase_Compute(msg)  { 
-  __sdag_init();
   usesAtSync = CmiTrue;
   delete msg;
 }
@@ -44,15 +42,14 @@ void Compute::selfInteract(ParticleDataMsg *msg){
 }
 
 //interaction between two cells
-//mcast1 attached to message from lower id cell
-void Compute::interact(ParticleDataMsg *msg){
+void Compute::interact(ParticleDataMsg *msg1, ParticleDataMsg *msg2){
   double energyP = 0;
 
   CkSectionInfo *handleA = &mcast1, *handleB = &mcast2;
-  if (bufferedMsg->x*cellArrayDimY*cellArrayDimZ + bufferedMsg->y*cellArrayDimZ + bufferedMsg->z < msg->x*cellArrayDimY*cellArrayDimZ + msg->y*cellArrayDimZ + msg->z){ 
+  if (msg1->x*cellArrayDimY*cellArrayDimZ + msg1->y*cellArrayDimZ + msg1->z < msg2->x*cellArrayDimY*cellArrayDimZ + msg2->y*cellArrayDimZ + msg2->z){ 
     swap(handleA, handleB);
   }
-  energyP = calcPairForces(msg, bufferedMsg, handleA, handleB, stepCount);
+  energyP = calcPairForces(msg2, msg1, handleA, handleB, stepCount);
 
   //energy assignment only in begining and end
   if(stepCount == 1) {
