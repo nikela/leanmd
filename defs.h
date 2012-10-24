@@ -11,7 +11,7 @@
 #define ENERGY_VAR  		      (1.0 * pow(10.0,-5))
 
 //average of next two should be what you want as you atom density
-#define PARTICLES_PER_CELL_START  150
+#define PARTICLES_PER_CELL_START  100 
 #define PARTICLES_PER_CELL_END  	250
 
 #define DEFAULT_DELTA         1	// in femtoseconds
@@ -21,7 +21,7 @@
 #define DEFAULT_FT_PERIOD     100000
 
 #define KAWAY_X               2
-#define KAWAY_Y               1
+#define KAWAY_Y               2
 #define KAWAY_Z               1
 #define NBRS_X	              (2*KAWAY_X+1)
 #define NBRS_Y		            (2*KAWAY_Y+1)
@@ -31,15 +31,15 @@
 #define CELLARRAY_DIM_X	      3
 #define CELLARRAY_DIM_Y	      3
 #define CELLARRAY_DIM_Z	      3
-#define PTP_CUT_OFF		        20 // cut off for atom to atom interactions
+#define PTP_CUT_OFF		        26 // cut off for atom to atom interactions
 #define CELL_MARGIN		        4  // constant diff between cutoff and cell size
 #define CELL_SIZE_X		        (PTP_CUT_OFF + CELL_MARGIN)/KAWAY_X
 #define CELL_SIZE_Y		        (PTP_CUT_OFF + CELL_MARGIN)/KAWAY_Y
 #define CELL_SIZE_Z		        (PTP_CUT_OFF + CELL_MARGIN)/KAWAY_Z
 
 //variables to control initial uniform placement of atoms
-#define PERDIM                8
-#define GAP                   (PTP_CUT_OFF + CELL_MARGIN)/PERDIM
+#define PERDIM                10
+#define GAP                   3 
 
 #define CELL_ORIGIN_X		      0
 #define CELL_ORIGIN_Y		      0
