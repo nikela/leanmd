@@ -111,7 +111,6 @@ Main::Main(CkArgMsg* m) {
   cellArray.doneInserting();
   CkPrintf("\nCells: %d X %d X %d .... created\n", cellArrayDimX, cellArrayDimY, cellArrayDimZ);
 
-  thisProxy.run();
   delete m;
 }
 

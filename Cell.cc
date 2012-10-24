@@ -112,7 +112,7 @@ void Cell::createComputes() {
       computesList[num][3] = px2; computesList[num][4] = py2; computesList[num][5] = pz2;
     }
   } // end of for loop
-  contribute(CkCallback(CkReductionTarget(Main,computesCreated),mainProxy));
+  contribute(CkCallback(CkReductionTarget(Main,run),mainProxy));
 }
 
 //call multicast section creation

@@ -19,13 +19,11 @@ mainmodule leanmd {
   //central controller chare
   mainchare [migratable] Main { 
     entry Main(CkArgMsg* msg);
-    entry [reductiontarget] void computesCreated(); //called when computes have been created
     entry [reductiontarget] void energySum(double iE, double fE);  //reduction of potential energy
 
-    //this get called after the main constructor has called cell array constructor
+    // called when computes have been created
     entry void run() {
-      //compute array created, start simulation
-      when computesCreated() atomic {
+      atomic {
         computeArray.doneInserting();
         CkPrintf("Computes: %d .... created\n", (NUM_NEIGHBORS/2+1)*cellArrayDimX*cellArrayDimY*cellArrayDimZ);
         CkPrintf("Starting simulation .... \n\n");
