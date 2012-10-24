@@ -122,9 +122,8 @@ void Cell::createSection() {
   for (int num=0; num<inbrs; num++)
     elems.push_back(CkArrayIndex6D(computesList[num][0], computesList[num][1], computesList[num][2], computesList[num][3], computesList[num][4], computesList[num][5]));
 
-  CkArrayID computeArrayID = computeArray.ckGetArrayID();
   //knit the computes into a section
-  mCastSecProxy = CProxySection_Compute::ckNew(computeArrayID, &elems[0], elems.size());
+  mCastSecProxy = CProxySection_Compute::ckNew(computeArray.ckGetArrayID(), &elems[0], elems.size());
 
   //delegate the communication responsibility for this section to multicast library
   CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
