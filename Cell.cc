@@ -1,4 +1,3 @@
-
 #include "defs.h"
 #include "leanmd.decl.h"
 #include "Cell.h"
@@ -18,7 +17,6 @@ extern /* readonly */ std::string logs;
 
 //default constructor
 Cell::Cell(){
-  __sdag_init();
   int i;
   inbrs = NUM_NEIGHBORS;
   //load balancing to be called when AtSync is called
@@ -35,10 +33,11 @@ Cell::Cell(){
     particles.push_back(Particle());
     particles[i].mass = HYDROGEN_MASS;
 
-    //give random values for position and velocity
+    //uniformly place particles, avoid close distance among them
     particles[i].pos.x = (GAP/(float)2) + thisIndex.x * CELL_SIZE_X + ((i*KAWAY_Y*KAWAY_Z)/(PERDIM*PERDIM))*GAP;
     particles[i].pos.y = (GAP/(float)2) + thisIndex.y * CELL_SIZE_Y + (((i*KAWAY_Z)/PERDIM)%(PERDIM/KAWAY_Y))*GAP;
     particles[i].pos.z = (GAP/(float)2) + thisIndex.z * CELL_SIZE_Z + (i%(PERDIM/KAWAY_Z))*GAP; 
+    //give random values for velocity
     particles[i].vel.x = (drand48() - 0.5) * .2 * MAX_VELOCITY;
     particles[i].vel.y = (drand48() - 0.5) * .2 * MAX_VELOCITY;
     particles[i].vel.z = (drand48() - 0.5) * .2 * MAX_VELOCITY;
@@ -53,7 +52,6 @@ Cell::Cell(){
 
 //constructor for chare object migration
 Cell::Cell(CkMigrateMessage *msg): CBase_Cell(msg) {
-  __sdag_init();
   usesAtSync = CmiTrue;
   setMigratable(CmiFalse);
   delete msg;
@@ -70,14 +68,13 @@ void Cell::createComputes() {
   int z = thisIndex.z;
   int px1, py1, pz1, dx, dy, dz, px2, py2, pz2;
 
-  // For Round Robin insertion
-  int numPes = CkNumPes();
-  int currPe = CkMyPe();
-
   computesList = new int*[inbrs];
   for (int i =0; i < inbrs; i++){
     computesList[i] = new int[6];
   }
+
+  // for round robin insertion
+  int currPe = CkMyPe();
 
   /*  The computes X are inserted by a given cell:
    *
@@ -88,9 +85,9 @@ void Cell::createComputes() {
    */
 
   for (num=0; num<inbrs; num++) {
-    dx = num / (NBRS_Y * NBRS_Z)            - NBRS_X/2;
-    dy = (num % (NBRS_Y * NBRS_Z)) / NBRS_Z   - NBRS_Y/2;
-    dz = num % NBRS_Z                       - NBRS_Z/2;
+    dx = num / (NBRS_Y * NBRS_Z)                - NBRS_X/2;
+    dy = (num % (NBRS_Y * NBRS_Z)) / NBRS_Z     - NBRS_Y/2;
+    dz = num % NBRS_Z                           - NBRS_Z/2;
 
     if (num >= inbrs/2){
       px1 = x + KAWAY_X;
@@ -99,7 +96,7 @@ void Cell::createComputes() {
       px2 = px1+dx;
       py2 = py1+dy;
       pz2 = pz1+dz;
-      computeArray(px1, py1, pz1, px2, py2, pz2).insert((++currPe)%numPes);
+      computeArray(px1, py1, pz1, px2, py2, pz2).insert((++currPe)%CkNumPes());
       computesList[num][0] = px1; computesList[num][1] = py1; computesList[num][2] = pz1; 
       computesList[num][3] = px2; computesList[num][4] = py2; computesList[num][5] = pz2;
     }
@@ -115,7 +112,7 @@ void Cell::createComputes() {
       computesList[num][3] = px2; computesList[num][4] = py2; computesList[num][5] = pz2;
     }
   } // end of for loop
-  contribute(0,NULL,CkReduction::nop,CkCallback(CkReductionTarget(Main,computesCreated),mainProxy));
+  contribute(CkCallback(CkReductionTarget(Main,computesCreated),mainProxy));
 }
 
 //call multicast section creation
@@ -177,8 +174,6 @@ void Cell::migrateParticles(){
 
 //check if the particle is to be moved
 void Cell::migrateToCell(Particle p, int &px, int &py, int &pz) {
-  // currently this is assuming that particles are
-  // migrating only to the immediate neighbors
   int x = thisIndex.x * CELL_SIZE_X + CELL_ORIGIN_X;
   int y = thisIndex.y * CELL_SIZE_Y + CELL_ORIGIN_Y;
   int z = thisIndex.z * CELL_SIZE_Z + CELL_ORIGIN_Z;
@@ -193,12 +188,11 @@ void Cell::migrateToCell(Particle p, int &px, int &py, int &pz) {
   else if (p.pos.y < y) py = -1;
   else if (p.pos.y > (y+2*CELL_SIZE_Y)) py = 2;
   else if (p.pos.y > (y+CELL_SIZE_Y)) py = 1;
-  
+
   if (p.pos.z < (z-CELL_SIZE_Z)) pz = -2;
   else if (p.pos.z < z) pz = -1;
   else if (p.pos.z > (z+2*CELL_SIZE_Z)) pz = 2;
   else if (p.pos.z > (z+CELL_SIZE_Z)) pz = 1;
-
 }
 
 // Function to update properties (i.e. acceleration, velocity and position) in particles
@@ -254,7 +248,7 @@ Particle& Cell::wrapAround(Particle &p) {
   return p;
 }
 
-//pack important data when I move
+//pack important data when I move/checkpoint
 void Cell::pup(PUP::er &p) {
   CBase_Cell::pup(p);
   __sdag_pup(p);
@@ -282,13 +276,13 @@ void Cell::pup(PUP::er &p) {
   //adjust the multicast tree to give best performance after moving
   if (p.isUnpacking()){
     if(CkInRestarting()){
-		createSection();
-	}
-	else{
-	 	CkMulticastMgr *mg = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
-    	mg->resetSection(mCastSecProxy);
-    	mg->setReductionClient(mCastSecProxy, new CkCallback(CkReductionTarget(Cell,reduceForces), thisProxy(thisIndex.x, thisIndex.y, thisIndex.z)));
-	}
+      createSection();
+    }
+    else{
+      CkMulticastMgr *mg = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
+      mg->resetSection(mCastSecProxy);
+      mg->setReductionClient(mCastSecProxy, new CkCallback(CkReductionTarget(Cell,reduceForces), thisProxy(thisIndex.x, thisIndex.y, thisIndex.z)));
+    }
   }
 }
 
