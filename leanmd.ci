@@ -1,4 +1,5 @@
 mainmodule leanmd {
+  include "pup_stl.h";
 
   readonly CProxy_Main mainProxy;       //central controller
   readonly CProxy_Cell cellArray;     //array that houses atoms
@@ -56,7 +57,7 @@ mainmodule leanmd {
   array [3D] Cell {
     entry Cell();  
     entry void createComputes();    //call to insert computes that I need  
-    entry void receiveParticles(CkVec<Particle> updates);   //receive atoms that have migrated to neighboring cells to me
+    entry void receiveParticles(std::vector<Particle> updates);   //receive atoms that have migrated to neighboring cells to me
     entry void ResumeFromSync();    //resume from here after load balancing
     entry [reductiontarget] void startCheckpoint(); //reduction to start checkpointing
     entry void recvCheckPointDone();  //checkpointing done, resume application
@@ -82,10 +83,9 @@ mainmodule leanmd {
     
           //receive particles from my neighbors
           for(updateCount = 0; updateCount < inbrs; updateCount++) {
-            when receiveParticles(CkVec<Particle> &updates) atomic {
-              for(int i=0; i < updates.length(); i++) {
-                particles.push_back(updates[i]);    //add particles that have moved from neighboring cells to my cell
-              }
+            when receiveParticles(std::vector<Particle> &updates) atomic {
+              for (std::vector<Particle>::iterator iter = updates.begin(); iter != updates.end(); ++iter)
+                particles.push_back(*iter); //add particles that have moved from neighboring cells to my cell
             }
           }
         }

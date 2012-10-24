@@ -152,7 +152,7 @@ void Cell::sendPositions() {
 //send the atoms that have moved beyond my cell to neighbors
 void Cell::migrateParticles(){
   int i, x1, y1, z1;
-  CkVec<Particle> *outgoing = new CkVec<Particle>[inbrs];
+  std::vector<Particle> outgoing[inbrs];
 
   for(i=0; i<particles.length(); i++) {
     migrateToCell(particles[i], x1, y1, z1);
@@ -169,7 +169,6 @@ void Cell::migrateParticles(){
     z1 = num % NBRS_Z                       - NBRS_Z/2;
     cellArray(WRAP_X(thisIndex.x+x1), WRAP_Y(thisIndex.y+y1), WRAP_Z(thisIndex.z+z1)).receiveParticles(outgoing[num]);
   }
-  delete [] outgoing;
 }
 
 //check if the particle is to be moved
