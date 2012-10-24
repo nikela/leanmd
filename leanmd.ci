@@ -20,8 +20,7 @@ mainmodule leanmd {
   mainchare [migratable] Main { 
     entry Main(CkArgMsg* msg);
     entry [reductiontarget] void computesCreated(); //called when computes have been created
-    entry [reductiontarget] void energySumP(double iP, double fP);  //reduction of potential energy
-    entry [reductiontarget] void energySumK(double iK, double fK);  //reduction of kinetic energy
+    entry [reductiontarget] void energySum(double iE, double fE);  //reduction of potential energy
 
     //this get called after the main constructor has called cell array constructor
     entry void run() {
@@ -35,9 +34,9 @@ mainmodule leanmd {
         startBenchmarkTime = CkWallTimer();
       }
       //receive intial and final energies and compare
-      when energySumP(double iP, double fP), energySumK(double iK, double fK) atomic {
-        if(fabs(fP + fK - iP - iK)>ENERGY_VAR) {
-          CkPrintf("Energy value has varied significantly from %E to %E\n",iP+iK,fP+fK);
+      when energySum(double iE1, double fE1) when energySum(double iE2, double fE2) atomic {
+        if(fabs(fE1 + fE2 - iE1 - iE2) > ENERGY_VAR) {
+          CkPrintf("Energy value has varied significantly from %E to %E\n", iE1 + iE2, fE1 + fE2);
           CkPrintf("\nEnergy conservation test failed for maximum allowed variation of %E units.\nSIMULATION UNSUCCESSFULL\n",ENERGY_VAR);  
         } else {
           CkPrintf("\nEnergy conservation test passed for maximum allowed variation of %E units.\nSIMULATION SUCCESSFULL \n",ENERGY_VAR);
@@ -137,7 +136,7 @@ mainmodule leanmd {
       }
 
       //everything done, reduction on kinetic energy
-      atomic { contribute(2*sizeof(double),energy,CkReduction::sum_double,CkCallback(CkReductionTarget(Main,energySumK),mainProxy)); }
+      atomic { contribute(2*sizeof(double),energy,CkReduction::sum_double,CkCallback(CkReductionTarget(Main,energySum),mainProxy)); }
     };
   };
 
@@ -164,7 +163,7 @@ mainmodule leanmd {
         }
       }
       //everything done, reduction on potential energy
-      atomic { contribute(2*sizeof(double),energy,CkReduction::sum_double,CkCallback(CkReductionTarget(Main,energySumP),mainProxy)); }
+      atomic { contribute(2*sizeof(double),energy,CkReduction::sum_double,CkCallback(CkReductionTarget(Main,energySum),mainProxy)); }
     };
   };
 };
