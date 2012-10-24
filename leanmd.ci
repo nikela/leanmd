@@ -57,7 +57,7 @@ mainmodule leanmd {
     entry void receiveParticles(std::vector<Particle> updates);   //receive atoms that have migrated to neighboring cells to me
     entry void ResumeFromSync();    //resume from here after load balancing
     entry [reductiontarget] void startCheckpoint(); //reduction to start checkpointing
-    entry void recvCheckPointDone();  //checkpointing done, resume application
+    entry [reductiontarget] void recvCheckPointDone();  //checkpointing done, resume application
     entry [reductiontarget] void reduceForces(vec3 forces[n], int n);   //receives forces from my computes on my atoms
 
     //function to perform iterations for Cells
@@ -87,7 +87,7 @@ mainmodule leanmd {
           }
         }
 
-        if (thisIndex.x==0 && thisIndex.y==0 && thisIndex.z==0) serial {
+        if (thisIndex.x == 0 && thisIndex.y == 0 && thisIndex.z == 0) serial {
           CkPrintf("Step %d Benchmark Time %lf ms/step\n", 
           stepCount, ((CkWallTimer() - stepTime))*1000);
           stepTime = CkWallTimer();
@@ -103,14 +103,14 @@ mainmodule leanmd {
         if (stepCount % checkptFreq == 0) {
           serial {
             //coordinate to start checkpointing
-            if (thisIndex.x==0 && thisIndex.y==0 && thisIndex.z==0) {
+            if (thisIndex.x == 0 && thisIndex.y == 0 && thisIndex.z == 0) {
               CkPrintf("[%d] CHECKPOINT at step %d\n", CkMyPe(), stepCount);
             }
             contribute(CkCallback(CkReductionTarget(Cell,startCheckpoint),thisProxy(0,0,0)));
           }
-          if (thisIndex.x==0 && thisIndex.y==0 && thisIndex.z==0) {
+          if (thisIndex.x == 0 && thisIndex.y == 0 && thisIndex.z == 0) {
             when startCheckpoint() serial {
-              CkCallback cb(CkIndex_Cell::recvCheckPointDone(), thisProxy);
+              CkCallback cb(CkReductionTarget(Cell,recvCheckPointDone), thisProxy);
               if(checkptStrategy==0)
                 CkStartCheckpoint(logs.c_str(),cb);
               else
@@ -134,7 +134,7 @@ mainmodule leanmd {
       }
 
       //everything done, reduction on kinetic energy
-      serial { contribute(2*sizeof(double),energy,CkReduction::sum_double,CkCallback(CkReductionTarget(Main,energySum),mainProxy)); }
+      serial { contribute(2*sizeof(double), energy,CkReduction::sum_double, CkCallback(CkReductionTarget(Main,energySum),mainProxy)); }
     };
   };
 
@@ -151,8 +151,7 @@ mainmodule leanmd {
           when calculateForces(ParticleDataMsg *msg) serial { selfInteract(msg); }
         } else {
           //receive positions from two cells
-          when calculateForces(ParticleDataMsg *msg1) 
-            when calculateForces(ParticleDataMsg *msg2) serial { interact(msg1, msg2); }
+          when calculateForces(ParticleDataMsg *msg1) when calculateForces(ParticleDataMsg *msg2) serial { interact(msg1, msg2); }
         }
         //periodically call load balancer
         if (stepCount >= firstLdbStep && (stepCount - firstLdbStep) % ldbPeriod== 0) {
@@ -161,7 +160,7 @@ mainmodule leanmd {
         }
       }
       //everything done, reduction on potential energy
-      serial { contribute(2*sizeof(double),energy,CkReduction::sum_double,CkCallback(CkReductionTarget(Main,energySum),mainProxy)); }
+      serial { contribute(2*sizeof(double),energy, CkReduction::sum_double, CkCallback(CkReductionTarget(Main,energySum),mainProxy)); }
     };
   };
 };
