@@ -41,6 +41,7 @@ void Compute::selfInteract(ParticleDataMsg *msg){
     energy[1] = energyP;
   }
 
+  //contribute to force reduction
   CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
   CkGetSectionInfo(mcast1, msg);
   mCastGrp->contribute(sizeof(vec3)*msg->lengthAll, fmsg, CkReduction::sum_double, mcast1);
@@ -66,7 +67,8 @@ void Compute::interact(ParticleDataMsg *msg1, ParticleDataMsg *msg2){
   } else if(stepCount == finalStepCount) {
     energy[1] = energyP;
   }
-
+  
+  //contribute to force reduction
   CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
   CkGetSectionInfo(*handleA, msg1);
   mCastGrp->contribute(sizeof(vec3)*msg1->lengthAll, fmsg1, CkReduction::sum_double, *handleA);
