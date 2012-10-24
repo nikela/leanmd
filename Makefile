@@ -1,5 +1,5 @@
 # to be set appropiately
-CHARMBASE      = $(HOME)/charm/bluegenep-xlc
+CHARMBASE      = $(HOME)/charms/charm/net-linux-x86_64
 CHARMC         = $(CHARMBASE)/bin/charmc
 
 OPTS            = -O3
