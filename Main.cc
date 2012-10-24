@@ -1,7 +1,6 @@
+#include <string>
 #include "time.h"
 #include "ckmulticast.h"
-#include <string>
-#include <pup_stl.h>
 #include "defs.h"
 #include "leanmd.decl.h"
 #include "Main.h"
@@ -93,7 +92,6 @@ Main::Main(CkArgMsg* m) {
       CkAbort("Checkpoint directory has to be specified for split execution");
     }else
       logs = m->argv[cur_arg];
-
   }
   
   cellArray = CProxy_Cell::ckNew();

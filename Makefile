@@ -33,7 +33,7 @@ Compute.o: Compute.cc Compute.h leanmd.decl.h defs.h physics.h
 	$(CHARMC) $(OPTS) -o Compute.o Compute.cc
 
 test: leanmd
-	./charmrun +p4 ./leanmd 4 4 4 101 20 20 +balancer GreedyLB +LBDebug 1
+	./charmrun +p4 ./leanmd 4 4 4 10 3 3 +balancer GreedyLB +LBDebug 1 ++local
 
 clean:
 	rm -f *.decl.h *.def.h *.o leanmd leanmd-ft leanmd.prj charmrun

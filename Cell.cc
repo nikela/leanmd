@@ -124,7 +124,7 @@ void Cell::createSection() {
 
   CkArrayID computeArrayID = computeArray.ckGetArrayID();
   //knit the computes into a section
-  mCastSecProxy = CProxySection_Compute::ckNew(computeArrayID, elems.getVec(), elems.size()); 
+  mCastSecProxy = CProxySection_Compute::ckNew(computeArrayID, elems.getVec(), elems.length());
 
   //delegate the communication responsibility for this section to multicast library
   CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
@@ -134,11 +134,11 @@ void Cell::createSection() {
 
 // Function to start interaction among particles in neighboring cells as well as its own particles
 void Cell::sendPositions() {
-  unsigned int len = particles.length();
+  unsigned int len = particles.size();
   //create the particle and control message to be sent to computes
   ParticleDataMsg* msg = new (len) ParticleDataMsg(thisIndex.x, thisIndex.y, thisIndex.z, len);
 
-  for (int i = 0; i < len; i++)
+  for(int i = 0; i < len; ++i)
     msg->part[i] = particles[i].pos;
 
   mCastSecProxy.calculateForces(msg);
@@ -149,12 +149,11 @@ void Cell::migrateParticles(){
   int x1, y1, z1;
   std::vector<Particle> outgoing[inbrs];
 
-  for(int i = 0; i < particles.length(); i++) {
-    migrateToCell(particles[i], x1, y1, z1);
+  for(std::vector<Particle>::iterator iter = particles.begin(); iter != particles.end(); ++iter) {
+    migrateToCell(*iter, x1, y1, z1);
     if(x1!=0 || y1!=0 || z1!=0) {
-      outgoing[(x1+KAWAY_X)*NBRS_Y*NBRS_Z + (y1+KAWAY_Y)*NBRS_Z + (z1+KAWAY_Z)].push_back(wrapAround(particles[i]));
-      particles.remove(i);
-      --i;
+      outgoing[(x1+KAWAY_X)*NBRS_Y*NBRS_Z + (y1+KAWAY_Y)*NBRS_Z + (z1+KAWAY_Z)].push_back(wrapAround(*iter));
+      iter = particles.erase(iter);
     }
   }
 
@@ -190,13 +189,13 @@ void Cell::migrateToCell(Particle p, int &px, int &py, int &pz) {
 }
 
 // Function to update properties (i.e. acceleration, velocity and position) in particles
-void Cell::updateProperties(vec3 *forces, int lengthUp) {
+void Cell::updateProperties(vec3 *forces) {
   int i;
   double powTen, powTwenty, realTimeDeltaVel, invMassParticle;
   powTen = pow(10.0, 10);
   powTwenty = pow(10.0, -20);
   realTimeDeltaVel = DEFAULT_DELTA * powTwenty;
-  for(i = 0; i < particles.length(); i++) {
+  for(i = 0; i < particles.size(); i++) {
     //calculate energy only in begining and end
     if(stepCount == 1) {
       energy[0] += (0.5 * particles[i].mass * dot(particles[i].vel, particles[i].vel) * powTen); // in milliJoules
