@@ -24,9 +24,7 @@ struct ParticleDataMsg : public CkMcastBaseMsg, public CMessage_ParticleDataMsg 
     CMessage_ParticleDataMsg::pup(p);
     p | lengthAll;
     p | x; p | y; p | z;
-    if (p.isUnpacking()){
-      part = new vec3[lengthAll];
-    }
+    if (p.isUnpacking()) part = new vec3[lengthAll];
     PUParray(p, part, lengthAll);
   } 
 };
