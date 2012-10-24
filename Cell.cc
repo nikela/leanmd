@@ -15,10 +15,7 @@ extern /* readonly */ int finalStepCount;
 extern /* readonly */ int checkptStrategy; 
 extern /* readonly */ std::string logs; 
 
-//default constructor
-Cell::Cell(){
-  int i;
-  inbrs = NUM_NEIGHBORS;
+Cell::Cell() : inbrs(NUM_NEIGHBORS), stepCount(1), updateCount(0), computesList(NUM_NEIGHBORS) {
   //load balancing to be called when AtSync is called
   usesAtSync = CmiTrue;
 
@@ -43,9 +40,6 @@ Cell::Cell(){
     particles[i].vel.z = (drand48() - 0.5) * .2 * MAX_VELOCITY;
   }
 
-  stepCount = 1;
-  updateCount = 0;
-  stepTime = 0; 
   energy[0] = energy[1] = 0;
   setMigratable(CmiFalse);
 }
@@ -61,20 +55,8 @@ Cell::~Cell() {}
 
 //function to create my computes
 void Cell::createComputes() {
-  int num;  
-
-  int x = thisIndex.x;
-  int y = thisIndex.y;
-  int z = thisIndex.z;
+  int x = thisIndex.x, y = thisIndex.y, z = thisIndex.z;
   int px1, py1, pz1, dx, dy, dz, px2, py2, pz2;
-
-  computesList = new int*[inbrs];
-  for (int i =0; i < inbrs; i++){
-    computesList[i] = new int[6];
-  }
-
-  // for round robin insertion
-  int currPe = CkMyPe();
 
   /*  The computes X are inserted by a given cell:
    *
@@ -84,32 +66,34 @@ void Cell::createComputes() {
    *	   x ---->
    */
 
-  for (num=0; num<inbrs; num++) {
+  // for round robin insertion
+  int currPe = CkMyPe();
+
+  for (int num = 0; num < inbrs; num++) {
     dx = num / (NBRS_Y * NBRS_Z)                - NBRS_X/2;
     dy = (num % (NBRS_Y * NBRS_Z)) / NBRS_Z     - NBRS_Y/2;
     dz = num % NBRS_Z                           - NBRS_Z/2;
 
-    if (num >= inbrs/2){
+    if (num >= inbrs / 2){
       px1 = x + KAWAY_X;
       py1 = y + KAWAY_Y;
       pz1 = z + KAWAY_Z;
       px2 = px1+dx;
       py2 = py1+dy;
       pz2 = pz1+dz;
-      computeArray(px1, py1, pz1, px2, py2, pz2).insert((++currPe)%CkNumPes());
-      computesList[num][0] = px1; computesList[num][1] = py1; computesList[num][2] = pz1; 
-      computesList[num][3] = px2; computesList[num][4] = py2; computesList[num][5] = pz2;
-    }
-    else {
+      CkArrayIndex6D index(px1, py1, pz1, px2, py2, pz2);
+      computeArray[index].insert((++currPe) % CkNumPes());
+      computesList[num] = index;
+    } else {
       // these computes will be created by pairing cells
-      px1 = WRAP_X(x+dx)+KAWAY_X;
-      py1 = WRAP_Y(y+dy)+KAWAY_Y;
-      pz1 = WRAP_Z(z+dz)+KAWAY_Z;
+      px1 = WRAP_X(x + dx) + KAWAY_X;
+      py1 = WRAP_Y(y + dy) + KAWAY_Y;
+      pz1 = WRAP_Z(z + dz) + KAWAY_Z;
       px2 = px1 - dx;
       py2 = py1 - dy;
       pz2 = pz1 - dz;
-      computesList[num][0] = px1; computesList[num][1] = py1; computesList[num][2] = pz1; 
-      computesList[num][3] = px2; computesList[num][4] = py2; computesList[num][5] = pz2;
+      CkArrayIndex6D index(px1, py1, pz1, px2, py2, pz2);
+      computesList[num] = index;
     }
   } // end of for loop
   contribute(CkCallback(CkReductionTarget(Main,run),mainProxy));
@@ -117,13 +101,8 @@ void Cell::createComputes() {
 
 //call multicast section creation
 void Cell::createSection() {
-  std::vector<CkArrayIndex6D> elems;
-  //create a vector list of my computes
-  for (int num=0; num<inbrs; num++)
-    elems.push_back(CkArrayIndex6D(computesList[num][0], computesList[num][1], computesList[num][2], computesList[num][3], computesList[num][4], computesList[num][5]));
-
   //knit the computes into a section
-  mCastSecProxy = CProxySection_Compute::ckNew(computeArray.ckGetArrayID(), &elems[0], elems.size());
+  mCastSecProxy = CProxySection_Compute::ckNew(computeArray.ckGetArrayID(), &computesList[0], computesList.size());
 
   //delegate the communication responsibility for this section to multicast library
   CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
@@ -253,16 +232,7 @@ void Cell::pup(PUP::er &p) {
   p | numReadyCheckpoint;
   PUParray(p, energy, 2);
 
-  if (p.isUnpacking()){
-    computesList = new int*[inbrs];
-    for (int i = 0; i < inbrs; i++){
-      computesList[i] = new int[6];
-    }
-  }
-
-  for (int i = 0; i < inbrs; i++){
-    PUParray(p, computesList[i], 6);
-  }
+  p | computesList;
 
   p | mCastSecProxy;
   //adjust the multicast tree to give best performance after moving

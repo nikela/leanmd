@@ -33,33 +33,44 @@ struct ParticleDataMsg : public CkMcastBaseMsg, public CMessage_ParticleDataMsg 
 
 //chare used to represent a cell
 class Cell : public CBase_Cell {
-  private:
-    Cell_SDAG_CODE   //SDAG code
-    std::vector<Particle> particles;  //list of atoms
-    int **computesList;   //my compute locations
-    int stepCount;		// to count the number of steps, and decide when to stop
-    int myNumParts;   //number of atoms in my cell
-    int inbrs;        //number of interacting neighbors
-    double stepTime;
-    int updateCount;
-    double energy[2]; //store kinetic energy - initial and final
-    int numReadyCheckpoint;
-    void migrateToCell(Particle p, int &px, int &py, int &pz);
-    void updateProperties(vec3 *forces);	//updates properties after receiving forces from computes
-    void limitVelocity(Particle &p); //limit velcities to an upper limit
-    Particle& wrapAround(Particle &p); //particles going out of right enters from left
-    CProxySection_Compute mCastSecProxy; //handle to section proxy of computes
+private:
+  Cell_SDAG_CODE;
 
-  public:
-    Cell();
-    Cell(CkMigrateMessage *msg);
-    ~Cell();
-    void createComputes();  //add my computes
-    void createSection();   //created multicast section of computes
-    void migrateParticles();
-    void sendPositions();
-    void startCheckpoint(int);
-    void pup(PUP::er &p);
+  // list of atoms
+  std::vector<Particle> particles;
+  // my compute locations
+  std::vector<CkArrayIndex6D> computesList;
+  // to count the number of steps, and decide when to stop
+  int stepCount;
+  // number of atoms in my cell
+  int myNumParts;
+  // number of interacting neighbors
+  int inbrs;
+  double stepTime;
+  int updateCount;
+  // store kinetic energy - initial and final
+  double energy[2];
+  int numReadyCheckpoint;
+  void migrateToCell(Particle p, int &px, int &py, int &pz);
+  // updates properties after receiving forces from computes
+  void updateProperties(vec3 *forces);
+  // limit velcities to an upper limit
+  void limitVelocity(Particle &p);
+  // particles going out of right enters from left
+  Particle& wrapAround(Particle &p);
+  // handle to section proxy of computes
+  CProxySection_Compute mCastSecProxy;
+
+public:
+  Cell();
+  Cell(CkMigrateMessage *msg);
+  ~Cell();
+  void createComputes();  //add my computes
+  void createSection();   //created multicast section of computes
+  void migrateParticles();
+  void sendPositions();
+  void startCheckpoint(int);
+  void pup(PUP::er &p);
 };
 
 #endif
