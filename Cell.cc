@@ -26,7 +26,7 @@ Cell::Cell() : inbrs(NUM_NEIGHBORS), stepCount(1), updateCount(0), computesList(
   srand48(myid);
 
   // Particle initialization
-  for(i=0; i < myNumParts; i++) {
+  for(int i = 0; i < myNumParts; i++) {
     particles.push_back(Particle());
     particles[i].mass = HYDROGEN_MASS;
 

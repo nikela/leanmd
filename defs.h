@@ -53,9 +53,9 @@
 #define DEFAULT_FINALSTEPCOUNT	        1001
 #define MAX_VELOCITY		        .1  //in A/fs
 
-#define WRAP_X(a)		(((a)+cellArrayDimX)%cellArrayDimX)
-#define WRAP_Y(a)		(((a)+cellArrayDimY)%cellArrayDimY)
-#define WRAP_Z(a)		(((a)+cellArrayDimZ)%cellArrayDimZ)
+#define WRAP_X(a)		(((a) + cellArrayDimX) % cellArrayDimX)
+#define WRAP_Y(a)		(((a) + cellArrayDimY) % cellArrayDimY)
+#define WRAP_Z(a)		(((a) + cellArrayDimZ) % cellArrayDimZ)
 
 struct vec3 {
   double x, y, z;
