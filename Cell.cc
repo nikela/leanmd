@@ -3,18 +3,6 @@
 #include "Cell.h"
 #include "ckmulticast.h"
 
-extern /* readonly */ CProxy_Main mainProxy;
-extern /* readonly */ CProxy_Cell cellArray;
-extern /* readonly */ CProxy_Compute computeArray;
-extern /* readonly */ CkGroupID mCastGrpID;
-
-extern /* readonly */ int cellArrayDimX;
-extern /* readonly */ int cellArrayDimY;
-extern /* readonly */ int cellArrayDimZ;
-extern /* readonly */ int finalStepCount; 
-extern /* readonly */ int checkptStrategy; 
-extern /* readonly */ std::string logs; 
-
 Cell::Cell() : inbrs(NUM_NEIGHBORS), stepCount(1), updateCount(0), computesList(NUM_NEIGHBORS) {
   //load balancing to be called when AtSync is called
   usesAtSync = CmiTrue;

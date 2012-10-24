@@ -1,12 +1,7 @@
 #ifndef __MAIN_H__
 #define __MAIN_H__
 
-extern /* readonly */ CProxy_Cell cellArray;
-extern /* readonly */ CProxy_Compute computeArray;
-
-extern /* readonly */ int cellArrayDimX;
-extern /* readonly */ int cellArrayDimY;
-extern /* readonly */ int cellArrayDimZ;
+#include "defs.h"
 
 //central controller chare
 class Main : public CBase_Main {

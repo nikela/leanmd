@@ -1,19 +1,10 @@
 #include "defs.h"
-#include "leanmd.decl.h"
 #include "Cell.h"
 #include "Compute.h"
 #include "physics.h"
 #include "ckmulticast.h"
 #include <algorithm>
 using std::swap;
-
-extern /* readonly */ CProxy_Main mainProxy;
-extern /* readonly */ CkGroupID mCastGrpID;
-
-extern /* readonly */ int cellArrayDimX;
-extern /* readonly */ int cellArrayDimY;
-extern /* readonly */ int cellArrayDimZ;
-extern /* readonly */ int finalStepCount; 
 
 //compute - Default constructor
 Compute::Compute() {

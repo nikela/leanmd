@@ -1,8 +1,6 @@
 #include <string>
 #include "time.h"
 #include "ckmulticast.h"
-#include "defs.h"
-#include "leanmd.decl.h"
 #include "Main.h"
 #include "Cell.h"
 #include "Compute.h"

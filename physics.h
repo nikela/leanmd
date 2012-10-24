@@ -4,13 +4,6 @@
 #include "ckmulticast.h"
 #include "defs.h"
 
-extern /* readonly */ CkGroupID mCastGrpID;
-
-extern /* readonly */ int cellArrayDimX;	// Number of Chare Rows
-extern /* readonly */ int cellArrayDimY;	// Number of Chare Columns
-extern /* readonly */ int cellArrayDimZ;
-extern /* readonly */ int finalStepCount; 
-
 #define BLOCK_SIZE	512
 
 //function to calculate forces among 2 lists of atoms

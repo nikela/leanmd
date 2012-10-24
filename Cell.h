@@ -1,12 +1,5 @@
 #ifndef __CELL_H__
 #define __CELL_H__
-extern /* readonly */ CProxy_Main mainProxy;
-extern /* readonly */ CProxy_Cell cellArray;
-extern /* readonly */ CkGroupID mCastGrpID;
-extern /* readonly */ int firstLdbStep;
-extern /* readonly */ int ldbPeriod;
-extern /* readonly */ int finalStepCount;
-extern /* readonly */ int checkptFreq;
 
 #include "ckmulticast.h"
 #include <string>
