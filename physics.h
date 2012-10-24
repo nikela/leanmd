@@ -14,7 +14,8 @@ extern /* readonly */ int finalStepCount;
 #define BLOCK_SIZE	512
 
 //function to calculate forces among 2 lists of atoms
-inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, int stepCount, vec3 *&firstmsg, vec3 *&secondmsg) {
+inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, int stepCount,
+                             std::vector<vec3>& force1, std::vector<vec3> &force2) {
   int i, j, ptpCutOffSqd, diff;
   int firstLen = first->lengthAll;
   int secondLen = second->lengthAll;
@@ -26,8 +27,8 @@ inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, in
   if(stepCount == 1 || stepCount == finalStepCount)
     doEnergy = 1;
 
-  firstmsg = new vec3[firstLen];
-  secondmsg = new vec3[secondLen];
+  force1.resize(firstLen);
+  force2.resize(secondLen);
   //check for wrap around and adjust locations accordingly
   if (abs(first->x - second->x) > 1){
     diff = CELL_SIZE_X * cellArrayDimX;
@@ -71,8 +72,8 @@ inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, in
               energy += (double)( VDW_A / rTwelve - VDW_B / rSix); // in milliJoules
             fr = f / rsqd;
             force = separation * (fr * powTen);
-            firstmsg[i] += force;
-            secondmsg[j] -= force;
+            force1[i] += force;
+            force2[j] -= force;
           }
         }
       }
@@ -81,7 +82,7 @@ inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, in
 }
 
 //function to calculate forces among atoms in a single list
-inline double calcInternalForces(ParticleDataMsg* first, int stepCount, vec3 *&firstmsg) {
+inline double calcInternalForces(ParticleDataMsg* first, int stepCount, std::vector<vec3>& force1) {
   int i, j, ptpCutOffSqd;
   int firstLen = first->lengthAll;
   double powTwenty, powTen, firstx, firsty, firstz, rx, ry, rz, r, rsqd, fx, fy, fz, f, fr;
@@ -91,7 +92,7 @@ inline double calcInternalForces(ParticleDataMsg* first, int stepCount, vec3 *&f
   int doEnergy = 0;
   if(stepCount == 1 || stepCount == finalStepCount)
     doEnergy = 1;
-  firstmsg = new vec3[firstLen];
+  force1.resize(firstLen);
 
   ptpCutOffSqd = PTP_CUT_OFF * PTP_CUT_OFF;
   powTen = pow(10.0, -10);
@@ -113,8 +114,8 @@ inline double calcInternalForces(ParticleDataMsg* first, int stepCount, vec3 *&f
 
         fr = f / rsqd;
         force = separation * (fr * powTen);
-        firstmsg[i] += force;
-        firstmsg[j] -= force;
+        force1[i] += force;
+        force1[j] -= force;
       }
     }
   }

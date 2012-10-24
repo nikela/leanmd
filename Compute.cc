@@ -30,9 +30,9 @@ Compute::Compute(CkMigrateMessage *msg): CBase_Compute(msg)  {
 //interaction within a cell
 void Compute::selfInteract(ParticleDataMsg *msg){
   double energyP = 0;
-  vec3 * fmsg;
+  std::vector<vec3> force1;
 
-  energyP = calcInternalForces(msg,  stepCount, fmsg);
+  energyP = calcInternalForces(msg, stepCount, force1);
 
   //energy assignment only in begining and end
   if(stepCount == 1) {
@@ -44,41 +44,35 @@ void Compute::selfInteract(ParticleDataMsg *msg){
   //contribute to force reduction
   CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
   CkGetSectionInfo(mcast1, msg);
-  mCastGrp->contribute(sizeof(vec3)*msg->lengthAll, fmsg, CkReduction::sum_double, mcast1);
+  mCastGrp->contribute(sizeof(vec3)*msg->lengthAll, &force1[0], CkReduction::sum_double, mcast1);
 
   delete msg;
-  delete [] fmsg;
 }
 
 //interaction between two cells
 void Compute::interact(ParticleDataMsg *msg1, ParticleDataMsg *msg2){
   double energyP = 0;
-  vec3 *fmsg1, *fmsg2;
+  std::vector<vec3> force1, force2;
 
   CkSectionInfo *handleA = &mcast1, *handleB = &mcast2;
   if (msg2->x*cellArrayDimY*cellArrayDimZ + msg2->y*cellArrayDimZ + msg2->z < msg1->x*cellArrayDimY*cellArrayDimZ + msg1->y*cellArrayDimZ + msg1->z){ 
     swap(handleA, handleB);
   }
-  energyP = calcPairForces(msg1, msg2, stepCount, fmsg1, fmsg2);
+  energyP = calcPairForces(msg1, msg2, stepCount, force1, force2);
 
   //energy assignment only in begining and end
-  if(stepCount == 1) {
-    energy[0] = energyP;
-  } else if(stepCount == finalStepCount) {
-    energy[1] = energyP;
-  }
+  if (stepCount == 1) energy[0] = energyP;
+  else if (stepCount == finalStepCount) energy[1] = energyP;
   
   //contribute to force reduction
   CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
   CkGetSectionInfo(*handleA, msg1);
-  mCastGrp->contribute(sizeof(vec3)*msg1->lengthAll, fmsg1, CkReduction::sum_double, *handleA);
+  mCastGrp->contribute(sizeof(vec3)*msg1->lengthAll, &force1[0], CkReduction::sum_double, *handleA);
   CkGetSectionInfo(*handleB, msg2);
-  mCastGrp->contribute(sizeof(vec3)*msg2->lengthAll, fmsg2, CkReduction::sum_double, *handleB);
+  mCastGrp->contribute(sizeof(vec3)*msg2->lengthAll, &force2[0], CkReduction::sum_double, *handleB);
 
   delete msg1;
   delete msg2;
-  delete [] fmsg1;
-  delete [] fmsg2;
 }
 
 //pack important information if I am moving
