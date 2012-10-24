@@ -70,7 +70,6 @@ void Compute::pup(PUP::er &p) {
   p | mcast2;
   PUParray(p, energy, 2);
   if (p.isUnpacking() && CkInRestarting()) {
-    mcast1.get_redNo() = 0;
-    mcast2.get_redNo() = 0;
+    mcast1.set_redNo(0); mcast2.set_redNo(0);
   }
 }
