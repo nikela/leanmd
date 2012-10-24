@@ -25,11 +25,8 @@ void Compute::selfInteract(ParticleDataMsg *msg){
   energyP = calcInternalForces(msg, stepCount, force1);
 
   //energy assignment only in begining and end
-  if(stepCount == 1) {
-    energy[0] = energyP;
-  } else if(stepCount == finalStepCount) {
-    energy[1] = energyP;
-  }
+  if (stepCount == 1) energy[0] = energyP;
+  else if (stepCount == finalStepCount) energy[1] = energyP;
 
   //contribute to force reduction
   CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
@@ -41,19 +38,18 @@ void Compute::selfInteract(ParticleDataMsg *msg){
 
 //interaction between two cells
 void Compute::interact(ParticleDataMsg *msg1, ParticleDataMsg *msg2){
-  double energyP = 0;
-  std::vector<vec3> force1, force2;
-
   CkSectionInfo *handleA = &mcast1, *handleB = &mcast2;
-  if (msg2->x*cellArrayDimY*cellArrayDimZ + msg2->y*cellArrayDimZ + msg2->z < msg1->x*cellArrayDimY*cellArrayDimZ + msg1->y*cellArrayDimZ + msg1->z){ 
+  if (msg2->x * cellArrayDimY * cellArrayDimZ + msg2->y * cellArrayDimZ + msg2->z <
+      msg1->x * cellArrayDimY * cellArrayDimZ + msg1->y * cellArrayDimZ + msg1->z)
     swap(handleA, handleB);
-  }
-  energyP = calcPairForces(msg1, msg2, stepCount, force1, force2);
+
+  std::vector<vec3> force1, force2;
+  double energyP = calcPairForces(msg1, msg2, stepCount, force1, force2);
 
   //energy assignment only in begining and end
   if (stepCount == 1) energy[0] = energyP;
   else if (stepCount == finalStepCount) energy[1] = energyP;
-  
+
   //contribute to force reduction
   CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
   CkGetSectionInfo(*handleA, msg1);

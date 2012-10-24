@@ -62,8 +62,9 @@ mainmodule leanmd {
 
     //function to perform iterations for Cells
     entry void run() {
-      if(thisIndex.x==0 && thisIndex.y==0 && thisIndex.z==0) serial {
-          stepTime = CkWallTimer(); }
+      if (thisIndex.x==0 && thisIndex.y==0 && thisIndex.z==0) serial {
+        stepTime = CkWallTimer();
+      }
 
       serial { createSection(); }
 
@@ -95,7 +96,7 @@ mainmodule leanmd {
 
         //periodically call load balancer
         if (stepCount >= firstLdbStep && (stepCount - firstLdbStep) % ldbPeriod == 0) {
-          serial { AtSync();}
+          serial { AtSync(); }
           when ResumeFromSync() { }
         }
 
@@ -103,18 +104,15 @@ mainmodule leanmd {
         if (stepCount % checkptFreq == 0) {
           serial {
             //coordinate to start checkpointing
-            if (thisIndex.x == 0 && thisIndex.y == 0 && thisIndex.z == 0) {
+            if (thisIndex.x == 0 && thisIndex.y == 0 && thisIndex.z == 0)
               CkPrintf("[%d] CHECKPOINT at step %d\n", CkMyPe(), stepCount);
-            }
             contribute(CkCallback(CkReductionTarget(Cell,startCheckpoint),thisProxy(0,0,0)));
           }
           if (thisIndex.x == 0 && thisIndex.y == 0 && thisIndex.z == 0) {
             when startCheckpoint() serial {
               CkCallback cb(CkReductionTarget(Cell,recvCheckPointDone), thisProxy);
-              if(checkptStrategy==0)
-                CkStartCheckpoint(logs.c_str(),cb);
-              else
-                CkStartMemCheckpoint(cb);
+              if (checkptStrategy == 0) CkStartCheckpoint(logs.c_str(), cb);
+              else CkStartMemCheckpoint(cb);
             }
           }
           when recvCheckPointDone() { }
@@ -122,12 +120,10 @@ mainmodule leanmd {
 
 #if CMK_MEM_CHECKPOINT
         //kill one of processes to demonstrate fault tolerance
-        if (stepCount == 60 && thisIndex.x == 1 && thisIndex.y == 1 && thisIndex.z == 0) {
-          serial {
-            if (CkHasCheckpoints()){   
-              CkPrintf("CkDieNow step 60\n");
-              CkDieNow();
-            }
+        if (stepCount == 60 && thisIndex.x == 1 && thisIndex.y == 1 && thisIndex.z == 0) serial {
+          if (CkHasCheckpoints()) {
+            CkPrintf("CkDieNow step 60\n");
+            CkDieNow();
           }
         }
 #endif
@@ -145,14 +141,13 @@ mainmodule leanmd {
     entry void calculateForces(ParticleDataMsg *msg);
 
     entry void run() {
-      for(stepCount = 1; stepCount <= finalStepCount; stepCount++) {
+      for (stepCount = 1; stepCount <= finalStepCount; stepCount++) {
         //self interaction check
-        if(thisIndex.x1==thisIndex.x2 && thisIndex.y1==thisIndex.y2 && thisIndex.z1==thisIndex.z2) {
+        if (thisIndex.x1==thisIndex.x2 && thisIndex.y1==thisIndex.y2 && thisIndex.z1==thisIndex.z2)
           when calculateForces(ParticleDataMsg *msg) serial { selfInteract(msg); }
-        } else {
+        else
           //receive positions from two cells
           when calculateForces(ParticleDataMsg *msg1) when calculateForces(ParticleDataMsg *msg2) serial { interact(msg1, msg2); }
-        }
         //periodically call load balancer
         if (stepCount >= firstLdbStep && (stepCount - firstLdbStep) % ldbPeriod== 0) {
           serial { AtSync();}
