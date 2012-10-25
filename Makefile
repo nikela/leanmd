@@ -4,7 +4,7 @@ SHELL := /bin/bash
 CHARMHOME      ?= $(HOME)/charm
 CHARMC         ?= $(CHARMHOME)/bin/charmc
 
-OPTS            = -O3
+OPTS            ?= -O3
 
 DECL=
 SUFFIX=
