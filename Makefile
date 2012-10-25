@@ -1,8 +1,8 @@
 SHELL := /bin/bash
 
 # to be set appropiately
-CHARMHOME      ?= $(HOME)/charms/charm/net-linux-x86_64
-CHARMC         ?= $(CHARMBASE)/bin/charmc
+CHARMHOME      ?= $(HOME)/charm
+CHARMC         ?= $(CHARMHOME)/bin/charmc
 
 OPTS            = -O3
 
