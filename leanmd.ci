@@ -100,6 +100,7 @@ mainmodule leanmd {
           when ResumeFromSync() { }
         }
 
+#if CMK_MEM_CHECKPOINT
         //periodically checkpointing
         if (stepCount % checkptFreq == 0) {
           serial {
@@ -118,7 +119,6 @@ mainmodule leanmd {
           when recvCheckPointDone() { }
         }
 
-#if CMK_MEM_CHECKPOINT
         //kill one of processes to demonstrate fault tolerance
         if (stepCount == 60 && thisIndex.x == 1 && thisIndex.y == 1 && thisIndex.z == 0) serial {
           if (CkHasCheckpoints()) {
