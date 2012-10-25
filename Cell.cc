@@ -113,7 +113,7 @@ void Cell::sendPositions() {
 //send the atoms that have moved beyond my cell to neighbors
 void Cell::migrateParticles(){
   int x1, y1, z1;
-  std::vector<Particle> outgoing[inbrs];
+  std::vector<Particle> outgoing[NUM_NEIGHBORS];
 
   for(std::vector<Particle>::iterator iter = particles.begin(); iter != particles.end(); ++iter) {
     migrateToCell(*iter, x1, y1, z1);
