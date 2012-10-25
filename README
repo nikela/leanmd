@@ -1,15 +1,20 @@
 TO COMPILE-
-Do a make in this folder
+Do a make in this folder to create a binary without fault tolerance
+Do a "make FT=yes" to create a binary with fault tolerance support
 
 TO RUN-
-Either provide no arguments or provide all
-./charmrun +p<Procs> ./leanmd <dimX,dimY,dimZ,steps,firstLBstep,LBPeriod>
+Either provide no arguments or provide arguments clustered from the left 
+./charmrun +p<Procs> ./leanmd <dimX,dimY,dimZ,steps,firstLBstep,LBPeriod,FTPeriod,FTCheckPoint Folder>
+
 Example - ./charmrun +p8 ./leanmd 2 2 2 1001 20 20 
 Example - ./charmrun +p8 ./leanmd 2 2 2 1001 20 20 +balancer RefineLB 
+
 Here is an example on how to use MetaBalancer
 Example - ./charmrun +p8 ./leanmd 2 2 2 1001 20 20 +balancer RefineLB +MetaLB 
+
 Here is an example showing how to enable checkpoint and restart
 Example - ./charmrun +p8 ./leanmd 2 2 2 1001 20 20 25 
+
 Here is an example showing how to enable checkpoint application states, the applications states are stored in directory log
 Example - ./charmrun +p8 ./leanmd 2 2 2 1001 20 20 25 log 
 
@@ -28,7 +33,6 @@ Main.* - contains the constructor for Main chare; also the starting point
 of the application; main chare passes control to run() of Main chare and
 constructors of Cell.
 
-physics.h - contains physics equation implementation for force computation; also
-contains the contribute for reduction of forces.
+physics.h - contains physics equation implementation for force computation; 
 
 defs.h - #define for constant values and some class declaration
