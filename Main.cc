@@ -80,18 +80,12 @@ Main::Main(CkArgMsg* m) {
   }
 
   checkptStrategy = 1;
-  //choose the checkpointing strategy
+  //choose the checkpointing strategy use in disk checkpointing
   if (m->argc > cur_arg) {
-    checkptStrategy=atoi(m->argv[cur_arg++]);
+  	checkptStrategy = 0;
+    logs = m->argv[cur_arg];
   }
 
-  if(checkptStrategy == 0){
-    if(m->argc == cur_arg){
-      CkAbort("Checkpoint directory has to be specified for split execution");
-    }else
-      logs = m->argv[cur_arg];
-  }
-  
   cellArray = CProxy_Cell::ckNew();
   //initializing the 3D Patch array (with a uniform distribution) and 6D compute array
   int patchCount = 0;

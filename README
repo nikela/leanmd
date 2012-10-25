@@ -8,6 +8,10 @@ Example - ./charmrun +p8 ./leanmd 2 2 2 1001 20 20
 Example - ./charmrun +p8 ./leanmd 2 2 2 1001 20 20 +balancer RefineLB 
 Here is an example on how to use MetaBalancer
 Example - ./charmrun +p8 ./leanmd 2 2 2 1001 20 20 +balancer RefineLB +MetaLB 
+Here is an example showing how to enable checkpoint and restart
+Example - ./charmrun +p8 ./leanmd 2 2 2 1001 20 20 25 
+Here is an example showing how to enable checkpoint application states, the applications states are stored in directory log
+Example - ./charmrun +p8 ./leanmd 2 2 2 1001 20 20 25 log 
 
 READ ORDER
 leanmd.ci - contains the most important aspects of the program, look for run() 
