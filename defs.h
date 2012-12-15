@@ -76,19 +76,31 @@ struct vec3 {
   inline vec3 operator- (const vec3& rhs) const {
     return vec3(x - rhs.x, y - rhs.y, z - rhs.z);
   }
+  void pup(PUP::er &p){
+    p|x;p|y;p|z;
+  }
 };
 inline double dot(const vec3& a, const vec3& b) {
   return a.x*b.x + a.y*b.y + a.z*b.z;
 }
-PUPbytes(vec3)
+inline void PUParray(PUP::er &p,vec3 *ta,int n) { 
+  for(int i = 0; i < n; i++) {
+    p | ta[i];
+  }
+}
 
 //class for keeping track of the properties for a particle
 struct Particle {
   double mass;
   //   Position, acceleration, velocity
   vec3 pos,acc,vel;
+  void pup(PUP::er &p){
+    p|mass;
+    p|pos;
+    p|acc;
+    p|vel;
+  }
 };
-PUPbytes(Particle);
 
 #include "leanmd.decl.h"
 
