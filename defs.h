@@ -11,7 +11,12 @@
 #define ENERGY_VAR              (1.0 * pow(10.0,-5))
 
 //average of next two should be what you want as your atom density
-//this should match the PERDIM parameter 
+//this should comply with the PERDIM parameter; for KAWAY 1 1 1, the maximum number
+//of particles can be 10*10*10 = 1000 - 10 comes from PERDIM parameter, which is
+//currently set to be 10, using a GAP of 3; as KWAYness increases, the maximum
+//number of particles decreases - for 2 1 1, it is 500, for 2 2 1 it is 250; you
+//can set them to have lower values but not higher; alternatively a host of
+//paramters including PTP_CUT_OFF, PERDIM, GAP can be set to suitable values to
 #define PARTICLES_PER_CELL_START        100 
 #define PARTICLES_PER_CELL_END          250
 
