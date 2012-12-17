@@ -12,8 +12,8 @@
 
 //average of next two should be what you want as your atom density
 //this should match the PERDIM parameter 
-#define PARTICLES_PER_CELL_START        100 
-#define PARTICLES_PER_CELL_END          250
+#define PARTICLES_PER_CELL_START        700 
+#define PARTICLES_PER_CELL_END          700
 
 #define DEFAULT_DELTA           1	// in femtoseconds
 
@@ -21,8 +21,8 @@
 #define DEFAULT_LDB_PERIOD      20
 #define DEFAULT_FT_PERIOD       100000
 
-#define KAWAY_X                 2
-#define KAWAY_Y                 2
+#define KAWAY_X                 1
+#define KAWAY_Y                 1
 #define KAWAY_Z                 1
 #define NBRS_X	                (2*KAWAY_X+1)
 #define NBRS_Y                  (2*KAWAY_Y+1)

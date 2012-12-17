@@ -27,7 +27,6 @@ Cell::Cell() : inbrs(NUM_NEIGHBORS), stepCount(1), updateCount(0), computesList(
     particles[i].vel.y = (drand48() - 0.5) * .2 * MAX_VELOCITY;
     particles[i].vel.z = (drand48() - 0.5) * .2 * MAX_VELOCITY;
   }
-
   energy[0] = energy[1] = 0;
   setMigratable(CmiFalse);
 }
@@ -106,7 +105,6 @@ void Cell::sendPositions() {
 
   for(int i = 0; i < len; ++i)
     msg->part[i] = particles[i].pos;
-
   mCastSecProxy.calculateForces(msg);
 }
 
@@ -123,7 +121,7 @@ void Cell::migrateParticles(){
       iter = particles.erase(iter);
     }
   }
-
+  
   for(int num = 0; num < inbrs; num++) {
     x1 = num / (NBRS_Y * NBRS_Z)            - NBRS_X/2;
     y1 = (num % (NBRS_Y * NBRS_Z)) / NBRS_Z - NBRS_Y/2;
@@ -208,26 +206,59 @@ Particle& Cell::wrapAround(Particle &p) {
   return p;
 }
 
+void Cell::registerResumeClient(){
+	CkCallback _cb(CkIndex_Cell::resumeFromChkp(),thisProxy(thisIndex.x,thisIndex.y,thisIndex.z));
+	setChkpResumeClient(_cb);
+}
 //pack important data when I move/checkpoint
 void Cell::pup(PUP::er &p) {
+  
+//  if(p.isChecking())
+//  	CkPrintf("[%d][%d] pup cell\n",CmiMyPartition(),CkMyPe());
+  
+//  if(p.isChecking())
+//  	p.skip();	  
+  
   CBase_Cell::pup(p);
   __sdag_pup(p);
+  
+//  if(p.isChecking())
+//  	CkPrintf("[%d][%d] pup particles\n",CmiMyPartition(),CkMyPe());
   p | particles;
+  
+//  if(p.isChecking())
+//	  p.resume();
+  
   p | stepCount;
+//  if(p.isChecking())
+//  	CkPrintf("[%d][%d] pup stepCount %d\n",CmiMyPartition(),CkMyPe(),stepCount);
+  
+//  if(p.isChecking())
+//	  p.skip();
   p | myNumParts;
   p | updateCount;
+  
+//  if(p.isChecking())
+//	  p.skipNext();
   p | stepTime;
+  
   p | inbrs;
   p | numReadyCheckpoint;
   PUParray(p, energy, 2);
 
+//  if(p.isChecking())
+//    CkPrintf("[%d][%d] pup cell ends\n",CmiMyPartition(),CkMyPe());
+  
   p | computesList;
 
   p | mCastSecProxy;
+  
   //adjust the multicast tree to give best performance after moving
+//  if (p.isUnpacking()||p.isChecking()){
   if (p.isUnpacking()){
     if(CkInRestarting()){
       createSection();
+	  registerResumeClient();
     }
     else{
       CkMulticastMgr *mg = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
@@ -235,5 +266,8 @@ void Cell::pup(PUP::er &p) {
       mg->setReductionClient(mCastSecProxy, new CkCallback(CkReductionTarget(Cell,reduceForces), thisProxy(thisIndex.x, thisIndex.y, thisIndex.z)));
     }
   }
+  
+//  if(p.isChecking())
+//	  p.skip();
 }
 

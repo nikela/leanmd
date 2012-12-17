@@ -62,6 +62,7 @@ public:
   void sendPositions();
   void startCheckpoint(int);
   void pup(PUP::er &p);
+  void registerResumeClient();
 };
 
 #endif
