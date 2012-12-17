@@ -113,13 +113,12 @@ void Cell::migrateParticles(){
   int x1, y1, z1;
   std::vector<std::vector<Particle> > outgoing;
   outgoing.resize(inbrs);
-
-  for(std::vector<Particle>::iterator iter = particles.begin(); iter != particles.end(); ++iter) {
+  for(std::vector<Particle>::iterator iter = particles.begin(); iter != particles.end();) {
     migrateToCell(*iter, x1, y1, z1);
     if(x1!=0 || y1!=0 || z1!=0) {
       outgoing[(x1+KAWAY_X)*NBRS_Y*NBRS_Z + (y1+KAWAY_Y)*NBRS_Z + (z1+KAWAY_Z)].push_back(wrapAround(*iter));
       iter = particles.erase(iter);
-    }
+    } else iter++;
   }
   
   for(int num = 0; num < inbrs; num++) {
@@ -132,9 +131,9 @@ void Cell::migrateParticles(){
 
 //check if the particle is to be moved
 void Cell::migrateToCell(Particle p, int &px, int &py, int &pz) {
-  int x = thisIndex.x * CELL_SIZE_X + CELL_ORIGIN_X;
-  int y = thisIndex.y * CELL_SIZE_Y + CELL_ORIGIN_Y;
-  int z = thisIndex.z * CELL_SIZE_Z + CELL_ORIGIN_Z;
+  double x = thisIndex.x * CELL_SIZE_X + CELL_ORIGIN_X;
+  double y = thisIndex.y * CELL_SIZE_Y + CELL_ORIGIN_Y;
+  double z = thisIndex.z * CELL_SIZE_Z + CELL_ORIGIN_Z;
   px = py = pz = 0;
 
   if (p.pos.x < (x-CELL_SIZE_X)) px = -2;
