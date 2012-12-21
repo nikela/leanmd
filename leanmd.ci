@@ -96,8 +96,8 @@ mainmodule leanmd {
 
         if (thisIndex.x == 0 && thisIndex.y == 0 && thisIndex.z == 0) 
 		serial {
-          CkPrintf("Step %d Benchmark Time %lf ms/step\n", 
-          stepCount, ((CkWallTimer() - stepTime))*1000);
+          CkPrintf("[%d]Step %d Benchmark Time %lf ms/step\n", 
+          CmiMyPartition(),stepCount, ((CkWallTimer() - stepTime))*1000);
           stepTime = CkWallTimer();
         }
 
@@ -106,12 +106,6 @@ mainmodule leanmd {
           serial { AtSync(); }
           when ResumeFromSync() { }
         }
-		serial{
-			AtChkpSync();
-		}
-		when resumeFromChkp() serial{
-			 //CkPrintf("[%d] recv checkpoint done %d %d %d\n",CkMyPe(),thisIndex.x,thisIndex.y,thisIndex.z); 
-		}
 
         //periodically checkpointing
         if (stepCount % checkptFreq == 0) {
@@ -129,20 +123,28 @@ mainmodule leanmd {
 			  }
             }
           }
-          when resumeFromChkp() serial{
-		  }
-        }
+		}
+		else {
+			serial{
+				AtChkpSync();
+			}
+		}
+        when resumeFromChkp() serial{
+			//CkPrintf("[%d][%d] recv checkpoint done %d %d %d\n",CmiMyPartition(),CkMyPe(),thisIndex.x,thisIndex.y,thisIndex.z); 
+		}
 
 #if CMK_MEM_CHECKPOINT
 
         //kill one of processes to demonstrate fault tolerance
-        if (CmiMyPartition()==1&&stepCount == 12 && thisIndex.x == 1 && thisIndex.y == 1 && thisIndex.z == 0) serial {
-            CkPrintf("CkDieNow step 12\n");
+        if (CmiMyPartition()==0&&stepCount == 12 && thisIndex.x == 1 && thisIndex.y == 1 && thisIndex.z == 0) serial {
+            //if(CkHasCheckpoints()){
+			CkPrintf("CkDieNow step 12\n");
             CkDieNow();
+			//}
         }
-        if (CmiMyPartition()==0&&stepCount == 120 && thisIndex.x == 1 && thisIndex.y == 1 && thisIndex.z == 0) serial {
-            CkPrintf("CkDieNow step 120\n");
-            CkDieNow();
+        if (CmiMyPartition()==0&&stepCount == 80 && thisIndex.x == 1 && thisIndex.y == 1 && thisIndex.z == 0) serial {
+            //CkPrintf("CkDieNow step 80\n");
+           // CkDieNow();
         }
 #endif
       }
@@ -156,12 +158,12 @@ mainmodule leanmd {
   array [6D] Compute {
     entry Compute();
     entry void ResumeFromSync();
-    entry void resumeFromChkp();
+//    entry void resumeFromChkp();
     entry void calculateForces(ParticleDataMsg *msg);
 
     entry void run() {
 		serial{
-			registerResumeClient();
+//			registerResumeClient();
 		}
       for (stepCount = 1; stepCount <= finalStepCount; stepCount++) {
         //self interaction check
@@ -175,16 +177,11 @@ mainmodule leanmd {
           serial { AtSync();}
           when ResumeFromSync() { }
         }
-		serial{
-			AtChkpSync();
-		}
-		when resumeFromChkp() serial{
-		}
+        
 
-        if (stepCount % checkptFreq == 0) {
-          when resumeFromChkp() serial{
-		  }
-		}
+//		if (stepCount % checkptFreq == 0) {
+//			when resumeFromChkp(){}
+//		}
       }
       //everything done, reduction on potential energy
       serial { contribute(2*sizeof(double),energy, CkReduction::sum_double, CkCallback(CkReductionTarget(Main,energySum),mainProxy)); }

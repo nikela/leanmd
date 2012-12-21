@@ -62,8 +62,8 @@ void Compute::interact(ParticleDataMsg *msg1, ParticleDataMsg *msg2){
 }
 
 void Compute::registerResumeClient(){
-  	CkCallback _cb(CkIndex_Compute::resumeFromChkp(),thisProxy(thisIndex.x1,thisIndex.y1,thisIndex.z1,thisIndex.x2,thisIndex.y2,thisIndex.z2));
-	setChkpResumeClient(_cb);
+//  	CkCallback _cb(CkIndex_Compute::resumeFromChkp(),thisProxy(thisIndex.x1,thisIndex.y1,thisIndex.z1,thisIndex.x2,thisIndex.y2,thisIndex.z2));
+//	setChkpResumeClient(_cb);
 }
 
 //pack important information if I am moving
@@ -71,37 +71,26 @@ void Compute::pup(PUP::er &p) {
   
 //  if(p.isChecking())
 //  	CkPrintf("[%d][%d] pup compute\n",CmiMyPartition(),CkMyPe());
-
-//  if(p.isChecking())
-//	  p.skip();
+  if(p.isChecking())
+	p.skip();
   CBase_Compute::pup(p);
   __sdag_pup(p);
   
-//  if(p.isChecking())
-//	  p.resume();
-
-  
+  if(p.isChecking())
+	p.resume();
   p | stepCount;
-  
-//  if(p.isChecking())
-//  	CkPrintf("[%d][%d] pup stepCount %d\n",CmiMyPartition(),CkMyPe(),stepCount);
   
   PUParray(p, energy, 2);
   
-//  if(p.isChecking())
-//  	CkPrintf("[%d][%d] pup compute ends\n",CmiMyPartition(),CkMyPe());
   
-//  if(p.isChecking())
-//	  p.skip();
+  if(p.isChecking())
+	p.skip();
   p | mcast1;
   p | mcast2;
   
   if (p.isUnpacking() && CkInRestarting()) {
     mcast1.set_redNo(0); mcast2.set_redNo(0);
-	registerResumeClient();
+//	registerResumeClient();
   }
   
-  
- // if(p.isChecking())
-//	  p.resume();
 }

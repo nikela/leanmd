@@ -2,14 +2,13 @@
 #include "leanmd.decl.h"
 #include "Cell.h"
 #include "ckmulticast.h"
-
+#include <math.h>
 Cell::Cell() : inbrs(NUM_NEIGHBORS), stepCount(1), updateCount(0), computesList(NUM_NEIGHBORS) {
   //load balancing to be called when AtSync is called
   usesAtSync = CmiTrue;
 
   int myid = thisIndex.z+cellArrayDimZ*(thisIndex.y+thisIndex.x*cellArrayDimY); 
   myNumParts = PARTICLES_PER_CELL_START + (myid*(PARTICLES_PER_CELL_END-PARTICLES_PER_CELL_START))/(cellArrayDimX*cellArrayDimY*cellArrayDimZ);
-
   // starting random generator
   srand48(myid);
 
@@ -168,13 +167,22 @@ void Cell::updateProperties(vec3 *forces) {
     }
     // applying kinetic equations
     invMassParticle = 1 / particles[i].mass;
-    particles[i].acc = forces[i] * invMassParticle; // in m/sec^2
-    particles[i].vel += particles[i].acc * realTimeDeltaVel; // in A/fm
+//    particles[i].acc = forces[i] * invMassParticle; // in m/sec^2
+//    particles[i].vel += particles[i].acc * realTimeDeltaVel; // in A/fm
+	particles[i].acc = forces[i] * invMassParticle * realTimeDeltaVel; 
+	particles[i].vel += particles[i].acc * DEFAULT_DELTA; 
 
     limitVelocity(particles[i]);
 
     particles[i].pos += particles[i].vel * DEFAULT_DELTA; // in A
+
+	//if(stepCount == 140 && fabs(particles[i].pos.x-5.041007)<=0.000001 ){
+	if((stepCount == 140 )&& (fabs(particles[i].pos.z-4.255967)<=0.000001 || fabs(particles[i].pos.z-4.255967)<=0.000001)){
+		CkPrintf("[%d][%d] i %d %lf\n",CmiMyPartition(),CkMyPe(),i,particles[i].pos.z);
+	}
   }
+ if((stepCount == 140 ) )
+  CkPrintf("[%d][%d] %lf\n",CmiMyPartition(),CkMyPe(),particles[81].pos.z);
 }
 
 inline double velocityCheck(double inVelocity) {
@@ -214,47 +222,35 @@ void Cell::pup(PUP::er &p) {
   
 //  if(p.isChecking())
 //  	CkPrintf("[%d][%d] pup cell\n",CmiMyPartition(),CkMyPe());
-  
-//  if(p.isChecking())
-//  	p.skip();	  
+  if(p.isChecking())
+  	p.skip();	  
   
   CBase_Cell::pup(p);
   __sdag_pup(p);
   
 //  if(p.isChecking())
 //  	CkPrintf("[%d][%d] pup particles\n",CmiMyPartition(),CkMyPe());
+  p | stepTime;
   p | particles;
-  
-//  if(p.isChecking())
-//	  p.resume();
-  
+  if(p.isChecking()){
+	 p.resume();
+  }
   p | stepCount;
-//  if(p.isChecking())
-//  	CkPrintf("[%d][%d] pup stepCount %d\n",CmiMyPartition(),CkMyPe(),stepCount);
-  
-//  if(p.isChecking())
-//	  p.skip();
   p | myNumParts;
   p | updateCount;
   
-//  if(p.isChecking())
-//	  p.skipNext();
-  p | stepTime;
   
-  p | inbrs;
-  p | numReadyCheckpoint;
   PUParray(p, energy, 2);
-
-//  if(p.isChecking())
-//    CkPrintf("[%d][%d] pup cell ends\n",CmiMyPartition(),CkMyPe());
+  p | inbrs;
   
+  
+  if(p.isChecking())
+	  p.skip();
   p | computesList;
-
   p | mCastSecProxy;
   
   //adjust the multicast tree to give best performance after moving
-//  if (p.isUnpacking()||p.isChecking()){
-  if (p.isUnpacking()){
+  if (p.isUnpacking()||p.isChecking()){
     if(CkInRestarting()){
       createSection();
 	  registerResumeClient();
@@ -266,7 +262,5 @@ void Cell::pup(PUP::er &p) {
     }
   }
   
-//  if(p.isChecking())
-//	  p.skip();
 }
 
