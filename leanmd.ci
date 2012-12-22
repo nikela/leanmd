@@ -54,11 +54,10 @@ mainmodule leanmd {
   array [3D] Cell {
     entry Cell();  
     entry void createComputes();    //call to insert computes that I need  
-    entry void receiveParticles(const std::vector<Particle> &updates);   //receive atoms that have migrated to neighboring cells to me
+    entry void receiveParticles(const std::vector<Particle> &updates,int x, int y, int z);   //receive atoms that have migrated to neighboring cells to me
     entry void ResumeFromSync();    //resume from here after load balancing
     entry void resumeFromChkp();
     entry [reductiontarget] void startCheckpoint(); //reduction to start checkpointing
-//    entry void recvCheckPointDone();  //checkpointing done, resume application
     entry [reductiontarget] void reduceForces(vec3 forces[n], int n);   //receives forces from my computes on my atoms
 
     //function to perform iterations for Cells
@@ -167,13 +166,9 @@ mainmodule leanmd {
   array [6D] Compute {
     entry Compute();
     entry void ResumeFromSync();
-//    entry void resumeFromChkp();
     entry void calculateForces(ParticleDataMsg *msg);
 
     entry void run() {
-		serial{
-//			registerResumeClient();
-		}
       for (stepCount = 1; stepCount <= finalStepCount; stepCount++) {
         //self interaction check
         if (thisIndex.x1==thisIndex.x2 && thisIndex.y1==thisIndex.y2 && thisIndex.z1==thisIndex.z2)
@@ -188,9 +183,6 @@ mainmodule leanmd {
         }
         
 
-//		if (stepCount % checkptFreq == 0) {
-//			when resumeFromChkp(){}
-//		}
       }
       //everything done, reduction on potential energy
       serial { contribute(2*sizeof(double),energy, CkReduction::sum_double, CkCallback(CkReductionTarget(Main,energySum),mainProxy)); }

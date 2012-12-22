@@ -117,23 +117,23 @@ struct Particle {
   //   Position, acceleration, velocity
   vec3 pos,acc,vel;
   void pup(PUP::er &p){
+  if(p.isChecking()){
+	  p.resume();
+  	  p.setAccuracy(0.000001);
+  }
   	p|mass;
 	p|pos.x;
 	p|pos.y;
-  if(p.isChecking()){
-	  p.resume();
-  	  p.setAccuracy(0.01);
-  }
 	p|pos.z;
-  	if(p.isChecking()){
- 		p.skip();	
-	}	
 	p|acc.x;
 	p|acc.y;
 	p|acc.z;
 	p|vel.x;
 	p|vel.y;
 	p|vel.z;
+  	if(p.isChecking()){
+ 		p.skip();	
+	}	
   }
 };
 
