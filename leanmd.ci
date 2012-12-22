@@ -54,18 +54,14 @@ mainmodule leanmd {
   array [3D] Cell {
     entry Cell();  
     entry void createComputes();    //call to insert computes that I need  
-    entry void receiveParticles(const std::vector<Particle> &updates);   //receive atoms that have migrated to neighboring cells to me
+    entry void receiveParticles(const std::vector<Particle> &updates, int x, int y, int z);   //receive atoms that have migrated to neighboring cells to me
     entry void ResumeFromSync();    //resume from here after load balancing
-    entry void resumeFromChkp();
     entry [reductiontarget] void startCheckpoint(); //reduction to start checkpointing
-//    entry void recvCheckPointDone();  //checkpointing done, resume application
+    entry void recvCheckPointDone();  //checkpointing done, resume application
     entry [reductiontarget] void reduceForces(vec3 forces[n], int n);   //receives forces from my computes on my atoms
 
     //function to perform iterations for Cells
     entry void run() {
-  		serial{
-			registerResumeClient();
-		}
       if (thisIndex.x==0 && thisIndex.y==0 && thisIndex.z==0) serial {
         stepTime = CkWallTimer();
       }
@@ -74,9 +70,7 @@ mainmodule leanmd {
 
       for(stepCount = 1; stepCount <= finalStepCount; stepCount++) {
         //send current atom positions to my computes 
-        serial { 
-			sendPositions();
-		} 
+        serial { sendPositions(); } 
 
         //update properties of atoms using new force values 
         when reduceForces(vec3 forces[n], int n) serial { updateProperties(forces); }
@@ -87,17 +81,25 @@ mainmodule leanmd {
     
           //receive particles from my neighbors
           for(updateCount = 0; updateCount < inbrs; updateCount++) {
-            when receiveParticles(const std::vector<Particle> &updates) serial {
-              for (int i = 0; i < updates.size(); ++i)
-                particles.push_back(updates[i]); //add particles that have moved from neighboring cells to my cell
+            when receiveParticles(const std::vector<Particle> &updates, int x, int y, int z) serial {
+              if(thisIndex.x - x > KAWAY_X) x += cellArrayDimX; if(thisIndex.x - x < -KAWAY_X) x -= cellArrayDimX;
+              if(thisIndex.y - y > KAWAY_Y) y += cellArrayDimY; if(thisIndex.y - y < -KAWAY_Y) y -= cellArrayDimY;
+              if(thisIndex.z - z > KAWAY_Z) z += cellArrayDimZ; if(thisIndex.z - z < -KAWAY_Z) z -= cellArrayDimZ;
+              int id = (thisIndex.x-x+KAWAY_X)*NBRS_Y*NBRS_Z+(thisIndex.y-y+KAWAY_Y)*NBRS_Z+(thisIndex.z-z+KAWAY_Z);
+              listParticles[id] = updates;
+            }
+          }
+          serial {
+            for(int j = 0; j < inbrs; j++) {
+              for (int i = 0; i < listParticles[j].size(); ++i)
+                particles.push_back(listParticles[j][i]); //add particles that have moved from neighboring cells to my cell
             }
           }
         }
 
-        if (thisIndex.x == 0 && thisIndex.y == 0 && thisIndex.z == 0) 
-		serial {
-          CkPrintf("[%d]Step %d Benchmark Time %lf ms/step\n", 
-          CmiMyPartition(),stepCount, ((CkWallTimer() - stepTime))*1000);
+        if (thisIndex.x == 0 && thisIndex.y == 0 && thisIndex.z == 0) serial {
+          CkPrintf("Step %d Benchmark Time %lf ms/step\n", 
+          stepCount, ((CkWallTimer() - stepTime))*1000);
           stepTime = CkWallTimer();
         }
 
@@ -111,40 +113,28 @@ mainmodule leanmd {
         if (stepCount % checkptFreq == 0) {
           serial {
             //coordinate to start checkpointing
+            if (thisIndex.x == 0 && thisIndex.y == 0 && thisIndex.z == 0)
+              CkPrintf("[%d] CHECKPOINT at step %d\n", CkMyPe(), stepCount);
             contribute(CkCallback(CkReductionTarget(Cell,startCheckpoint),thisProxy(0,0,0)));
           }
           if (thisIndex.x == 0 && thisIndex.y == 0 && thisIndex.z == 0) {
             when startCheckpoint() serial {
-              CkCallback cb(CkIndex_Cell::resumeFromChkp(),thisProxy);
+              CkCallback cb(CkIndex_Cell::recvCheckPointDone(),thisProxy);
               if (checkptStrategy == 0) CkStartCheckpoint(logs.c_str(), cb);
-              else
-			  { 
-				  CkStartMemCheckpoint(cb);
-			  }
+              else CkStartMemCheckpoint(cb);
             }
           }
-		}
-		else {
-			serial{
-				AtChkpSync();
-			}
-		}
-        when resumeFromChkp() serial{
-			//CkPrintf("[%d][%d] recv checkpoint done %d %d %d\n",CmiMyPartition(),CkMyPe(),thisIndex.x,thisIndex.y,thisIndex.z); 
-		}
+          when recvCheckPointDone() { }
+        }
 
 #if CMK_MEM_CHECKPOINT
 
         //kill one of processes to demonstrate fault tolerance
-        if (CmiMyPartition()==0&&stepCount == 12 && thisIndex.x == 1 && thisIndex.y == 1 && thisIndex.z == 0) serial {
-            //if(CkHasCheckpoints()){
-			CkPrintf("CkDieNow step 12\n");
+        if (stepCount == 60 && thisIndex.x == 1 && thisIndex.y == 1 && thisIndex.z == 0) serial {
+          if (CkHasCheckpoints()) {
+            CkPrintf("CkDieNow step 60\n");
             CkDieNow();
-			//}
-        }
-        if (CmiMyPartition()==0&&stepCount == 80 && thisIndex.x == 1 && thisIndex.y == 1 && thisIndex.z == 0) serial {
-            //CkPrintf("CkDieNow step 80\n");
-           // CkDieNow();
+          }
         }
 #endif
       }
@@ -158,17 +148,13 @@ mainmodule leanmd {
   array [6D] Compute {
     entry Compute();
     entry void ResumeFromSync();
-//    entry void resumeFromChkp();
     entry void calculateForces(ParticleDataMsg *msg);
 
     entry void run() {
-		serial{
-//			registerResumeClient();
-		}
       for (stepCount = 1; stepCount <= finalStepCount; stepCount++) {
         //self interaction check
         if (thisIndex.x1==thisIndex.x2 && thisIndex.y1==thisIndex.y2 && thisIndex.z1==thisIndex.z2)
-          when calculateForces(ParticleDataMsg *msg) serial {selfInteract(msg); }
+          when calculateForces(ParticleDataMsg *msg) serial { selfInteract(msg); }
         else
           //receive positions from two cells
           when calculateForces(ParticleDataMsg *msg1) when calculateForces(ParticleDataMsg *msg2) serial { interact(msg1, msg2); }
@@ -177,11 +163,6 @@ mainmodule leanmd {
           serial { AtSync();}
           when ResumeFromSync() { }
         }
-        
-
-//		if (stepCount % checkptFreq == 0) {
-//			when resumeFromChkp(){}
-//		}
       }
       //everything done, reduction on potential energy
       serial { contribute(2*sizeof(double),energy, CkReduction::sum_double, CkCallback(CkReductionTarget(Main,energySum),mainProxy)); }
