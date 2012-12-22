@@ -55,7 +55,7 @@
 #define CELL_ORIGIN_Y	        0
 #define CELL_ORIGIN_Z	        0
 
-#define MIGRATE_STEPCOUNT	        1000
+#define MIGRATE_STEPCOUNT	        20
 #define DEFAULT_FINALSTEPCOUNT	        1001
 #define MAX_VELOCITY		        .1  //in A/fs
 
