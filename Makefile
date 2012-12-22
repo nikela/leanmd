@@ -1,7 +1,10 @@
 SHELL := /bin/bash
 
 # to be set appropiately
-CHARMBASE      = $(HOME)/Xiang/git/replica/charm/mpi-bluegeneq-syncft-xlc
+#CHARMBASE      = $(HOME)/git/replica_orig/charm/mpi-linux-x86_64-syncft
+CHARMBASE      = $(HOME)/git/replica/charm/mpi-linux-x86_64-syncft
+#CHARMBASE      = $(HOME)/git/testlb/charm/net-linux-x86_64-syncft
+#CHARMBASE      = $(HOME)/git/charm/net-linux-x86_64-syncft
 CHARMC         = $(CHARMBASE)/bin/charmc
 
 OPTS            = -O3 -w

@@ -41,7 +41,6 @@ private:
   int updateCount;
   // store kinetic energy - initial and final
   double energy[2];
-  int numReadyCheckpoint;
   void migrateToCell(Particle p, int &px, int &py, int &pz);
   // updates properties after receiving forces from computes
   void updateProperties(vec3 *forces);
@@ -63,6 +62,7 @@ public:
   void sendPositions();
   void startCheckpoint(int);
   void pup(PUP::er &p);
+  void registerResumeClient();
 };
 
 #endif

@@ -2,14 +2,13 @@
 #include "leanmd.decl.h"
 #include "Cell.h"
 #include "ckmulticast.h"
-
+#include <math.h>
 Cell::Cell() : inbrs(NUM_NEIGHBORS), stepCount(1), updateCount(0), computesList(NUM_NEIGHBORS) {
   //load balancing to be called when AtSync is called
   usesAtSync = CmiTrue;
 
   int myid = thisIndex.z+cellArrayDimZ*(thisIndex.y+thisIndex.x*cellArrayDimY); 
   myNumParts = PARTICLES_PER_CELL_START + (myid*(PARTICLES_PER_CELL_END-PARTICLES_PER_CELL_START))/(cellArrayDimX*cellArrayDimY*cellArrayDimZ);
-
   // starting random generator
   srand48(myid);
 
@@ -27,7 +26,6 @@ Cell::Cell() : inbrs(NUM_NEIGHBORS), stepCount(1), updateCount(0), computesList(
     particles[i].vel.y = (drand48() - 0.5) * .2 * MAX_VELOCITY;
     particles[i].vel.z = (drand48() - 0.5) * .2 * MAX_VELOCITY;
   }
-
   energy[0] = energy[1] = 0;
   setMigratable(CmiFalse);
   listParticles.resize(inbrs);
@@ -107,7 +105,6 @@ void Cell::sendPositions() {
 
   for(int i = 0; i < len; ++i)
     msg->part[i] = particles[i].pos;
-
   mCastSecProxy.calculateForces(msg);
 }
 
@@ -123,7 +120,7 @@ void Cell::migrateParticles(){
       iter = particles.erase(iter);
     } else iter++;
   }
-
+  
   for(int num = 0; num < inbrs; num++) {
     x1 = num / (NBRS_Y * NBRS_Z)            - NBRS_X/2;
     y1 = (num % (NBRS_Y * NBRS_Z)) / NBRS_Z - NBRS_Y/2;
@@ -171,13 +168,22 @@ void Cell::updateProperties(vec3 *forces) {
     }
     // applying kinetic equations
     invMassParticle = 1 / particles[i].mass;
-    particles[i].acc = forces[i] * invMassParticle; // in m/sec^2
-    particles[i].vel += particles[i].acc * realTimeDeltaVel; // in A/fm
+//    particles[i].acc = forces[i] * invMassParticle; // in m/sec^2
+//    particles[i].vel += particles[i].acc * realTimeDeltaVel; // in A/fm
+	particles[i].acc = forces[i] * invMassParticle * realTimeDeltaVel; 
+	particles[i].vel += particles[i].acc * DEFAULT_DELTA; 
 
     limitVelocity(particles[i]);
 
     particles[i].pos += particles[i].vel * DEFAULT_DELTA; // in A
+
+	//if(stepCount == 140 && fabs(particles[i].pos.x-5.041007)<=0.000001 ){
+	if((stepCount == 140 )&& (fabs(particles[i].pos.z-4.255967)<=0.000001 || fabs(particles[i].pos.z-4.255967)<=0.000001)){
+		CkPrintf("[%d][%d] i %d %lf\n",CmiMyPartition(),CkMyPe(),i,particles[i].pos.z);
+	}
   }
+ if((stepCount == 140 ) )
+  CkPrintf("[%d][%d] %lf\n",CmiMyPartition(),CkMyPe(),particles[81].pos.z);
 }
 
 inline double velocityCheck(double inVelocity) {
@@ -208,26 +214,47 @@ Particle& Cell::wrapAround(Particle &p) {
   return p;
 }
 
+void Cell::registerResumeClient(){
+	CkCallback _cb(CkIndex_Cell::resumeFromChkp(),thisProxy(thisIndex.x,thisIndex.y,thisIndex.z));
+	setChkpResumeClient(_cb);
+}
 //pack important data when I move/checkpoint
 void Cell::pup(PUP::er &p) {
+  
+//  if(p.isChecking())
+//  	CkPrintf("[%d][%d] pup cell\n",CmiMyPartition(),CkMyPe());
+  if(p.isChecking())
+  	p.skip();	  
+  
   CBase_Cell::pup(p);
   __sdag_pup(p);
+  
+//  if(p.isChecking())
+//  	CkPrintf("[%d][%d] pup particles\n",CmiMyPartition(),CkMyPe());
+  p | stepTime;
   p | particles;
+  if(p.isChecking()){
+	 p.resume();
+  }
   p | stepCount;
   p | myNumParts;
   p | updateCount;
-  p | stepTime;
-  p | inbrs;
-  p | numReadyCheckpoint;
+  
+  
   PUParray(p, energy, 2);
-
+  p | inbrs;
+  
+  
+  if(p.isChecking())
+	  p.skip();
   p | computesList;
-
   p | mCastSecProxy;
+  
   //adjust the multicast tree to give best performance after moving
-  if (p.isUnpacking()){
+  if (p.isUnpacking()||p.isChecking()){
     if(CkInRestarting()){
       createSection();
+	  registerResumeClient();
     }
     else{
       CkMulticastMgr *mg = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
@@ -235,5 +262,6 @@ void Cell::pup(PUP::er &p) {
       mg->setReductionClient(mCastSecProxy, new CkCallback(CkReductionTarget(Cell,reduceForces), thisProxy(thisIndex.x, thisIndex.y, thisIndex.z)));
     }
   }
+  
 }
 
