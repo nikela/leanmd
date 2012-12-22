@@ -18,8 +18,8 @@
 //can set them to have lower values but not higher; alternatively a host of
 //paramters including PTP_CUT_OFF, PERDIM, GAP can be set to suitable values to
 //this should match the PERDIM parameter 
-#define PARTICLES_PER_CELL_START        700 
-#define PARTICLES_PER_CELL_END          700
+#define PARTICLES_PER_CELL_START        175 
+#define PARTICLES_PER_CELL_END          175
 
 #define DEFAULT_DELTA           1	// in femtoseconds
 
@@ -55,7 +55,7 @@
 #define CELL_ORIGIN_Y	        0
 #define CELL_ORIGIN_Z	        0
 
-#define MIGRATE_STEPCOUNT	        20
+#define MIGRATE_STEPCOUNT	        1000
 #define DEFAULT_FINALSTEPCOUNT	        1001
 #define MAX_VELOCITY		        .1  //in A/fs
 

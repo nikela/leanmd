@@ -176,13 +176,7 @@ void Cell::updateProperties(vec3 *forces) {
 
     particles[i].pos += particles[i].vel * DEFAULT_DELTA; // in A
 
-	//if(stepCount == 140 && fabs(particles[i].pos.x-5.041007)<=0.000001 ){
-	if((stepCount == 140 )&& (fabs(particles[i].pos.z-4.255967)<=0.000001 || fabs(particles[i].pos.z-4.255967)<=0.000001)){
-		CkPrintf("[%d][%d] i %d %lf\n",CmiMyPartition(),CkMyPe(),i,particles[i].pos.z);
-	}
   }
- if((stepCount == 140 ) )
-  CkPrintf("[%d][%d] %lf\n",CmiMyPartition(),CkMyPe(),particles[81].pos.z);
 }
 
 inline double velocityCheck(double inVelocity) {

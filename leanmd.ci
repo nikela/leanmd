@@ -137,10 +137,8 @@ mainmodule leanmd {
 
         //kill one of processes to demonstrate fault tolerance
         if (CmiMyPartition()==0&&stepCount == 12 && thisIndex.x == 1 && thisIndex.y == 1 && thisIndex.z == 0) serial {
-            //if(CkHasCheckpoints()){
-			CkPrintf("CkDieNow step 12\n");
-            CkDieNow();
-			//}
+			    CkPrintf("CkDieNow step 12\n");
+          CkDieNow();
         }
         if (CmiMyPartition()==0&&stepCount == 80 && thisIndex.x == 1 && thisIndex.y == 1 && thisIndex.z == 0) serial {
             //CkPrintf("CkDieNow step 80\n");
