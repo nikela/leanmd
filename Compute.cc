@@ -69,22 +69,19 @@ void Compute::registerResumeClient(){
 //pack important information if I am moving
 void Compute::pup(PUP::er &p) {
   
-//  if(p.isChecking())
-//  	CkPrintf("[%d][%d] pup compute\n",CmiMyPartition(),CkMyPe());
   if(p.isChecking())
-	p.skip();
+    p.skip();
   CBase_Compute::pup(p);
   __sdag_pup(p);
   
   if(p.isChecking())
-	p.resume();
+    p.resume();
   p | stepCount;
   
   PUParray(p, energy, 2);
   
-  
   if(p.isChecking())
-	p.skip();
+    p.skip();
   p | mcast1;
   p | mcast2;
   

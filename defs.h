@@ -83,14 +83,7 @@ struct vec3 {
     return vec3(x - rhs.x, y - rhs.y, z - rhs.z);
   }
   void pup(PUP::er &p){
-	  if(p.isChecking()){
-	//	  p.resume();
-	  }
   	p|x;
-  	if(p.isChecking()){
-  	//	printf("vector x %lf\n",x);
-		p.skip();	  
-	}
 	p|y;
 	p|z;
   }
@@ -100,15 +93,9 @@ inline double dot(const vec3& a, const vec3& b) {
 }
 
 inline void PUParray(PUP::er &p,vec3 * ta,int n){
-  if(p.isChecking()){
-	 // p.resume();
-  //	  p.setAccuracy(100);
-  }
 	for(int i=0;i<n;i++){
 		p|ta[i];
 	}
-//  	if(p.isChecking())
-//  		p.skip();	  
 }
 
 //class for keeping track of the properties for a particle
@@ -120,6 +107,7 @@ struct Particle {
   if(p.isChecking()){
 	  p.resume();
   	  p.setAccuracy(0.000001);
+  	  p.setAccuracyBit(24);
   }
   	p|mass;
 	p|pos.x;

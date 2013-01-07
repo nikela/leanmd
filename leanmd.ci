@@ -62,9 +62,9 @@ mainmodule leanmd {
 
     //function to perform iterations for Cells
     entry void run() {
-  		serial{
-			registerResumeClient();
-		}
+      serial{
+        registerResumeClient();
+      }
       if (thisIndex.x==0 && thisIndex.y==0 && thisIndex.z==0) serial {
         stepTime = CkWallTimer();
       }
@@ -74,16 +74,18 @@ mainmodule leanmd {
       for(stepCount = 1; stepCount <= finalStepCount; stepCount++) {
         //send current atom positions to my computes 
         serial { 
-			sendPositions();
-		} 
+          sendPositions();
+        } 
 
         //update properties of atoms using new force values 
-        when reduceForces(vec3 forces[n], int n) serial { updateProperties(forces); }
+        when reduceForces(vec3 forces[n], int n) serial { 
+          updateProperties(forces); 
+        }
 
         if ((stepCount %  MIGRATE_STEPCOUNT) == 0) {
           //send atoms that have moved beyond my cell to neighbors
           serial { migrateParticles(); } 
-    
+
           //receive particles from my neighbors
           for(updateCount = 0; updateCount < inbrs; updateCount++) {
             when receiveParticles(const std::vector<Particle> &updates, int x, int y, int z) serial {
@@ -103,11 +105,11 @@ mainmodule leanmd {
         }
 
         if (thisIndex.x == 0 && thisIndex.y == 0 && thisIndex.z == 0) 
-		serial {
-          CkPrintf("[%d]Step %d Benchmark Time %lf ms/step\n", 
-          CmiMyPartition(),stepCount, ((CkWallTimer() - stepTime))*1000);
-          stepTime = CkWallTimer();
-        }
+          serial {
+            CkPrintf("[%d]Step %d Benchmark Time %lf ms/step\n", 
+                CmiMyPartition(),stepCount, ((CkWallTimer() - stepTime))*1000);
+            stepTime = CkWallTimer();
+          }
 
         //periodically call load balancer
         if (stepCount >= firstLdbStep && (stepCount - firstLdbStep) % ldbPeriod == 0) {
@@ -126,33 +128,28 @@ mainmodule leanmd {
               CkCallback cb(CkIndex_Cell::resumeFromChkp(),thisProxy);
               if (checkptStrategy == 0) CkStartCheckpoint(logs.c_str(), cb);
               else
-			  { 
-				  CkStartMemCheckpoint(cb);
-			  }
+              { 
+                CkStartMemCheckpoint(cb);
+              }
             }
           }
-		}
-		else {
-			serial{
-				AtChkpSync();
-			}
-		}
+        }
+        else {
+          serial{
+            AtChkpSync();
+          }
+        }
         when resumeFromChkp() serial{
-			//CkPrintf("[%d][%d] recv checkpoint done %d %d %d\n",CmiMyPartition(),CkMyPe(),thisIndex.x,thisIndex.y,thisIndex.z); 
-		}
+        }
 
 #if CMK_MEM_CHECKPOINT
 
         //kill one of processes to demonstrate fault tolerance
         if (CmiMyPartition()==0&&stepCount == 12 && thisIndex.x == 1 && thisIndex.y == 1 && thisIndex.z == 0) serial {
-            //if(CkHasCheckpoints()){
-			CkPrintf("CkDieNow step 12\n");
-            CkDieNow();
-			//}
-        }
-        if (CmiMyPartition()==0&&stepCount == 80 && thisIndex.x == 1 && thisIndex.y == 1 && thisIndex.z == 0) serial {
-            //CkPrintf("CkDieNow step 80\n");
-           // CkDieNow();
+          //if(CkHasCheckpoints()){
+          CkPrintf("CkDieNow step 12\n");
+          CkDieNow();
+          //}
         }
 #endif
       }
@@ -172,16 +169,19 @@ mainmodule leanmd {
       for (stepCount = 1; stepCount <= finalStepCount; stepCount++) {
         //self interaction check
         if (thisIndex.x1==thisIndex.x2 && thisIndex.y1==thisIndex.y2 && thisIndex.z1==thisIndex.z2)
-          when calculateForces(ParticleDataMsg *msg) serial {selfInteract(msg); }
+          when calculateForces(ParticleDataMsg *msg) serial {
+            selfInteract(msg); 
+          }
         else
           //receive positions from two cells
-          when calculateForces(ParticleDataMsg *msg1) when calculateForces(ParticleDataMsg *msg2) serial { interact(msg1, msg2); }
+          when calculateForces(ParticleDataMsg *msg1) when calculateForces(ParticleDataMsg *msg2) serial { 
+              interact(msg1, msg2); 
+            }
         //periodically call load balancer
         if (stepCount >= firstLdbStep && (stepCount - firstLdbStep) % ldbPeriod== 0) {
           serial { AtSync();}
           when ResumeFromSync() { }
         }
-        
 
       }
       //everything done, reduction on potential energy

@@ -168,8 +168,6 @@ void Cell::updateProperties(vec3 *forces) {
     }
     // applying kinetic equations
     invMassParticle = 1 / particles[i].mass;
-//    particles[i].acc = forces[i] * invMassParticle; // in m/sec^2
-//    particles[i].vel += particles[i].acc * realTimeDeltaVel; // in A/fm
 	particles[i].acc = forces[i] * invMassParticle * realTimeDeltaVel; 
 	particles[i].vel += particles[i].acc * DEFAULT_DELTA; 
 
@@ -215,20 +213,17 @@ void Cell::registerResumeClient(){
 //pack important data when I move/checkpoint
 void Cell::pup(PUP::er &p) {
   
-//  if(p.isChecking())
-//  	CkPrintf("[%d][%d] pup cell\n",CmiMyPartition(),CkMyPe());
   if(p.isChecking())
-  	p.skip();	  
+    p.skip();	  
   
   CBase_Cell::pup(p);
   __sdag_pup(p);
   
-//  if(p.isChecking())
-//  	CkPrintf("[%d][%d] pup particles\n",CmiMyPartition(),CkMyPe());
   p | stepTime;
   p | particles;
+  
   if(p.isChecking()){
-	 p.resume();
+    p.resume();
   }
   p | stepCount;
   p | myNumParts;
@@ -240,25 +235,22 @@ void Cell::pup(PUP::er &p) {
   
   
   if(p.isChecking())
-	  p.skip();
+    p.skip();
   p | computesList;
   p | mCastSecProxy;
   
   //adjust the multicast tree to give best performance after moving
-  if (p.isUnpacking()||p.isChecking()){
+  if (p.isUnpacking()){
     if(CkInRestarting()){
       createSection();
-	  registerResumeClient();
+      registerResumeClient();
     }
     else{
       CkMulticastMgr *mg = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
       mg->resetSection(mCastSecProxy);
       mg->setReductionClient(mCastSecProxy, new CkCallback(CkReductionTarget(Cell,reduceForces), thisProxy(thisIndex.x, thisIndex.y, thisIndex.z)));
     }
-	if(p.isUnpacking()){
-  		listParticles.resize(inbrs);
-	}
+    listParticles.resize(inbrs);
   }
-  
 }
 

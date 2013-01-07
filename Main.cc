@@ -111,7 +111,7 @@ Main::Main(CkMigrateMessage* msg): CBase_Main(msg) {
 //pup routine incase the main chare moves, pack important information
 void Main::pup(PUP::er &p) {
   if(p.isChecking())
-	  p.skip();
+    p.skip();
   CBase_Main::pup(p);
   __sdag_pup(p);
 }
