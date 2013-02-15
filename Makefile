@@ -4,7 +4,7 @@ SHELL := /bin/bash
 CHARMBASE      = $(HOME)/charms/charm/net-linux-x86_64
 CHARMC         = $(CHARMBASE)/bin/charmc
 
-OPTS            = -O3
+OPTS            = -msse4.1 -O3
 
 DECL=
 SUFFIX=
