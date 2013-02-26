@@ -5,8 +5,8 @@
 
 Cell::Cell() : inbrs(NUM_NEIGHBORS), stepCount(1), updateCount(0), computesList(NUM_NEIGHBORS) {
   //load balancing to be called when AtSync is called
-  usesAtSync = CmiTrue;
-
+ ReadyMigrate(CmiFalse); 
+    usesAtSync = CmiTrue;
   int myid = thisIndex.z+cellArrayDimZ*(thisIndex.y+thisIndex.x*cellArrayDimY); 
   myNumParts = PARTICLES_PER_CELL_START + (myid*(PARTICLES_PER_CELL_END-PARTICLES_PER_CELL_START))/(cellArrayDimX*cellArrayDimY*cellArrayDimZ);
 
@@ -70,7 +70,8 @@ void Cell::createComputes() {
       py2 = py1+dy;
       pz2 = pz1+dz;
       CkArrayIndex6D index(px1, py1, pz1, px2, py2, pz2);
-      computeArray[index].insert((++currPe) % CkNumPes());
+      computeArray[index].insert(0);
+      //computeArray[index].insert((++currPe) % CkNumPes());
       computesList[num] = index;
     } else {
       // these computes will be created by pairing cells
