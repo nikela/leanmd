@@ -96,6 +96,9 @@ mainmodule leanmd {
 
         //periodically call load balancer
         if (stepCount >= firstLdbStep && (stepCount - firstLdbStep) % ldbPeriod == 0) {
+	  if (thisIndex.x == 0 && thisIndex.y == 0 && thisIndex.z == 0) serial {
+	    CkPrintf("Starting load balancing ....\n");
+	  }
           serial { AtSync(); }
           when ResumeFromSync() { }
         }

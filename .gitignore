@@ -4,3 +4,5 @@
 
 charmrun
 leanmd
+leanmd-interop
+libmoduleleanmd.a

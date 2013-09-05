@@ -1,8 +1,9 @@
 SHELL := /bin/bash
 
 # to be set appropiately
-CHARMBASE      = $(HOME)/charms/charm/net-linux-x86_64
+CHARMBASE      = $(HOME)/work/charm
 CHARMC         = $(CHARMBASE)/bin/charmc
+MPICXX         = mpicxx
 
 OPTS            = -O3
 
@@ -14,11 +15,14 @@ DECL=-DCMK_MEM_CHECKPOINT=1
 FT=-syncft
 endif
 
-all: leanmd
+all: interop
+
+interop: leanmd LeanMD.cc
+	$(MPICXX) $(OPTS) -c LeanMD.cc -I$(CHARMBASE)/include
+	$(CHARMC) $(OPTS) -mpi -nomain-module -language charm++ -o leanmd-interop LeanMD.o -L. -module leanmd -module CkMulticast -module CommonLBs -module HybridLB
 
 leanmd: Main.o Cell.o Compute.o leanmd.decl.h
-	$(CHARMC) $(OPTS) -module CkMulticast -module CommonLBs \
-	-language charm++ -o leanmd$(SUFFIX) Main.o Cell.o Compute.o
+	$(CHARMC) $(OPTS) -language charm++ -o libmoduleleanmd.a Main.o Cell.o Compute.o
 
 Main.o: Main.cc Main.h leanmd.decl.h defs.h
 	$(CHARMC) $(OPTS) -o Main.o Main.cc
@@ -36,4 +40,4 @@ test: leanmd
 	./charmrun +p4 ./leanmd 4 4 4 10 3 3 +balancer GreedyLB +LBDebug 1 ++local
 
 clean:
-	rm -f *.decl.h *.def.h *.o leanmd leanmd-ft leanmd.prj charmrun
+	rm -f *.decl.h *.def.h *.o leanmd leanmd-ft leanmd.prj libmoduleleanmd.a charmrun
