@@ -11,7 +11,7 @@ int main(int argc, char **argv) {
   MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
   MPI_Comm_size(MPI_COMM_WORLD, &numranks);
 
-  CharmLibInit(newComm, argc, argv);
+  CharmLibInit(MPI_COMM_WORLD, argc, argv);
 
   MPI_Barrier(MPI_COMM_WORLD);
   CharmLibExit();
