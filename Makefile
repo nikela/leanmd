@@ -19,7 +19,7 @@ all: interop
 
 interop: leanmd LeanMD.cc
 	$(MPICXX) $(OPTS) -c LeanMD.cc -I$(CHARMBASE)/include
-	$(CHARMC) $(OPTS) -mpi -nomain-module -language charm++ -o leanmd-interop LeanMD.o -L. -module leanmd -module CkMulticast -module CommonLBs -module HybridLB
+	$(CHARMC) $(OPTS) -mpi -nomain-module -language charm++ -o leanmd-interop LeanMD.o -L. -module leanmd -module CkMulticast -module CommonLBs -module ParMetisLB -module ParMetisCentLB -lparmetis -lmetis
 
 leanmd: Main.o Cell.o Compute.o leanmd.decl.h
 	$(CHARMC) $(OPTS) -language charm++ -o libmoduleleanmd.a Main.o Cell.o Compute.o
