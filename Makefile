@@ -1,11 +1,27 @@
 SHELL := /bin/bash
 
 # to be set appropiately
-CHARMBASE      = $(HOME)/work/charm
+CHARMBASE      = $(HOME)/charm/
 CHARMC         = $(CHARMBASE)/bin/charmc
-MPICXX         = mpicxx
+ifeq ($(TARGET),gni)
+  MPICXX=CC
+else
+ifeq ($(TARGET),bgq)
+  MPICXX=mpicxx
+  BGQ_INSTALL=/bgsys/drivers/ppcfloor
+  MPI_LIBS=-L$(BGQ_INSTALL)/comm/gcc/lib -lmpich -lopa -lmpl -ldl -L$(BGQ_INSTALL)/comm/sys-fast/lib -lpami -L$(BGQ_INSTALL)/spi/lib -lSPI -lSPI_cnk -lpthread -lrt
+else
+ifeq ($(TARGET),xlc)
+  MPICXX=mpixlcxx_r
+  BGQ_INSTALL=/bgsys/drivers/ppcfloor
+  MPI_LIBS=-L$(BGQ_INSTALL)/comm/xl/lib -lmpich -lopa -lmpl -ldl -L$(BGQ_INSTALL)/comm/sys-fast/lib -lpami -L$(BGQ_INSTALL)/spi/lib -lSPI -lSPI_cnk -lpthread -lrt
+else
+  MPICXX=mpicxx
+endif
+endif
+endif
 
-OPTS            = -O3
+OPTS            = -O0 -g
 
 DECL=
 SUFFIX=
@@ -19,7 +35,7 @@ all: interop
 
 interop: leanmd LeanMD.cc
 	$(MPICXX) $(OPTS) -c LeanMD.cc -I$(CHARMBASE)/include
-	$(CHARMC) $(OPTS) -mpi -nomain-module -language charm++ -o leanmd-interop LeanMD.o -L. -module leanmd -module CkMulticast -module CommonLBs -module ParMetisLB -module ParMetisCentLB -lparmetis -lmetis
+	$(CHARMC) $(OPTS) -mpi -nomain-module -language charm++ -o leanmd-interop LeanMD.o -L. -module leanmd -module CkMulticast -module CommonLBs -module ParMetisLB -module ParMetisCentLB -lparmetis -lmetis $(MPI_LIBS)
 
 leanmd: Main.o Cell.o Compute.o leanmd.decl.h
 	$(CHARMC) $(OPTS) -language charm++ -o libmoduleleanmd.a Main.o Cell.o Compute.o
