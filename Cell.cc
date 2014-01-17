@@ -14,6 +14,8 @@ Cell::Cell() : inbrs(NUM_NEIGHBORS), stepCount(1), updateCount(0), computesList(
   // starting random generator
   srand48(myid);
 
+  //if(thisIndex.x == 0 && thisIndex.y == 0)
+  //    CkPrintf(" numParts = %d \n", myNumParts);
   // Particle initialization
   for(int i = 0; i < myNumParts; i++) {
     particles.push_back(Particle());

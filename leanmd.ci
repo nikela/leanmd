@@ -32,6 +32,7 @@ mainmodule leanmd {
   //central controller chare
   mainchare [migratable] Main { 
     entry Main(CkArgMsg* msg);
+    entry void init();
     entry [reductiontarget] void energySum(double iE, double fE);  //reduction of potential energy
 
     // called when computes have been created

@@ -124,17 +124,22 @@ Main::Main(CkArgMsg* m) {
   CELL_SIZE_X = (PTP_CUT_OFF + CELL_MARGIN)/KAWAY_X;
   CELL_SIZE_Y = (PTP_CUT_OFF + CELL_MARGIN)/KAWAY_Y;
   CELL_SIZE_Z = (PTP_CUT_OFF + CELL_MARGIN)/KAWAY_Z;
-  CkPrintf("Cell Array Dimension X:%d Y:%d Z:%d of size %d %d %d\n",cellArrayDimX,cellArrayDimY,cellArrayDimZ,CELL_SIZE_X,CELL_SIZE_Y,CELL_SIZE_Z);
 
   cellArrayDimX = problemDimX * KAWAY_X;
   cellArrayDimY = problemDimY * KAWAY_Y;
   cellArrayDimZ = problemDimZ * KAWAY_Z;
-
+  CkPrintf("Cell Array Dimension X:%d Y:%d Z:%d of size %d %d %d\n",cellArrayDimX,cellArrayDimY,cellArrayDimZ,CELL_SIZE_X,CELL_SIZE_Y,CELL_SIZE_Z);
+  delete m;
   cellArray = CProxy_Cell::ckNew();
+  computeArray = CProxy_Compute::ckNew();
+  thisProxy.init();
+}
+
+void Main::init()
+{
   //initializing the 3D Patch array (with a uniform distribution) and 6D compute array
   int patchCount = 0;
   float ratio = ((float)CkNumPes() - 1)/(cellArrayDimX*cellArrayDimY*cellArrayDimZ);
-  computeArray = CProxy_Compute::ckNew();
   for (int x=0; x<cellArrayDimX; x++)
     for (int y=0; y<cellArrayDimY; y++)
       for (int z=0; z<cellArrayDimZ; z++) {
@@ -145,7 +150,8 @@ Main::Main(CkArgMsg* m) {
   cellArray.doneInserting();
   CkPrintf("\nCells: %d X %d X %d .... created\n", cellArrayDimX, cellArrayDimY, cellArrayDimZ);
 
-  delete m;
+
+
 }
 
 //constructor for chare object migration
