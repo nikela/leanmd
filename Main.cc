@@ -35,12 +35,13 @@
 
 // Entry point of Charm++ application
 Main::Main(CkArgMsg* m) {
+  int problemDimX, problemDimY, problemDimZ;
   CkPrintf("\nLENNARD JONES MOLECULAR DYNAMICS START UP ...\n");
 
   //set variable values to a default set
-  cellArrayDimX = CELLARRAY_DIM_X;
-  cellArrayDimY = CELLARRAY_DIM_Y;
-  cellArrayDimZ = CELLARRAY_DIM_Z;
+  problemDimX = cellArrayDimX = CELLARRAY_DIM_X;
+  problemDimY = cellArrayDimY = CELLARRAY_DIM_Y;
+  problemDimZ = cellArrayDimZ = CELLARRAY_DIM_Z;
   finalStepCount = DEFAULT_FINALSTEPCOUNT;
   firstLdbStep = DEFAULT_FIRST_LDB;
   ldbPeriod = DEFAULT_LDB_PERIOD;
@@ -62,10 +63,9 @@ Main::Main(CkArgMsg* m) {
   //read user parameters
   //number of cells in each dimension
   if (m->argc > cur_arg) {
-    cellArrayDimX=atoi(m->argv[cur_arg++]);
-    cellArrayDimY=atoi(m->argv[cur_arg++]);
-    cellArrayDimZ=atoi(m->argv[cur_arg++]);
-    CkPrintf("Cell Array Dimension X:%d Y:%d Z:%d of size %d %d %d\n",cellArrayDimX,cellArrayDimY,cellArrayDimZ,CELL_SIZE_X,CELL_SIZE_Y,CELL_SIZE_Z);
+    problemDimX = atoi(m->argv[cur_arg++]);
+    problemDimY = atoi(m->argv[cur_arg++]);
+    problemDimZ = atoi(m->argv[cur_arg++]);
   }
 
   //number of steps in simulation
@@ -104,14 +104,17 @@ Main::Main(CkArgMsg* m) {
   //decomposition , Away X
   if (m->argc > cur_arg) {
     KAWAY_X = atoi(m->argv[cur_arg++]);
+    CkPrintf("Away X : %d ", KAWAY_X);
   }
 
   if (m->argc > cur_arg) {
     KAWAY_Y = atoi(m->argv[cur_arg++]);
+    CkPrintf("Away Y : %d ", KAWAY_Y);
   }
 
   if (m->argc > cur_arg) {
     KAWAY_Z = atoi(m->argv[cur_arg]);
+    CkPrintf("Away Z : %d ", KAWAY_Z);
   }
 
   NBRS_X = (2*KAWAY_X+1);
@@ -121,6 +124,11 @@ Main::Main(CkArgMsg* m) {
   CELL_SIZE_X = (PTP_CUT_OFF + CELL_MARGIN)/KAWAY_X;
   CELL_SIZE_Y = (PTP_CUT_OFF + CELL_MARGIN)/KAWAY_Y;
   CELL_SIZE_Z = (PTP_CUT_OFF + CELL_MARGIN)/KAWAY_Z;
+  CkPrintf("Cell Array Dimension X:%d Y:%d Z:%d of size %d %d %d\n",cellArrayDimX,cellArrayDimY,cellArrayDimZ,CELL_SIZE_X,CELL_SIZE_Y,CELL_SIZE_Z);
+
+  cellArrayDimX = problemDimX * KAWAY_X;
+  cellArrayDimY = problemDimY * KAWAY_Y;
+  cellArrayDimZ = problemDimZ * KAWAY_Z;
 
   cellArray = CProxy_Cell::ckNew();
   //initializing the 3D Patch array (with a uniform distribution) and 6D compute array

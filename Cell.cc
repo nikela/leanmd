@@ -8,7 +8,7 @@ Cell::Cell() : inbrs(NUM_NEIGHBORS), stepCount(1), updateCount(0), computesList(
   usesAtSync = CmiTrue;
 
   int myid = thisIndex.z+cellArrayDimZ*(thisIndex.y+thisIndex.x*cellArrayDimY); 
-  myNumParts = PARTICLES_PER_CELL_START;
+  myNumParts = PARTICLES_PER_CELL_START/(KAWAY_X * KAWAY_Y * KAWAY_Z);
   //myNumParts = PARTICLES_PER_CELL_START + (myid*(PARTICLES_PER_CELL_END-PARTICLES_PER_CELL_START))/(cellArrayDimX*cellArrayDimY*cellArrayDimZ);
 
   // starting random generator
