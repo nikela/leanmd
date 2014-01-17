@@ -16,6 +16,19 @@ mainmodule leanmd {
   readonly int checkptStrategy; // choose the checkpoint strategy
   readonly std::string logs;   // log file for checkpointing
 
+  readonly int KAWAY_X;
+  readonly int KAWAY_Y;
+  readonly int KAWAY_Z;
+  readonly int NBRS_X;
+  readonly int NBRS_Y;
+  readonly int NBRS_Z;
+  readonly int NUM_NEIGHBORS;
+  readonly int  CELL_SIZE_X;
+  readonly int  CELL_SIZE_Y;
+  readonly int  CELL_SIZE_Z;
+
+
+
   //central controller chare
   mainchare [migratable] Main { 
     entry Main(CkArgMsg* msg);

@@ -26,22 +26,22 @@
 #define DEFAULT_LDB_PERIOD      20
 #define DEFAULT_FT_PERIOD       100000
 
-#define KAWAY_X                 1
-#define KAWAY_Y                 1
-#define KAWAY_Z                 1
-#define NBRS_X	                (2*KAWAY_X+1)
-#define NBRS_Y                  (2*KAWAY_Y+1)
-#define NBRS_Z                  (2*KAWAY_Z+1)
-#define NUM_NEIGHBORS           (NBRS_X * NBRS_Y * NBRS_Z)
+//#define KAWAY_X                 1
+//#define KAWAY_Y                 1
+//#define KAWAY_Z                 1
+//#define NBRS_X	                (2*KAWAY_X+1)
+//#define NBRS_Y                  (2*KAWAY_Y+1)
+//#define NBRS_Z                  (2*KAWAY_Z+1)
+//#define NUM_NEIGHBORS           (NBRS_X * NBRS_Y * NBRS_Z)
 
 #define CELLARRAY_DIM_X         3
 #define CELLARRAY_DIM_Y         3
 #define CELLARRAY_DIM_Z         3
 #define PTP_CUT_OFF             26 // cut off for atom to atom interactions
 #define CELL_MARGIN             4  // constant diff between cutoff and cell size
-#define CELL_SIZE_X             (PTP_CUT_OFF + CELL_MARGIN)/KAWAY_X
-#define CELL_SIZE_Y             (PTP_CUT_OFF + CELL_MARGIN)/KAWAY_Y
-#define CELL_SIZE_Z             (PTP_CUT_OFF + CELL_MARGIN)/KAWAY_Z
+//#define CELL_SIZE_X             (PTP_CUT_OFF + CELL_MARGIN)/KAWAY_X
+//#define CELL_SIZE_Y             (PTP_CUT_OFF + CELL_MARGIN)/KAWAY_Y
+//#define CELL_SIZE_Z             (PTP_CUT_OFF + CELL_MARGIN)/KAWAY_Z
 
 //variables to control initial uniform placement of atoms;
 //atoms should not be too close at startup for a stable system;  
@@ -108,5 +108,16 @@ extern /* readonly */ int cellArrayDimZ;
 extern /* readonly */ int finalStepCount;
 extern /* readonly */ int checkptStrategy;
 extern /* readonly */ std::string logs;
+
+extern /*  readonly*/ int KAWAY_X;
+extern /*  readonly*/ int KAWAY_Y;
+extern /*  readonly*/ int KAWAY_Z;
+extern /*  readonly*/ int NBRS_X;
+extern /*  readonly*/ int NBRS_Y;
+extern /*  readonly*/ int NBRS_Z;
+extern /*  readonly*/ int NUM_NEIGHBORS;
+extern /*  readonly*/ int  CELL_SIZE_X;
+extern /*  readonly*/ int  CELL_SIZE_Y;
+extern /*  readonly*/ int  CELL_SIZE_Z;
 
 #endif

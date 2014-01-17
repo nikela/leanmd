@@ -1,10 +1,11 @@
 SHELL := /bin/bash
 
 # to be set appropiately
-CHARMBASE      = $(HOME)/PPL/git/charmSteering/charm/mpi-linux-x86_64
+#CHARMBASE      = $(HOME)/git/charmSteering/charm/mpi-bluegeneq
+CHARMBASE      = $(HOME)/git/charmSteering/charm/pamilrts-bluegeneq
 CHARMC         = $(CHARMBASE)/bin/charmc
 
-OPTS            = -O3 -L/dcsdata/home/jessie/papi/lib
+OPTS            = -O3 
 
 DECL=
 SUFFIX=
@@ -37,7 +38,7 @@ Compute.o: Compute.cc Compute.h leanmd.decl.h defs.h physics.h
 	$(CHARMC) $(OPTS) -o Compute.o Compute.cc
 
 test: leanmd
-	./charmrun +p4 ./leanmd 4 4 4 10 3 3 +balancer GreedyLB +LBDebug 1 ++local
+	./charmrun +p4 ./leanmd 4 4 4 10 3 3 10000 mem 1 1 1  +balancer GreedyLB +LBDebug 1 ++local
 
 clean:
 	rm -f *.decl.h *.def.h *.o leanmd leanmd-ft leanmd.prj charmrun

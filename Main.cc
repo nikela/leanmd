@@ -20,6 +20,19 @@
 /* readonly */ int checkptStrategy;
 /* readonly */ std::string logs;
 
+/*  readonly*/ int KAWAY_X;
+/*  readonly*/ int KAWAY_Y;
+/*  readonly*/ int KAWAY_Z;
+/*  readonly*/ int NBRS_X;
+/*  readonly*/ int NBRS_Y;
+/*  readonly*/ int NBRS_Z;
+/*  readonly*/ int NUM_NEIGHBORS;
+/*  readonly*/ int  CELL_SIZE_X;
+/*  readonly*/ int  CELL_SIZE_Y;
+/*  readonly*/ int  CELL_SIZE_Z;
+
+
+
 // Entry point of Charm++ application
 Main::Main(CkArgMsg* m) {
   CkPrintf("\nLENNARD JONES MOLECULAR DYNAMICS START UP ...\n");
@@ -83,8 +96,31 @@ Main::Main(CkArgMsg* m) {
   //choose the checkpointing strategy use in disk checkpointing
   if (m->argc > cur_arg) {
   	checkptStrategy = 0;
-    logs = m->argv[cur_arg];
+    logs = m->argv[cur_arg++];
   }
+    KAWAY_X = 1;
+    KAWAY_Y = 1;
+    KAWAY_Z = 1;
+  //decomposition , Away X
+  if (m->argc > cur_arg) {
+    KAWAY_X = atoi(m->argv[cur_arg++]);
+  }
+
+  if (m->argc > cur_arg) {
+    KAWAY_Y = atoi(m->argv[cur_arg++]);
+  }
+
+  if (m->argc > cur_arg) {
+    KAWAY_Z = atoi(m->argv[cur_arg]);
+  }
+
+  NBRS_X = (2*KAWAY_X+1);
+  NBRS_Y = (2*KAWAY_Y+1);
+  NBRS_Z = (2*KAWAY_Z+1);
+  NUM_NEIGHBORS = (NBRS_X * NBRS_Y * NBRS_Z);
+  CELL_SIZE_X = (PTP_CUT_OFF + CELL_MARGIN)/KAWAY_X;
+  CELL_SIZE_Y = (PTP_CUT_OFF + CELL_MARGIN)/KAWAY_Y;
+  CELL_SIZE_Z = (PTP_CUT_OFF + CELL_MARGIN)/KAWAY_Z;
 
   cellArray = CProxy_Cell::ckNew();
   //initializing the 3D Patch array (with a uniform distribution) and 6D compute array
