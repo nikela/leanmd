@@ -17,7 +17,7 @@
 //number of particles decreases - for 2 1 1, it is 500, for 2 2 1 it is 250; you
 //can set them to have lower values but not higher; alternatively a host of
 //paramters including PTP_CUT_OFF, PERDIM, GAP can be set to suitable values to
-#define PARTICLES_PER_CELL_START        100 
+#define PARTICLES_PER_CELL_START        512
 #define PARTICLES_PER_CELL_END          250
 
 #define DEFAULT_DELTA           1	// in femtoseconds
@@ -26,8 +26,8 @@
 #define DEFAULT_LDB_PERIOD      20
 #define DEFAULT_FT_PERIOD       100000
 
-#define KAWAY_X                 2
-#define KAWAY_Y                 2
+#define KAWAY_X                 1
+#define KAWAY_Y                 1
 #define KAWAY_Z                 1
 #define NBRS_X	                (2*KAWAY_X+1)
 #define NBRS_Y                  (2*KAWAY_Y+1)

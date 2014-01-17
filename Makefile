@@ -1,10 +1,10 @@
 SHELL := /bin/bash
 
 # to be set appropiately
-CHARMBASE      = $(HOME)/charms/charm/net-linux-x86_64
+CHARMBASE      = $(HOME)/PPL/git/charmSteering/charm/mpi-linux-x86_64
 CHARMC         = $(CHARMBASE)/bin/charmc
 
-OPTS            = -O3
+OPTS            = -O3 -L/dcsdata/home/jessie/papi/lib
 
 DECL=
 SUFFIX=
@@ -18,7 +18,11 @@ all: leanmd
 
 leanmd: Main.o Cell.o Compute.o leanmd.decl.h
 	$(CHARMC) $(OPTS) -module CkMulticast -module CommonLBs \
-	-language charm++ -o leanmd$(SUFFIX) Main.o Cell.o Compute.o
+	-language charm++ -o leanmd$(SUFFIX) Main.o Cell.o Compute.o -tracemode autoPerf -tracemode autoTuner
+
+leanmd.prj: Main.o Cell.o Compute.o leanmd.decl.h
+	$(CHARMC) $(OPTS) -module CkMulticast -module CommonLBs \
+	-language charm++ -o leanmd.prj Main.o Cell.o Compute.o -tracemode projections  -tracemode autoPerf -tracemode autoTuner
 
 Main.o: Main.cc Main.h leanmd.decl.h defs.h
 	$(CHARMC) $(OPTS) -o Main.o Main.cc
