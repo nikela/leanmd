@@ -17,7 +17,7 @@
 //number of particles decreases - for 2 1 1, it is 500, for 2 2 1 it is 250; you
 //can set them to have lower values but not higher; alternatively a host of
 //paramters including PTP_CUT_OFF, PERDIM, GAP can be set to suitable values to
-#define PARTICLES_PER_CELL_START        512
+#define PARTICLES_PER_CELL_START       512 
 #define PARTICLES_PER_CELL_END          250
 
 #define DEFAULT_DELTA           1	// in femtoseconds

@@ -51,8 +51,6 @@ Main::Main(CkArgMsg* m) {
 
   //branch factor for spanning tree of multicast
   int bFactor = 4;
-  //creating the multicast spanning tree
-  mCastGrpID = CProxy_CkMulticastMgr::ckNew(bFactor);
 
   int numPes = CkNumPes();
   int currPe = -1, pe;
@@ -113,9 +111,16 @@ Main::Main(CkArgMsg* m) {
   }
 
   if (m->argc > cur_arg) {
-    KAWAY_Z = atoi(m->argv[cur_arg]);
+    KAWAY_Z = atoi(m->argv[cur_arg++]);
     CkPrintf("Away Z : %d ", KAWAY_Z);
   }
+  
+  if (m->argc > cur_arg) {
+    bFactor = atoi(m->argv[cur_arg]);
+    CkPrintf("Branch factor: %d ", bFactor);
+  }
+  //creating the multicast spanning tree
+  mCastGrpID = CProxy_CkMulticastMgr::ckNew(bFactor);
 
   NBRS_X = (2*KAWAY_X+1);
   NBRS_Y = (2*KAWAY_Y+1);
@@ -149,8 +154,6 @@ void Main::init()
 
   cellArray.doneInserting();
   CkPrintf("\nCells: %d X %d X %d .... created\n", cellArrayDimX, cellArrayDimY, cellArrayDimZ);
-
-
 
 }
 
