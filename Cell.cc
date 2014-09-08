@@ -115,13 +115,17 @@ void Cell::migrateParticles(){
   int x1, y1, z1;
   std::vector<std::vector<Particle> > outgoing;
   outgoing.resize(inbrs);
-  for(std::vector<Particle>::iterator iter = particles.begin(); iter != particles.end();) {
+
+  int size = particles.size();
+  for(std::vector<Particle>::reverse_iterator iter = particles.rbegin(); iter != particles.rend(); iter++) {
     migrateToCell(*iter, x1, y1, z1);
     if(x1!=0 || y1!=0 || z1!=0) {
       outgoing[(x1+KAWAY_X)*NBRS_Y*NBRS_Z + (y1+KAWAY_Y)*NBRS_Z + (z1+KAWAY_Z)].push_back(wrapAround(*iter));
-      iter = particles.erase(iter);
-    } else iter++;
+      std::swap(*iter, particles[size - 1]);
+      size--;
+    }
   }
+  particles.resize(size);
 
   for(int num = 0; num < inbrs; num++) {
     x1 = num / (NBRS_Y * NBRS_Z)            - NBRS_X/2;
