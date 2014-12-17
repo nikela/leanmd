@@ -1,0 +1,4 @@
+#!/bin/sh
+
+runjob -p 8 -n 64 --block $COBALT_PARTNAME --envs BG_SHAREDMEMSIZE=32MB PAMI_CLIENTS=MPI,Converse OMP_NUM_THREADS=4 : ./leanmd-interop 12 12 12 100 20 20 +balancer RefineLB +LBDebug 1 +LBCommOff +LBOff
+runjob -p 8 -n 64 --block $COBALT_PARTNAME --envs BG_SHAREDMEMSIZE=32MB PAMI_CLIENTS=MPI,Converse OMP_NUM_THREADS=4 : ./leanmd-interop 12 12 12 100 20 20 +balancer ParMetisLB +LBDebug 1 +LBOff
