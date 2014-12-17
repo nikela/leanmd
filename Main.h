@@ -2,7 +2,9 @@
 #define __MAIN_H__
 
 #include "defs.h"
+#ifndef NO_INTEROPERATE
 #include "mpi-interoperate.h"
+#endif
 
 //central controller chare
 class Main : public CBase_Main {

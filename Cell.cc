@@ -12,7 +12,6 @@ Cell::Cell() : inbrs(NUM_NEIGHBORS), stepCount(1), updateCount(0), computesList(
 
   // starting random generator
   srand48(myid);
-
   // Particle initialization
   for(int i = 0; i < myNumParts; i++) {
     particles.push_back(Particle());
@@ -30,6 +29,7 @@ Cell::Cell() : inbrs(NUM_NEIGHBORS), stepCount(1), updateCount(0), computesList(
 
   energy[0] = energy[1] = 0;
   setMigratable(CmiFalse);
+  thisProxy(thisIndex).createComputes();
 }
 
 //constructor for chare object migration

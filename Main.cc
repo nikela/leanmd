@@ -95,12 +95,11 @@ Main::Main(CkArgMsg* m) {
     for (int y=0; y<cellArrayDimY; y++)
       for (int z=0; z<cellArrayDimZ; z++) {
         cellArray(x, y, z).insert((int)(patchCount++ * ratio));
-        cellArray(x, y, z).createComputes();
+        //cellArray(x, y, z).createComputes();
       }
 
   cellArray.doneInserting();
   CkPrintf("\nCells: %d X %d X %d .... created\n", cellArrayDimX, cellArrayDimY, cellArrayDimZ);
-
   delete m;
 }
 

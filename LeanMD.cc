@@ -16,7 +16,6 @@ int main(int argc, char **argv) {
   MPI_Barrier(MPI_COMM_WORLD);
   CharmLibExit();
 
-  printf("called finalize\n");
   MPI_Finalize();
   return 0;
 }
