@@ -9,11 +9,11 @@ using std::swap;
 //compute - Default constructor
 Compute::Compute() : stepCount(1) {
   energy[0] = energy[1] = 0;
-  usesAtSync = CmiTrue;
+  usesAtSync = true;
 }
 
 Compute::Compute(CkMigrateMessage *msg): CBase_Compute(msg)  { 
-  usesAtSync = CmiTrue;
+  usesAtSync = true;
   delete msg;
 }
 

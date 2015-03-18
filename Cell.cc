@@ -5,7 +5,7 @@
 
 Cell::Cell() : inbrs(NUM_NEIGHBORS), stepCount(1), updateCount(0), computesList(NUM_NEIGHBORS) {
   //load balancing to be called when AtSync is called
-  usesAtSync = CmiTrue;
+  usesAtSync = true;
 
   int myid = thisIndex.z+cellArrayDimZ*(thisIndex.y+thisIndex.x*cellArrayDimY); 
   myNumParts = PARTICLES_PER_CELL_START + (myid*(PARTICLES_PER_CELL_END-PARTICLES_PER_CELL_START))/(cellArrayDimX*cellArrayDimY*cellArrayDimZ);
@@ -29,13 +29,13 @@ Cell::Cell() : inbrs(NUM_NEIGHBORS), stepCount(1), updateCount(0), computesList(
   }
 
   energy[0] = energy[1] = 0;
-  setMigratable(CmiFalse);
+  setMigratable(false);
 }
 
 //constructor for chare object migration
 Cell::Cell(CkMigrateMessage *msg): CBase_Cell(msg) {
-  usesAtSync = CmiTrue;
-  setMigratable(CmiFalse);
+  usesAtSync = true;
+  setMigratable(false);
   delete msg;
 }  
 
