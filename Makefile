@@ -1,7 +1,8 @@
 SHELL := /bin/bash
 
 # to be set appropiately
-CHARMBASE      = $(HOME)/PPL/git/charmSteering/charm/mpi-linux-x86_64
+CHARMBASE	=	$(HOME)/PPL/git/charmgitrrit/charm/mpi-linux-x86_64
+#CHARMBASE      = $(HOME)/PPL/git/charmSteering/charm/mpi-linux-x86_64
 #CHARMBASE      = $(HOME)/git/charmSteering/charm/pamilrts-bluegeneq
 CHARMC         = $(CHARMBASE)/bin/charmc
 
@@ -23,7 +24,7 @@ leanmd: Main.o Cell.o Compute.o leanmd.decl.h
 
 leanmd.prj: Main.o Cell.o Compute.o leanmd.decl.h
 	$(CHARMC) $(OPTS) -module CkMulticast -module CommonLBs \
-	-language charm++ -o leanmd.prj Main.o Cell.o Compute.o -tracemode projections  -tracemode autoPerf -tracemode autoTuner
+	-language charm++ -o leanmd.prj Main.o Cell.o Compute.o -tracemode projections  
 
 Main.o: Main.cc Main.h leanmd.decl.h defs.h
 	$(CHARMC) $(OPTS) -o Main.o Main.cc
