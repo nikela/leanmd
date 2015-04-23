@@ -175,7 +175,7 @@ void Cell::updateProperties(vec3 *forces) {
     // applying kinetic equations
     invMassParticle = 1 / particles[i].mass;
     particles[i].acc = forces[i] * invMassParticle; // in m/sec^2
-    particles[i].vel += particles[i].acc * realTimeDeltaVel; // in A/fm
+    particles[i].vel += particles[i].acc * realTimeDeltaVel; // in A/fs
 
     limitVelocity(particles[i]);
 

@@ -61,7 +61,7 @@ inline double calcPairForces(ParticleDataMsg* first, ParticleDataMsg* second, in
             rSix = ((double)rsqd) * rsqd * rsqd;
             rTwelve = rSix * rSix;
             f = (double)( (12 * VDW_A) / rTwelve - (6 * VDW_B) / rSix);
-            if(doEnergy && rsqd > 2)
+            if(doEnergy)
               energy += (double)( VDW_A / rTwelve - VDW_B / rSix); // in milliJoules
             fr = f / rsqd;
             force = separation * (fr * powTen);
@@ -102,7 +102,7 @@ inline double calcInternalForces(ParticleDataMsg* first, int stepCount, std::vec
         rSix = ((double)rsqd) * rsqd * rsqd;
         rTwelve = rSix * rSix;
         f = (double)( (12 * VDW_A) / rTwelve - (6 * VDW_B) / rSix);
-        if(doEnergy && rsqd > 2)
+        if(doEnergy)
           energy += (double)( VDW_A / rTwelve - VDW_B / rSix);
 
         fr = f / rsqd;
