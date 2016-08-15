@@ -86,20 +86,19 @@ Main::Main(CkArgMsg* m) {
     logs = m->argv[cur_arg];
   }
 
-  cellArray = CProxy_Cell::ckNew();
-  //initializing the 3D Patch array (with a uniform distribution) and 6D compute array
-  int patchCount = 0;
-  float ratio = ((float)CkNumPes() - 1)/(cellArrayDimX*cellArrayDimY*cellArrayDimZ);
-  computeArray = CProxy_Compute::ckNew();
-  for (int x=0; x<cellArrayDimX; x++)
-    for (int y=0; y<cellArrayDimY; y++)
-      for (int z=0; z<cellArrayDimZ; z++) {
-        cellArray(x, y, z).insert((int)(patchCount++ * ratio));
-        cellArray(x, y, z).createComputes();
-      }
+  CProxy_CellMap cellMap = CProxy_CellMap::ckNew(cellArrayDimX, 
+    cellArrayDimY, cellArrayDimZ);
+  CkArrayOptions opts(cellArrayDimX, cellArrayDimY, cellArrayDimZ);
+  opts.setMap(cellMap);
+  //create a 3D Patch array (with a uniform distribution)
+  cellArray = CProxy_Cell::ckNew(opts);
 
-  cellArray.doneInserting();
-  CkPrintf("\nCells: %d X %d X %d .... created\n", cellArrayDimX, cellArrayDimY, cellArrayDimZ);
+  //create an empty 6D computer array to be filled in by Cells
+  computeArray = CProxy_Compute::ckNew();
+
+  cellArray.createComputes();
+  CkPrintf("\nCells: %d X %d X %d .... created\n", cellArrayDimX, 
+    cellArrayDimY, cellArrayDimZ);
 
   delete m;
 }

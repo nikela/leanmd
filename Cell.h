@@ -22,6 +22,27 @@ struct ParticleDataMsg : public CkMcastBaseMsg, public CMessage_ParticleDataMsg 
   } 
 };
 
+class CellMap : public CkArrayMap {
+  int num_x, num_y, num_z, num_yz;
+  float ratio;
+  public:
+  CellMap(int num_x_, int num_y_, int num_z_) : 
+    num_x(num_x_), num_y(num_y_), num_z(num_z_) 
+  {
+    num_yz = num_y * num_z;
+    ratio = ((float)CkNumPes())/(num_x * num_yz);
+  }
+  CellMap(CkMigrateMessage *m) {}
+  int registerArray(CkArrayIndex& numElements, CkArrayID aid) {
+    return 0;
+  }
+  int procNum(int arrayHdl, const CkArrayIndex &idx) {
+    int *index =(int *)idx.data();
+    int patchID = index[2] + index[1] * num_z + index[0] * num_yz;
+    return (int)(patchID * ratio);
+  }
+};
+
 //chare used to represent a cell
 class Cell : public CBase_Cell {
 private:
