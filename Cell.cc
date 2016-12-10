@@ -1,7 +1,6 @@
 #include "defs.h"
 #include "leanmd.decl.h"
 #include "Cell.h"
-#include "ckmulticast.h"
 
 Cell::Cell() : inbrs(NUM_NEIGHBORS), stepCount(1), updateCount(0), computesList(NUM_NEIGHBORS) {
   //load balancing to be called when AtSync is called
@@ -90,12 +89,8 @@ void Cell::createComputes() {
 //call multicast section creation
 void Cell::createSection() {
   //knit the computes into a section
-  mCastSecProxy = CProxySection_Compute::ckNew(computeArray.ckGetArrayID(), &computesList[0], computesList.size());
-
-  //delegate the communication responsibility for this section to multicast library
-  CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
-  mCastSecProxy.ckSectionDelegate(mCastGrp);
-  mCastGrp->setReductionClient(mCastSecProxy, new CkCallback(CkReductionTarget(Cell,reduceForces), thisProxy(thisIndex.x, thisIndex.y, thisIndex.z)));
+  mCastSecProxy = CProxySection_Compute::ckNew(computeArray.ckGetArrayID(), &computesList[0], computesList.size(), bFactor);
+  mCastSecProxy.setReductionClient(new CkCallback(CkReductionTarget(Cell,reduceForces), thisProxy(thisIndex.x, thisIndex.y, thisIndex.z)));
 }
 
 // Function to start interaction among particles in neighboring cells as well as its own particles
@@ -233,9 +228,8 @@ void Cell::pup(PUP::er &p) {
       createSection();
     }
     else{
-      CkMulticastMgr *mg = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
-      mg->resetSection(mCastSecProxy);
-      mg->setReductionClient(mCastSecProxy, new CkCallback(CkReductionTarget(Cell,reduceForces), thisProxy(thisIndex.x, thisIndex.y, thisIndex.z)));
+      mCastSecProxy.resetSection();
+      mCastSecProxy.setReductionClient(new CkCallback(CkReductionTarget(Cell,reduceForces), thisProxy(thisIndex.x, thisIndex.y, thisIndex.z)));
     }
   }
 }

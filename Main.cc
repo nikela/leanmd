@@ -1,6 +1,5 @@
 #include <string>
 #include "time.h"
-#include "ckmulticast.h"
 #include "Main.h"
 #include "Cell.h"
 #include "Compute.h"
@@ -8,7 +7,6 @@
 /* readonly */ CProxy_Main mainProxy;
 /* readonly */ CProxy_Cell cellArray;
 /* readonly */ CProxy_Compute computeArray;
-/* readonly */ CkGroupID mCastGrpID;
 
 /* readonly */ int cellArrayDimX;
 /* readonly */ int cellArrayDimY;
@@ -19,6 +17,7 @@
 /* readonly */ int checkptFreq; 
 /* readonly */ int checkptStrategy;
 /* readonly */ std::string logs;
+/* readonly */ int bFactor;
 
 // Entry point of Charm++ application
 Main::Main(CkArgMsg* m) {
@@ -35,10 +34,7 @@ Main::Main(CkArgMsg* m) {
 
   mainProxy = thisProxy;
 
-  //branch factor for spanning tree of multicast
-  int bFactor = 4;
-  //creating the multicast spanning tree
-  mCastGrpID = CProxy_CkMulticastMgr::ckNew(bFactor);
+  bFactor = 4;
 
   int numPes = CkNumPes();
   int currPe = -1, pe;

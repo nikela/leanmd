@@ -4,7 +4,6 @@ mainmodule leanmd {
   readonly CProxy_Main mainProxy;       //central controller
   readonly CProxy_Cell cellArray;     //array that houses atoms
   readonly CProxy_Compute computeArray; //computational kernels
-  readonly CkGroupID mCastGrpID;      //multicast group handle
 
   readonly int cellArrayDimX;		// X dimension of the Cell array
   readonly int cellArrayDimY;		// Y dimension of the Cell array
@@ -15,6 +14,7 @@ mainmodule leanmd {
   readonly int checkptFreq;     // do FT every period
   readonly int checkptStrategy; // choose the checkpoint strategy
   readonly std::string logs;   // log file for checkpointing
+  readonly int bFactor;  //branch factor for spanning tree of multicast
 
   //central controller chare
   mainchare [migratable] Main { 

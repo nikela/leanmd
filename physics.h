@@ -1,7 +1,6 @@
 #ifndef __PHYSICS_H__
 #define __PHYSICS_H__
 
-#include "ckmulticast.h"
 #include "defs.h"
 
 #define BLOCK_SIZE	512

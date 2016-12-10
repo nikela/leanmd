@@ -2,7 +2,6 @@
 #include "Cell.h"
 #include "Compute.h"
 #include "physics.h"
-#include "ckmulticast.h"
 #include <algorithm>
 using std::swap;
 
@@ -29,9 +28,8 @@ void Compute::selfInteract(ParticleDataMsg *msg){
   else if (stepCount == finalStepCount) energy[1] = energyP;
 
   //contribute to force reduction
-  CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
   CkGetSectionInfo(mcast1, msg);
-  mCastGrp->contribute(sizeof(vec3)*msg->lengthAll, &force1[0], CkReduction::sum_double, mcast1);
+  CProxySection_Compute::contribute(sizeof(vec3)*msg->lengthAll, &force1[0], CkReduction::sum_double, mcast1);
 
   delete msg;
 }
@@ -51,11 +49,10 @@ void Compute::interact(ParticleDataMsg *msg1, ParticleDataMsg *msg2){
   else if (stepCount == finalStepCount) energy[1] = energyP;
 
   //contribute to force reduction
-  CkMulticastMgr *mCastGrp = CProxy_CkMulticastMgr(mCastGrpID).ckLocalBranch();
   CkGetSectionInfo(*handleA, msg1);
-  mCastGrp->contribute(sizeof(vec3)*msg1->lengthAll, &force1[0], CkReduction::sum_double, *handleA);
+  CProxySection_Compute::contribute(sizeof(vec3)*msg1->lengthAll, &force1[0], CkReduction::sum_double, *handleA);
   CkGetSectionInfo(*handleB, msg2);
-  mCastGrp->contribute(sizeof(vec3)*msg2->lengthAll, &force2[0], CkReduction::sum_double, *handleB);
+  CProxySection_Compute::contribute(sizeof(vec3)*msg2->lengthAll, &force2[0], CkReduction::sum_double, *handleB);
 
   delete msg1;
   delete msg2;
