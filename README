@@ -1,10 +1,10 @@
 Developers and contact:
 This benchmark was developed by Nikhil Jain as part of PPL's effort
-to develope miniapplications that demonstrate utility of Charm++. It
+to develop miniapplications that demonstrate utility of Charm++. It
 mimics the short-ranged force computation (due to Lennard Jones potential)
 in NAMD. It is roughly based on mol3d, developed by Edgar Solomonik and
 Abhinav Bhatele, which is a benchmark based on NAMD. Phil Miller's guidance
-was cruical in writing the SDAG routines. Later on Esteban Meneses and Xiang Ni
+was crucial in writing the SDAG routines. Later on Esteban Meneses and Xiang Ni
 added fault tolerance to it. It has been used in many publications related
 to Charm++. Contact nikhil.jain@acm.org for any bug report or comments.
 
