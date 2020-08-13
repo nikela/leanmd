@@ -3,7 +3,7 @@
 
 #include "defs.h"
 
-//central controller chare
+// Central controller chare
 class Main : public CBase_Main {
   private:
     Main_SDAG_CODE
