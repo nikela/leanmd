@@ -3,14 +3,14 @@
 
 #include "defs.h"
 
-//class representing the interaction agents between a couple of cells
+// Class representing the interaction agents between a couple of cells
 class Compute : public CBase_Compute {
   private:
     Compute_SDAG_CODE
-    int stepCount;  //current step number
-    double energy[2]; //store potential energy
-    //handles to differentiate the two multicast sections I am part of
-    CkSectionInfo mcast1;     
+    int stepCount; // Current step number
+    double energy[2]; // Store potential energy
+    // Handles to differentiate the two multicast sections I am part of
+    CkSectionInfo mcast1;
     CkSectionInfo mcast2;
 
   public:
