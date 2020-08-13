@@ -3,25 +3,31 @@
 #include "Cell.h"
 
 Cell::Cell() : inbrs(NUM_NEIGHBORS), stepCount(1), updateCount(0), computesList(NUM_NEIGHBORS) {
-  //load balancing to be called when AtSync is called
+  // Load balancing to be called when AtSync is called
   usesAtSync = true;
 
-  int myid = thisIndex.z+cellArrayDimZ*(thisIndex.y+thisIndex.x*cellArrayDimY); 
-  myNumParts = PARTICLES_PER_CELL_START + (myid*(PARTICLES_PER_CELL_END-PARTICLES_PER_CELL_START))/(cellArrayDimX*cellArrayDimY*cellArrayDimZ);
+  int myid = thisIndex.z+cellArrayDimZ*(thisIndex.y+thisIndex.x*cellArrayDimY);
+  myNumParts = PARTICLES_PER_CELL_START
+    + (myid * (PARTICLES_PER_CELL_END - PARTICLES_PER_CELL_START))
+    / (cellArrayDimX * cellArrayDimY * cellArrayDimZ);
 
-  // starting random generator
+  // Starting random generator
   srand48(myid);
 
   // Particle initialization
-  for(int i = 0; i < myNumParts; i++) {
+  for (int i = 0; i < myNumParts; i++) {
     particles.push_back(Particle());
     particles[i].mass = HYDROGEN_MASS;
 
-    //uniformly place particles, avoid close distance among them
-    particles[i].pos.x = (GAP/(float)2) + thisIndex.x * CELL_SIZE_X + ((i*KAWAY_Y*KAWAY_Z)/(PERDIM*PERDIM))*GAP;
-    particles[i].pos.y = (GAP/(float)2) + thisIndex.y * CELL_SIZE_Y + (((i*KAWAY_Z)/PERDIM)%(PERDIM/KAWAY_Y))*GAP;
-    particles[i].pos.z = (GAP/(float)2) + thisIndex.z * CELL_SIZE_Z + (i%(PERDIM/KAWAY_Z))*GAP; 
-    //give random values for velocity
+    // Uniformly place particles, avoid close distance among them
+    particles[i].pos.x = (GAP/(float)2) + thisIndex.x * CELL_SIZE_X
+      + ((i*KAWAY_Y*KAWAY_Z)/(PERDIM*PERDIM))*GAP;
+    particles[i].pos.y = (GAP/(float)2) + thisIndex.y * CELL_SIZE_Y
+      + (((i*KAWAY_Z)/PERDIM)%(PERDIM/KAWAY_Y))*GAP;
+    particles[i].pos.z = (GAP/(float)2) + thisIndex.z * CELL_SIZE_Z
+      + (i%(PERDIM/KAWAY_Z))*GAP;
+
+    // Give random values for velocity
     particles[i].vel.x = (drand48() - 0.5) * .2 * MAX_VELOCITY;
     particles[i].vel.y = (drand48() - 0.5) * .2 * MAX_VELOCITY;
     particles[i].vel.z = (drand48() - 0.5) * .2 * MAX_VELOCITY;
@@ -31,16 +37,15 @@ Cell::Cell() : inbrs(NUM_NEIGHBORS), stepCount(1), updateCount(0), computesList(
   setMigratable(false);
 }
 
-//constructor for chare object migration
-Cell::Cell(CkMigrateMessage *msg): CBase_Cell(msg) {
+Cell::Cell(CkMigrateMessage *msg) : CBase_Cell(msg) {
   usesAtSync = true;
   setMigratable(false);
   delete msg;
-}  
+}
 
 Cell::~Cell() {}
 
-//function to create my computes
+// Function to create my computes
 void Cell::createComputes() {
   int x = thisIndex.x, y = thisIndex.y, z = thisIndex.z;
   int px1, py1, pz1, dx, dy, dz, px2, py2, pz2;
@@ -53,15 +58,15 @@ void Cell::createComputes() {
    *	   x ---->
    */
 
-  // for round robin insertion
+  // For round robin insertion
   int currPe = CkMyPe();
 
   for (int num = 0; num < inbrs; num++) {
-    dx = num / (NBRS_Y * NBRS_Z)                - NBRS_X/2;
-    dy = (num % (NBRS_Y * NBRS_Z)) / NBRS_Z     - NBRS_Y/2;
-    dz = num % NBRS_Z                           - NBRS_Z/2;
+    dx = num / (NBRS_Y * NBRS_Z) - NBRS_X/2;
+    dy = (num % (NBRS_Y * NBRS_Z)) / NBRS_Z - NBRS_Y/2;
+    dz = num % NBRS_Z - NBRS_Z/2;
 
-    if (num >= inbrs / 2){
+    if (num >= inbrs / 2) {
       px1 = x + KAWAY_X;
       py1 = y + KAWAY_Y;
       pz1 = z + KAWAY_Z;
@@ -72,7 +77,7 @@ void Cell::createComputes() {
       computeArray[index].insert((++currPe) % CkNumPes());
       computesList[num] = index;
     } else {
-      // these computes will be created by pairing cells
+      // These computes will be created by pairing cells
       px1 = WRAP_X(x + dx) + KAWAY_X;
       py1 = WRAP_Y(y + dy) + KAWAY_Y;
       pz1 = WRAP_Z(z + dz) + KAWAY_Z;
@@ -82,39 +87,44 @@ void Cell::createComputes() {
       CkArrayIndex6D index(px1, py1, pz1, px2, py2, pz2);
       computesList[num] = index;
     }
-  } // end of for loop
-  contribute(CkCallback(CkReductionTarget(Main,run),mainProxy));
+  }
+
+  contribute(CkCallback(CkReductionTarget(Main, run), mainProxy));
 }
 
-//call multicast section creation
+// Multicast section creation
 void Cell::createSection() {
-  //knit the computes into a section
-  mCastSecProxy = CProxySection_Compute::ckNew(computeArray.ckGetArrayID(), &computesList[0], computesList.size(), bFactor);
-  mCastSecProxy.setReductionClient(new CkCallback(CkReductionTarget(Cell,reduceForces), thisProxy(thisIndex.x, thisIndex.y, thisIndex.z)));
+  // Knit the computes into a section
+  mCastSecProxy = CProxySection_Compute::ckNew(computeArray.ckGetArrayID(),
+      &computesList[0], computesList.size(), bFactor);
+  mCastSecProxy.setReductionClient(new CkCallback(CkReductionTarget(Cell, reduceForces),
+        thisProxy(thisIndex.x, thisIndex.y, thisIndex.z)));
 }
 
 // Function to start interaction among particles in neighboring cells as well as its own particles
 void Cell::sendPositions() {
   unsigned int len = particles.size();
-  //create the particle and control message to be sent to computes
+
+  // Create the particle and control message to be sent to computes
   ParticleDataMsg* msg = new (len) ParticleDataMsg(thisIndex.x, thisIndex.y, thisIndex.z, len);
 
-  for(int i = 0; i < len; ++i)
+  for (int i = 0; i < len; ++i) {
     msg->part[i] = particles[i].pos;
+  }
 
   mCastSecProxy.calculateForces(msg);
 }
 
-//send the atoms that have moved beyond my cell to neighbors
-void Cell::migrateParticles(){
+// Send the atoms that have moved beyond my cell to neighbors
+void Cell::migrateParticles() {
   int x1, y1, z1;
-  std::vector<std::vector<Particle> > outgoing;
+  std::vector<std::vector<Particle>> outgoing;
   outgoing.resize(inbrs);
 
   int size = particles.size();
-  for(std::vector<Particle>::reverse_iterator iter = particles.rbegin(); iter != particles.rend(); iter++) {
+  for (std::vector<Particle>::reverse_iterator iter = particles.rbegin(); iter != particles.rend(); iter++) {
     migrateToCell(*iter, x1, y1, z1);
-    if(x1!=0 || y1!=0 || z1!=0) {
+    if (x1 != 0 || y1 != 0 || z1 != 0) {
       outgoing[(x1+KAWAY_X)*NBRS_Y*NBRS_Z + (y1+KAWAY_Y)*NBRS_Z + (z1+KAWAY_Z)].push_back(wrapAround(*iter));
       std::swap(*iter, particles[size - 1]);
       size--;
@@ -122,15 +132,15 @@ void Cell::migrateParticles(){
   }
   particles.resize(size);
 
-  for(int num = 0; num < inbrs; num++) {
-    x1 = num / (NBRS_Y * NBRS_Z)            - NBRS_X/2;
+  for (int num = 0; num < inbrs; num++) {
+    x1 = num / (NBRS_Y * NBRS_Z) - NBRS_X/2;
     y1 = (num % (NBRS_Y * NBRS_Z)) / NBRS_Z - NBRS_Y/2;
-    z1 = num % NBRS_Z                       - NBRS_Z/2;
+    z1 = num % NBRS_Z - NBRS_Z/2;
     cellArray(WRAP_X(thisIndex.x+x1), WRAP_Y(thisIndex.y+y1), WRAP_Z(thisIndex.z+z1)).receiveParticles(outgoing[num]);
   }
 }
 
-//check if the particle is to be moved
+// Check if the particle is to be moved
 void Cell::migrateToCell(Particle p, int &px, int &py, int &pz) {
   double x = thisIndex.x * CELL_SIZE_X + CELL_ORIGIN_X;
   double y = thisIndex.y * CELL_SIZE_Y + CELL_ORIGIN_Y;
@@ -160,30 +170,32 @@ void Cell::updateProperties(vec3 *forces) {
   powTen = pow(10.0, 10);
   powTwenty = pow(10.0, -20);
   realTimeDeltaVel = DEFAULT_DELTA * powTwenty;
-  for(i = 0; i < particles.size(); i++) {
-    //calculate energy only in begining and end
-    if(stepCount == 1) {
-      energy[0] += (0.5 * particles[i].mass * dot(particles[i].vel, particles[i].vel) * powTen); // in milliJoules
-    } else if(stepCount == finalStepCount) { 
+  for (i = 0; i < particles.size(); i++) {
+    // Calculate energy only in beginning and end
+    if (stepCount == 1) {
+      energy[0] += (0.5 * particles[i].mass * dot(particles[i].vel, particles[i].vel) * powTen); // In milliJoules
+    } else if (stepCount == finalStepCount) {
       energy[1] += (0.5 * particles[i].mass * dot(particles[i].vel, particles[i].vel) * powTen);
     }
-    // applying kinetic equations
+
+    // Applying kinetic equations
     invMassParticle = 1 / particles[i].mass;
-    particles[i].acc = forces[i] * invMassParticle; // in m/sec^2
-    particles[i].vel += particles[i].acc * realTimeDeltaVel; // in A/fs
+    particles[i].acc = forces[i] * invMassParticle; // In m/sec^2
+    particles[i].vel += particles[i].acc * realTimeDeltaVel; // In A/fs
 
     limitVelocity(particles[i]);
 
-    particles[i].pos += particles[i].vel * DEFAULT_DELTA; // in A
+    particles[i].pos += particles[i].vel * DEFAULT_DELTA; // In A
   }
 }
 
 inline double velocityCheck(double inVelocity) {
-  if(fabs(inVelocity) > MAX_VELOCITY) {
-    if(inVelocity < 0.0 )
+  if (fabs(inVelocity) > MAX_VELOCITY) {
+    if (inVelocity < 0.0) {
       return -MAX_VELOCITY;
-    else
+    } else {
       return MAX_VELOCITY;
+    }
   } else {
     return inVelocity;
   }
@@ -196,17 +208,17 @@ void Cell::limitVelocity(Particle &p) {
 }
 
 Particle& Cell::wrapAround(Particle &p) {
-  if(p.pos.x < CELL_ORIGIN_X) p.pos.x += CELL_SIZE_X*cellArrayDimX;
-  if(p.pos.y < CELL_ORIGIN_Y) p.pos.y += CELL_SIZE_Y*cellArrayDimY;
-  if(p.pos.z < CELL_ORIGIN_Z) p.pos.z += CELL_SIZE_Z*cellArrayDimZ;
-  if(p.pos.x > CELL_ORIGIN_X + CELL_SIZE_X*cellArrayDimX) p.pos.x -= CELL_SIZE_X*cellArrayDimX;
-  if(p.pos.y > CELL_ORIGIN_Y + CELL_SIZE_Y*cellArrayDimY) p.pos.y -= CELL_SIZE_Y*cellArrayDimY;
-  if(p.pos.z > CELL_ORIGIN_Z + CELL_SIZE_Z*cellArrayDimZ) p.pos.z -= CELL_SIZE_Z*cellArrayDimZ;
+  if (p.pos.x < CELL_ORIGIN_X) p.pos.x += CELL_SIZE_X*cellArrayDimX;
+  if (p.pos.y < CELL_ORIGIN_Y) p.pos.y += CELL_SIZE_Y*cellArrayDimY;
+  if (p.pos.z < CELL_ORIGIN_Z) p.pos.z += CELL_SIZE_Z*cellArrayDimZ;
+  if (p.pos.x > CELL_ORIGIN_X + CELL_SIZE_X*cellArrayDimX) p.pos.x -= CELL_SIZE_X*cellArrayDimX;
+  if (p.pos.y > CELL_ORIGIN_Y + CELL_SIZE_Y*cellArrayDimY) p.pos.y -= CELL_SIZE_Y*cellArrayDimY;
+  if (p.pos.z > CELL_ORIGIN_Z + CELL_SIZE_Z*cellArrayDimZ) p.pos.z -= CELL_SIZE_Z*cellArrayDimZ;
 
   return p;
 }
 
-//pack important data when I move/checkpoint
+// Pack important data when I move/checkpoint
 void Cell::pup(PUP::er &p) {
   CBase_Cell::pup(p);
   __sdag_pup(p);
@@ -222,15 +234,14 @@ void Cell::pup(PUP::er &p) {
   p | computesList;
 
   p | mCastSecProxy;
-  //adjust the multicast tree to give best performance after moving
+  // Adjust the multicast tree to give best performance after moving
   if (p.isUnpacking()){
-    if(CkInRestarting()){
+    if (CkInRestarting()) {
       createSection();
-    }
-    else{
+    } else {
       mCastSecProxy.resetSection();
-      mCastSecProxy.setReductionClient(new CkCallback(CkReductionTarget(Cell,reduceForces), thisProxy(thisIndex.x, thisIndex.y, thisIndex.z)));
+      mCastSecProxy.setReductionClient(new CkCallback(CkReductionTarget(Cell, reduceForces),
+            thisProxy(thisIndex.x, thisIndex.y, thisIndex.z)));
     }
   }
 }
-
