@@ -20,6 +20,11 @@ leanmd: Main.o Cell.o Compute.o leanmd.decl.h
 	$(CHARMC) $(OPTS) -module CkMulticast -module CommonLBs \
 	-language charm++ -o leanmd$(SUFFIX) Main.o Cell.o Compute.o
 
+projections: Main.o Cell.o Compute.o leanmd.decl.h
+	$(CHARMC) $(OPTS) -module CkMulticast -module CommonLBs \
+	 -tracemode projections -language charm++ -o leanmd$(SUFFIX).prj \
+	Main.o Cell.o Compute.o
+
 Main.o: Main.cc Main.h leanmd.decl.h defs.h
 	$(CHARMC) $(OPTS) -o $@ -c $<
 
