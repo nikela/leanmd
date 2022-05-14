@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 
 # to be set appropiately
-CHARMBASE      = $(HOME)/charms/charm/net-linux-x86_64
+CHARMBASE      = $(HOME)/Documents/Charm_miniapps/charm/netlrts-linux-x86_64
 CHARMC         = $(CHARMBASE)/bin/charmc
 
 OPTS            = -O3
@@ -38,6 +38,7 @@ Compute.o: Compute.cc Compute.h leanmd.decl.h defs.h physics.h
 	$(CHARMC) $(OPTS) -o $@ -c $<
 
 test: leanmd
+	./charmrun +n4 ++local ./leanmd 2 2 2 101 20 20
 	./charmrun +p4 ./leanmd 4 4 4 10 3 3 +balancer GreedyLB +LBDebug 1 ++local
 
 clean:
